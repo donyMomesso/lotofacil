@@ -1,0 +1,6 @@
+metodo,total_concursos_simulados,media_acertos,desvio_padrao_acertos,esperanca_teorica,diferenca_vs_esperanca,min_acertos,max_acertos,pct_11_ou_mais,pct_13_ou_mais,pct_14_ou_mais,pct_15,qtd_0_acertos,qtd_1_acertos,qtd_2_acertos,qtd_3_acertos,qtd_4_acertos,qtd_5_acertos,qtd_6_acertos,qtd_7_acertos,qtd_8_acertos,qtd_9_acertos,qtd_10_acertos,qtd_11_acertos,qtd_12_acertos,qtd_13_acertos,qtd_14_acertos,qtd_15_acertos
+M1_aleatorio_puro,3724,9.0003,1.2094,9.0,0.0003,5,13,10.15,0.188,0.0,0.0,0,0,0,0,0,2,49,330,878,1227,860,307,64,7,0,0
+M2_mais_frequentes,3724,9.0336,1.2275,9.0,0.0336,5,14,11.439,0.107,0.0269,0.0,0,0,0,0,0,2,61,315,842,1212,866,361,61,3,1,0
+M3_mais_atrasadas,3724,9.0263,1.2334,9.0,0.0263,5,13,11.359,0.107,0.0,0.0,0,0,0,0,0,4,61,322,850,1187,877,359,60,4,0,0
+M4_par_impar_balanceado,3724,8.9817,1.2222,9.0,-0.0183,5,14,10.392,0.295,0.0269,0.0,0,0,0,0,0,3,59,334,894,1206,841,331,45,10,1,0
+M5_soma_faixa_comum,3724,8.9936,1.2157,9.0,-0.0064,5,13,10.365,0.081,0.0,0.0,0,0,0,0,0,3,53,340,877,1198,867,324,59,3,0,0

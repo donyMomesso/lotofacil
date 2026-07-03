@@ -81,6 +81,27 @@ lotofacil/
 └─ .github/workflows/analise-diaria.yml
 ```
 
+## Simulação retroativa (backtest)
+
+`scripts/simular_backtest.py` roda os 5 métodos contra TODO o histórico
+real (a partir do 2º concurso), usando só dados disponíveis antes de
+cada concurso (sem "olhar o futuro"). Resultado atual, com 3724
+concursos simulados por método:
+
+| Método | Média de acertos | Diferença vs. esperança (9,0) |
+|---|---|---|
+| M1_aleatorio_puro | 9,0003 | +0,0003 |
+| M2_mais_frequentes | 9,0336 | +0,0336 |
+| M3_mais_atrasadas | 9,0263 | +0,0263 |
+| M4_par_impar_balanceado | 8,9817 | -0,0183 |
+| M5_soma_faixa_comum | 8,9936 | -0,0064 |
+
+Nenhum jogo teve 15 acertos nos 18620 jogos simulados. As diferenças
+entre métodos são pequenas demais para significar qualquer coisa além
+de variação estatística — ver `diario_estatistico.md` para a análise
+completa. Resultados em `dados/simulacao_metodos.csv` (linha a linha) e
+`dados/estatisticas_simulacao.csv` (agregado).
+
 ## Como rodar manualmente
 
 ```bash
@@ -97,13 +118,13 @@ meio, e depois rode `conferir_jogos.py`, `gerar_jogos.py` e
 
 ## Fonte dos dados
 
-API pública que espelha os resultados oficiais da Caixa
-(`loteriascaixa-api`). O histórico inicial (~17 concursos) foi
-carregado manualmente em 03/07/2026; a partir do workflow diário, o
-histórico cresce automaticamente, concurso a concurso.
+Histórico completo (concurso 1, 29/09/2003, até o concurso 3725,
+02/07/2026 — 3725 concursos reais) importado de planilha fornecida
+pelo usuário em 03/07/2026 (`scripts/importar_historico_excel.py`).
+A partir do workflow diário, o histórico cresce automaticamente,
+concurso a concurso, buscando na API pública que espelha os
+resultados oficiais da Caixa (`loteriascaixa-api`).
 
 ## Observação final
 
-Resultados passados não garantem resultados futuros. Este laboratório
-serve para aprendizado matemático — não para previsão nem recomendação
-de jogo.
+Resultados passados 

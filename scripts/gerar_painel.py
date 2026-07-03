@@ -8,6 +8,7 @@ nada da internet sozinho.
 Uso:
     python3 gerar_painel.py
 """
+import csv
 import json
 import os
 from datetime import datetime, timezone, timedelta
@@ -104,6 +105,19 @@ TEMPLATE = """<!DOCTYPE html>
 </section>
 
 <section>
+  <h2>Simulação retroativa (backtest em todo o histórico real)</h2>
+  <div class="panels">
+    <div class="card"><canvas id="backtestChart"></canvas></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Método</th><th>Concursos</th><th>Média</th><th>Dif. vs. esperança</th><th>13+</th></tr></thead>
+        <tbody>__TABELA_BACKTEST__</tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
   <h2>Jogos de estudo do próximo concurso</h2>
   <div class="card">
     <table>
@@ -164,6 +178,23 @@ new Chart(document.getElementById('metodosChart'), {
   options: { plugins: { legend: { labels: { color:'#e7ebf3' } }, title: { display:true, text:'Média de acertos por método vs. valor esperado', color:'#e7ebf3' } },
     scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' }, suggestedMax: 15 } } }
 });
+
+if (dados.backtest_metodos && dados.backtest_metodos.length) {
+  new Chart(document.getElementById('backtestChart'), {
+    type: 'bar',
+    data: {
+      labels: dados.backtest_metodos.map(m => m.metodo.replace(/^M[0-9]_/,'')),
+      datasets: [
+        { label: 'Média de acertos (backtest)', data: dados.backtest_metodos.map(m => m.media_acertos), backgroundColor: '#a78bfa' },
+        { label: 'Esperança teórica', data: dados.backtest_metodos.map(() => dados.esperanca), type: 'line',
+          borderColor: '#3fbf7f', borderDash: [6,4], pointRadius: 0 }
+      ]
+    },
+    options: { plugins: { legend: { labels: { color:'#e7ebf3' } },
+      title: { display:true, text:'Backtest em milhares de concursos reais (eixo ampliado p/ mostrar a diferença)', color:'#e7ebf3' } },
+      scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' }, min: 8.5, max: 9.5 } } }
+  });
+}
 </script>
 </body>
 </html>
@@ -185,12 +216,19 @@ def main():
     conferencias = lib.carregar_conferencias()
     ultimas_conf = conferencias[-15:][::-1]
 
+    stats_backtest = []
+    sim_path = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
+    if os.path.exists(sim_path):
+        with open(sim_path, encoding="utf-8") as f:
+            stats_backtest = list(csv.DictReader(f))
+
     dados_json = {
         "dezenas": lib.TODAS_DEZENAS,
         "freq_pct": [round(100 * freq[d] / total, 2) if total else 0 for d in lib.TODAS_DEZENAS],
         "atraso": [atraso[d] for d in lib.TODAS_DEZENAS],
         "metodos": [{"metodo": l["metodo"], "media_acertos": l["media_acertos"]} for l in stats_metodos],
         "esperanca": lib.ESPERANCA_TEORICA,
+        "backtest_metodos": [{"metodo": l["metodo"], "media_acertos": float(l["media_acertos"])} for l in stats_backtest],
     }
 
     tabela_metodos = "".join(
@@ -206,6 +244,13 @@ def main():
         for j in jogos_proximo
     ) or "<tr><td colspan=4>Ainda não gerado.</td></tr>"
 
+    tabela_backtest = "".join(
+        f"<tr><td>{l['metodo']}</td><td>{l['total_concursos_simulados']}</td>"
+        f"<td>{l['media_acertos']}</td><td>{float(l['diferenca_vs_esperanca']):+.4f}</td>"
+        f"<td>{l['pct_13_ou_mais']}%</td></tr>"
+        for l in stats_backtest
+    ) or "<tr><td colspan=5>Simulação ainda não rodada (scripts/simular_backtest.py).</td></tr>"
+
     tabela_conf = "".join(
         f"<tr><td>{c['concurso']}</td><td>{c['metodo']}</td>"
         f"<td><span class='pill {'ok' if c['acertos'] >= int(lib.ESPERANCA_TEORICA) else 'mid'}'>{c['acertos']}</span></td></tr>"
@@ -220,6 +265,7 @@ def main():
     html = html.replace("__ESPERANCA__", str(lib.ESPERANCA_TEORICA))
     html = html.replace("__TOTAL_CONFERIDOS__", str(total_conferidos))
     html = html.replace("__TABELA_METODOS__", tabela_metodos)
+    html = html.replace("__TABELA_BACKTEST__", tabela_backtest)
     html = html.replace("__TABELA_JOGOS__", tabela_jogos)
     html = html.replace("__TABELA_CONFERENCIAS__", tabela_conf)
     html = html.replace("__DADOS_JSON__", json.dumps(dados_json, ensure_ascii=False))
