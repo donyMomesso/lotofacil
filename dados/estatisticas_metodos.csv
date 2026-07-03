@@ -1,0 +1,6 @@
+metodo,total_jogos_conferidos,media_acertos,desvio_padrao_acertos,esperanca_teorica,min_acertos,max_acertos,pct_11_ou_mais,pct_13_ou_mais,qtd_0_acertos,qtd_1_acertos,qtd_2_acertos,qtd_3_acertos,qtd_4_acertos,qtd_5_acertos,qtd_6_acertos,qtd_7_acertos,qtd_8_acertos,qtd_9_acertos,qtd_10_acertos,qtd_11_acertos,qtd_12_acertos,qtd_13_acertos,qtd_14_acertos,qtd_15_acertos
+M1_aleatorio_puro,0,0.0,0.0,9.0,,,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+M2_mais_frequentes,0,0.0,0.0,9.0,,,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+M3_mais_atrasadas,0,0.0,0.0,9.0,,,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+M4_par_impar_balanceado,0,0.0,0.0,9.0,,,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+M5_soma_faixa_comum,0,0.0,0.0,9.0,,,0.0,0.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
