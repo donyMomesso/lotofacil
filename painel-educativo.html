@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratório Lotofácil — Estudo Estatístico</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1220; --ink: #101a2e; --card: #ffffff; --line: #e6e9f0;
+    --text: #16203a; --muted: #5b6478; --brand: #0f6e56; --brand2: #1d9e75;
+    --accent: #2a6df4; --warn: #b3540e; --warnbg: #fdf1e6;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Segoe UI', -apple-system, Roboto, Helvetica, Arial, sans-serif;
+         color: var(--text); background: #f6f7fb; }
+
+  .hero { background: radial-gradient(1200px 400px at 20% -10%, #12331f 0%, var(--ink) 55%, #0b1220 100%);
+          color: #eef1f8; padding: 64px 8vw 56px; }
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom: 36px; }
+  .brand .mark { width:34px; height:34px; border-radius:9px; background: linear-gradient(135deg, var(--brand2), var(--brand));
+                 display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+  .brand .name { font-weight:700; font-size:16px; letter-spacing:.01em; }
+  .hero h1 { font-size: clamp(28px, 4vw, 44px); line-height:1.15; margin: 0 0 16px; max-width: 760px; }
+  .hero p.lead { font-size: 17px; color:#c7cee0; max-width: 620px; line-height:1.6; margin: 0 0 28px; }
+  .hero-badges { display:flex; gap:10px; flex-wrap:wrap; }
+  .badge { background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); color:#e7ebf5;
+           padding:7px 14px; border-radius:999px; font-size:13px; }
+
+  .disclaimer-strip { background: var(--warnbg); border-top:1px solid #f2d9bd; border-bottom:1px solid #f2d9bd;
+                       color: var(--warn); padding: 14px 8vw; font-size: 13.5px; line-height:1.6; }
+  .disclaimer-strip b { color:#8a3d09; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 56px 8vw 80px; }
+  section { margin-bottom: 64px; }
+  .eyebrow { text-transform:uppercase; letter-spacing:.08em; font-size:12px; color: var(--brand); font-weight:700; margin-bottom:8px; }
+  h2 { font-size: 26px; margin: 0 0 14px; }
+  p.desc { color: var(--muted); font-size:15.5px; line-height:1.7; max-width:720px; margin:0 0 28px; }
+
+  .stat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin: -20px 0 40px; }
+  .stat-card { background: var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+  .stat-card .k { font-size:12.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  .stat-card .v { font-size:28px; font-weight:700; margin-top:6px; color:var(--text); }
+  .stat-card .h { font-size:12px; color:var(--muted); margin-top:4px; }
+
+  .steps { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:18px; }
+  .step { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .step .n { display:inline-flex; width:26px; height:26px; border-radius:8px; background:#eaf6f0; color:var(--brand);
+             align-items:center; justify-content:center; font-weight:700; font-size:13px; margin-bottom:10px; }
+  .step h3 { font-size:15.5px; margin: 0 0 6px; }
+  .step p { font-size:13.5px; color:var(--muted); line-height:1.6; margin:0; }
+
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .panels-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width: 860px){ .panels-2 { grid-template-columns:1fr; } .hero{padding:48px 6vw 40px;} main{padding:40px 6vw 64px;} }
+  canvas { max-height: 280px; }
+
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; }
+
+  .faq details { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:10px; }
+  .faq summary { cursor:pointer; font-weight:600; font-size:14.5px; }
+  .faq p { color:var(--muted); font-size:13.8px; line-height:1.65; margin: 10px 0 0; }
+
+  footer { background: var(--ink); color:#aab4c8; padding: 34px 8vw; font-size:12.8px; line-height:1.7; }
+  footer b { color:#e7ebf5; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="brand"><div class="mark">L</div><div class="name">Laboratório Lotofácil</div></div>
+  <h1>A matemática por trás da Lotofácil, sem prometer o que a matemática não entrega.</h1>
+  <p class="lead">Um estudo estatístico contínuo sobre resultados reais da Lotofácil: frequência, atraso,
+  distribuição e o comportamento de diferentes formas de montar um jogo — comparadas sempre contra o
+  valor teórico esperado, não entre si por "quem ganha mais".</p>
+  <div class="hero-badges">
+    <span class="badge">Atualizado diariamente</span>
+    <span class="badge">17+ concursos reais analisados</span>
+    <span class="badge">Esperança teórica: 9,0 acertos</span>
+  </div>
+</div>
+
+<div class="disclaimer-strip">
+  <b>Isto não é um método para ganhar.</b> Nenhum conteúdo aqui aumenta a chance de acertar 14 ou 15 dezenas.
+  A Lotofácil é um sorteio aleatório e cada concurso é independente dos anteriores. Este material é um
+  estudo de matemática e estatística — não é aconselhamento financeiro nem recomendação de aposta.
+</div>
+
+<main>
+
+  <section>
+    <div class="eyebrow">Como funciona</div>
+    <h2>Um experimento estatístico contínuo, não uma fórmula</h2>
+    <p class="desc">Todo dia, o laboratório registra o resultado real da Lotofácil e testa 5 formas
+    diferentes de montar um jogo de 15 dezenas — cada uma é uma hipótese, não uma estratégia.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Coleta</h3><p>Busca o resultado oficial mais recente e soma ao histórico real, concurso a concurso.</p></div>
+      <div class="step"><div class="n">2</div><h3>Comparação</h3><p>Gera 5 jogos fictícios por métodos diferentes (aleatório, frequência, atraso, par/ímpar, soma) só para observar.</p></div>
+      <div class="step"><div class="n">3</div><h3>Conferência</h3><p>Confere cada jogo contra o resultado real e registra quantas dezenas bateram — sem exceção.</p></div>
+      <div class="step"><div class="n">4</div><h3>Conclusão honesta</h3><p>Compara tudo contra o valor esperado por acaso (9 acertos). Se convergir para lá, é matemática funcionando — não um método "achado".</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Estado atual</div>
+    <h2>O que os dados mostram até agora</h2>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="k">Concursos analisados</div><div class="v">17</div><div class="h">histórico real, crescendo todo dia</div></div>
+      <div class="stat-card"><div class="k">Próximo concurso</div><div class="v">3726</div><div class="h">jogos de estudo já gerados</div></div>
+      <div class="stat-card"><div class="k">Esperança teórica</div><div class="v">9,0</div><div class="h">acertos por jogo, via hipergeométrica</div></div>
+      <div class="stat-card"><div class="k">Dezena mais frequente</div><div class="v">01 e 25</div><div class="h">76,5% dos concursos observados</div></div>
+    </div>
+
+    <div class="panels-2">
+      <div class="panel">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Frequência de cada dezena (%)</div>
+        <canvas id="freqChart" role="img" aria-label="Frequência relativa de cada dezena de 1 a 25 no histórico observado, entre 35% e 77%"></canvas>
+      </div>
+      <div class="panel">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Atraso atual (concursos sem sair)</div>
+        <canvas id="atrasoChart" role="img" aria-label="Atraso atual de cada dezena de 1 a 25, em número de concursos sem sair, entre 0 e 5"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Métodos em teste</div>
+    <h2>5 hipóteses, comparadas de forma neutra</h2>
+    <p class="desc">Nenhuma é chamada de "melhor". A expectativa matemática é que todas convirjam para perto
+    de 9 acertos em média — e é justamente isso que este estudo acompanha ao longo do tempo.</p>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Método</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td>Aleatório puro</td><td>15 dezenas sorteadas sem nenhum critério — o "controle" do experimento.</td></tr>
+          <tr><td>Mais frequentes</td><td>As 15 dezenas que mais saíram no histórico até aquele momento.</td></tr>
+          <tr><td>Mais atrasadas</td><td>As 15 dezenas há mais concursos sem sair.</td></tr>
+          <tr><td>Par/ímpar balanceado</td><td>Aleatório, forçando 8 pares e 7 ímpares.</td></tr>
+          <tr><td>Soma na faixa comum</td><td>Aleatório, só aceita jogos com soma entre 180 e 210.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="faq">
+    <div class="eyebrow">Perguntas frequentes</div>
+    <h2>Antes de qualquer dúvida</h2>
+    <details open>
+      <summary>Isso aumenta minha chance de ganhar?</summary>
+      <p>Não. Nenhum método estudado aqui muda a probabilidade real de um jogo acertar 14 ou 15 dezenas.
+      A Lotofácil é um sorteio aleatório: cada concurso é independente dos anteriores, e frequência ou
+      atraso passados não influenciam o próximo resultado.</p>
+    </details>
+    <details>
+      <summary>Então por que estudar frequência e atraso?</summary>
+      <p>Porque é um jeito prático e visual de aprender estatística de verdade: distribuição, variância,
+      viés de confirmação e o que significa "esperança matemática". O objetivo é entender o acaso, não escapar dele.</p>
+    </details>
+    <details>
+      <summary>Algum dos 5 métodos "está ganhando"?</summary>
+      <p>Se algum aparecer com média mais alta por um tempo, isso é variação estatística normal em amostra
+      pequena — não sinal de que funciona. O próprio propósito do laboratório é mostrar essa oscilação se
+      equilibrando conforme mais concursos entram na conta.</p>
+    </details>
+    <details>
+      <summary>Posso usar os jogos gerados aqui para apostar?</summary>
+      <p>Os jogos são gerados só para fins de estudo estatístico. Se decidir apostar, a decisão e o risco
+      são inteiramente seus — este material não recomenda, não promete e não se responsabiliza por resultado de aposta.</p>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <b>Laboratório Lotofácil</b> — conteúdo educativo sobre matemática, estatística e probabilidade aplicadas
+  a resultados reais da Lotofácil. Não possui vínculo com a Caixa Econômica Federal. Resultados passados
+  não garantem resultados futuros. Loteria é aleatória; este material não constitui aconselhamento
+  financeiro nem recomendação de aposta.
+</footer>
+
+<script>
+const dezenas = Array.from({length:25}, (_,i) => String(i+1).padStart(2,'0'));
+const freqPct = [76.5,58.8,41.2,70.6,70.6,70.6,52.9,47.1,58.8,47.1,52.9,70.6,35.3,70.6,70.6,52.9,52.9,70.6,52.9,58.8,64.7,64.7,52.9,58.8,76.5];
+const atraso = [0,0,1,0,0,0,1,0,5,2,0,1,0,0,1,0,0,2,0,2,0,1,2,0,0];
+
+new Chart(document.getElementById('freqChart'), {
+  type: 'bar',
+  data: { labels: dezenas, datasets: [{ data: freqPct, backgroundColor: '#1d9e75', borderRadius: 4 }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{grid:{color:'#eef0f5'}, ticks:{callback:v=>v+'%'}} } }
+});
+new Chart(document.getElementById('atrasoChart'), {
+  type: 'bar',
+  data: { labels: dezenas, datasets: [{ data: atraso, backgroundColor: '#2a6df4', borderRadius: 4 }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{grid:{color:'#eef0f5'}, ticks:{stepSize:1}} } }
+});
+</script>
+</body>
+</html>
