@@ -4,6 +4,7 @@ Inspirado na planilha Lotocerta, com estilo dark/elegante.
 
 Seções:
   - Aba 🎯 Jogos: moldura, miolo, desdobramento dos 5 métodos
+  - Aba ✏️ Meus Jogos: volante interativo para registrar jogos próprios (localStorage + exporta CSV)
   - Aba ✅ Conferidor: conferidor visual com acertos destacados + desempenho + financeiro
   - Aba 📊 Backtest: gráficos SVG + tabela comparativa
   - Aba 🔥 Dezenas: mapa de calor + ranking de atraso
@@ -629,12 +630,113 @@ def render_aba_historico(ultimos):
 # ─────────────────────────────────────────────
 # HTML PRINCIPAL
 # ─────────────────────────────────────────────
+def render_aba_meus_jogos(concurso_atual):
+    """Aba de entrada manual de jogos próprios com volante interativo."""
+    # Volante 5x5
+    volante_html = []
+    for row in range(5):
+        cells = []
+        for col in range(5):
+            num = row * 5 + col + 1
+            cells.append(
+                f'<div class="mj-bola" id="mj-bola-{num}" onclick="mjToggle({num})">{num:02d}</div>'
+            )
+        volante_html.append('<div class="mj-row">' + ''.join(cells) + '</div>')
+    volante = '\n'.join(volante_html)
+
+    return f'''
+    <div class="disclaimer">
+      <b>Meus Jogos Próprios:</b> Registre aqui seus jogos manuais para o próximo concurso.
+      Eles serão <b>conferidos automaticamente</b> pelo ciclo diário junto com os 5 métodos.
+      Clique nas dezenas do volante, informe o concurso alvo e salve.
+      Os dados ficam salvos no seu navegador (localStorage) e podem ser exportados como CSV.
+    </div>
+
+    <!-- VOLANTE INTERATIVO -->
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">🎰 Volante — Clique para selecionar as dezenas</div>
+        <div class="mj-volante">{volante}</div>
+        <div class="mj-info-row">
+          <div class="stat-mini" style="flex:1">
+            <div class="label">Dezenas</div>
+            <div class="value" id="mj-count" style="color:#8b949e">0/15</div>
+          </div>
+          <div class="stat-mini" style="flex:1">
+            <div class="label">Soma</div>
+            <div class="value" id="mj-soma" style="color:#58a6ff">--</div>
+          </div>
+          <div class="stat-mini" style="flex:1">
+            <div class="label">Pares/Ímpares</div>
+            <div class="value" id="mj-pares" style="color:#d29922">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💾 Salvar Jogo</div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;color:#8b949e;display:block;margin-bottom:6px">Concurso Alvo</label>
+          <input id="mj-concurso" type="number" value="{concurso_atual}" min="1"
+            style="width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px 14px;color:#e6edf3;font-size:16px;font-weight:700"
+            placeholder="Ex: 3727"/>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button id="mj-btn-add" onclick="mjAdicionarJogo()" disabled
+            style="flex:1;background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);color:#3fb950;border-radius:8px;padding:11px 16px;cursor:pointer;font-size:14px;font-weight:600;opacity:.4">
+            ✅ Adicionar Jogo
+          </button>
+          <button onclick="mjLimpar()"
+            style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.2);color:#f85149;border-radius:8px;padding:11px 16px;cursor:pointer;font-size:14px">
+            🗑 Limpar
+          </button>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #30363d;padding-top:14px">
+          <div class="card-title">Importar / Exportar CSV</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+            <button onclick="mjExportarCSV()"
+              style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);color:#58a6ff;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px">
+              ⬇ Exportar CSV
+            </button>
+            <label style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);color:#a78bfa;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px">
+              ⬆ Importar CSV
+              <input type="file" accept=".csv" onchange="mjImportarCSV(this)" style="display:none"/>
+            </label>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:#8b949e;line-height:1.6">
+            O CSV exportado pode ser copiado para a pasta <code style="color:#58a6ff">dados/</code>
+            do repositório como <code style="color:#58a6ff">meus_jogos.csv</code> para entrar no ciclo automático de conferência.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE JOGOS SALVOS -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">📋 Jogos Registrados</div>
+        <span id="mj-counter" style="font-size:12px;color:#8b949e">0 jogo(s)</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Concurso</th><th>Data</th><th>Dezenas</th><th>Soma</th><th>P/Í</th><th>Ação</th></tr></thead>
+          <tbody id="mj-tbody"><tr><td colspan="6" style="text-align:center;color:#8b949e;padding:20px">Nenhum jogo registrado ainda.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    '''
+
+
 def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualizacao):
     aba_jogos = render_aba_jogos(jogos, freq_list)
     aba_conf = render_aba_conferidor(conferencias)
     aba_bt = render_aba_backtest(backtest)
     aba_dez = render_aba_dezenas(freq_list)
     aba_hist = render_aba_historico(ultimos)
+
+    # Concurso atual para pré-preencher o campo de concurso
+    concurso_atual = jogos[0]["concurso_alvo"] if jogos else ""
+    aba_meus_jogos = render_aba_meus_jogos(concurso_atual)
 
     return f"""<!DOCTYPE html>
 <html lang="pt-br">
@@ -752,6 +854,14 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
   .empty{{text-align:center;padding:48px 24px;color:var(--muted)}}
   .empty .icon{{font-size:40px;margin-bottom:12px}} .empty p{{font-size:13px}}
   .gap-16{{gap:16px}}
+
+  /* MEUS JOGOS — VOLANTE */
+  .mj-volante{{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:16px}}
+  .mj-row{{display:flex;gap:6px}}
+  .mj-bola{{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);transition:all .15s;user-select:none}}
+  .mj-bola:hover{{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.1)}}
+  .mj-bola.mj-sel{{background:rgba(167,139,250,.25);border-color:#a78bfa;color:#a78bfa;transform:scale(1.08);box-shadow:0 0 10px rgba(167,139,250,.3)}}
+  .mj-info-row{{display:flex;gap:10px;flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -766,6 +876,7 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('jogos')">🎯 Jogos & Moldura</div>
+  <div class="tab" onclick="showTab('meusjogos')">✏️ Meus Jogos</div>
   <div class="tab" onclick="showTab('conferidor')">✅ Conferidor</div>
   <div class="tab" onclick="showTab('backtest')">📊 Backtest</div>
   <div class="tab" onclick="showTab('dezenas')">🔥 Dezenas</div>
@@ -779,6 +890,10 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
     Dezenas em <b style="color:#d29922">amarelo</b> = top 5 mais frequentes · em <b style="color:#f85149">vermelho</b> = top 5 maior atraso.
   </div>
   {aba_jogos}
+</div>
+
+<div class="page" id="page-meusjogos">
+  {aba_meus_jogos}
 </div>
 
 <div class="page" id="page-conferidor">
@@ -799,11 +914,168 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
 
 <script>
 function showTab(name) {{
-  var names = ['jogos','conferidor','backtest','dezenas','historico'];
+  var names = ['jogos','meusjogos','conferidor','backtest','dezenas','historico'];
   document.querySelectorAll('.tab').forEach(function(t,i){{ t.classList.toggle('active', names[i]===name); }});
   document.querySelectorAll('.page').forEach(function(p){{ p.classList.remove('active'); }});
   document.getElementById('page-'+name).classList.add('active');
 }}
+
+// ─── MEUS JOGOS ───────────────────────────────────────────────
+var MJ_KEY = 'lotofacil_meus_jogos';
+var mjSelecionadas = [];
+
+function mjLoad() {{
+  try {{ return JSON.parse(localStorage.getItem(MJ_KEY) || '[]'); }} catch(e) {{ return []; }}
+}}
+function mjSave(lista) {{ localStorage.setItem(MJ_KEY, JSON.stringify(lista)); }}
+
+function mjToggle(num) {{
+  var idx = mjSelecionadas.indexOf(num);
+  if (idx >= 0) {{
+    mjSelecionadas.splice(idx, 1);
+  }} else {{
+    if (mjSelecionadas.length >= 15) {{ alert('Máximo de 15 dezenas por jogo!'); return; }}
+    mjSelecionadas.push(num);
+  }}
+  mjRenderVolante();
+  mjRenderInfo();
+}}
+
+function mjRenderVolante() {{
+  for (var i = 1; i <= 25; i++) {{
+    var el = document.getElementById('mj-bola-' + i);
+    if (!el) continue;
+    if (mjSelecionadas.indexOf(i) >= 0) {{
+      el.classList.add('mj-sel');
+    }} else {{
+      el.classList.remove('mj-sel');
+    }}
+  }}
+}}
+
+function mjRenderInfo() {{
+  var n = mjSelecionadas.length;
+  var soma = mjSelecionadas.reduce(function(a,b){{return a+b;}}, 0);
+  var pares = mjSelecionadas.filter(function(d){{return d%2===0;}}).length;
+  document.getElementById('mj-count').textContent = n + '/15';
+  document.getElementById('mj-count').style.color = n === 15 ? '#3fb950' : (n > 0 ? '#d29922' : '#8b949e');
+  document.getElementById('mj-soma').textContent = n > 0 ? soma : '--';
+  document.getElementById('mj-pares').textContent = n > 0 ? pares + 'P / ' + (n - pares) + 'Í' : '--';
+  var btn = document.getElementById('mj-btn-add');
+  btn.disabled = n !== 15;
+  btn.style.opacity = n === 15 ? '1' : '0.4';
+}}
+
+function mjLimpar() {{
+  mjSelecionadas = [];
+  mjRenderVolante();
+  mjRenderInfo();
+}}
+
+function mjAdicionarJogo() {{
+  if (mjSelecionadas.length !== 15) {{ alert('Selecione exatamente 15 dezenas!'); return; }}
+  var concurso = document.getElementById('mj-concurso').value.trim();
+  if (!concurso || isNaN(parseInt(concurso))) {{ alert('Informe o número do concurso alvo!'); return; }}
+  var lista = mjLoad();
+  var dezStr = mjSelecionadas.slice().sort(function(a,b){{return a-b;}}).map(function(d){{return ('0'+d).slice(-2);}}).join('-');
+  // Verifica duplicata
+  var dup = lista.some(function(j){{ return j.concurso == concurso && j.dezenas === dezStr; }});
+  if (dup) {{ alert('Este jogo já está registrado para o concurso ' + concurso + '!'); return; }}
+  var sorted = mjSelecionadas.slice().sort(function(a,b){{return a-b;}});
+  var soma = sorted.reduce(function(a,b){{return a+b;}},0);
+  var pares = sorted.filter(function(d){{return d%2===0;}}).length;
+  var hoje = new Date();
+  var data = ('0'+hoje.getDate()).slice(-2)+'/'+('0'+(hoje.getMonth()+1)).slice(-2)+'/'+hoje.getFullYear();
+  lista.push({{ concurso: parseInt(concurso), data: data, dezenas: dezStr, soma: soma, pares: pares, impares: 15-pares }});
+  mjSave(lista);
+  mjLimpar();
+  mjRenderLista();
+  alert('✅ Jogo adicionado com sucesso!');
+}}
+
+function mjRemover(idx) {{
+  var lista = mjLoad();
+  lista.splice(idx, 1);
+  mjSave(lista);
+  mjRenderLista();
+}}
+
+function mjRenderLista() {{
+  var lista = mjLoad();
+  var tbody = document.getElementById('mj-tbody');
+  var counter = document.getElementById('mj-counter');
+  if (!tbody) return;
+  counter.textContent = lista.length + ' jogo(s) registrado(s)';
+  if (lista.length === 0) {{
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#8b949e;padding:20px">Nenhum jogo registrado ainda.</td></tr>';
+    return;
+  }}
+  var html = '';
+  lista.forEach(function(j, i) {{
+    var bolas = j.dezenas.split('-').map(function(d){{
+      return '<span class="chip" style="background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.3);color:#a78bfa">' + d + '</span>';
+    }}).join('');
+    html += '<tr>';
+    html += '<td><b style="color:#58a6ff">#' + j.concurso + '</b></td>';
+    html += '<td style="color:#8b949e">' + j.data + '</td>';
+    html += '<td>' + bolas + '</td>';
+    html += '<td>' + j.soma + '</td>';
+    html += '<td>' + j.pares + 'P/' + j.impares + 'Í</td>';
+    html += '<td><button onclick="mjRemover(' + i + ')" style="background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);color:#f85149;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px">✕ Remover</button></td>';
+    html += '</tr>';
+  }});
+  tbody.innerHTML = html;
+}}
+
+function mjExportarCSV() {{
+  var lista = mjLoad();
+  if (lista.length === 0) {{ alert('Nenhum jogo para exportar!'); return; }}
+  var linhas = ['data_geracao,concurso_alvo,metodo,dezenas,soma,pares,impares'];
+  lista.forEach(function(j) {{
+    linhas.push([j.data, j.concurso, 'MANUAL', j.dezenas, j.soma, j.pares, j.impares].join(','));
+  }});
+  var blob = new Blob([linhas.join('\n')], {{type:'text/csv'}});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meus_jogos_lotofacil.csv';
+  a.click();
+}}
+
+function mjImportarCSV(input) {{
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {{
+    var lines = e.target.result.split('\n').filter(function(l){{return l.trim();}});
+    var lista = mjLoad();
+    var adicionados = 0;
+    lines.forEach(function(line, idx) {{
+      if (idx === 0 && line.startsWith('data_geracao')) return; // header
+      var parts = line.split(',');
+      if (parts.length < 4) return;
+      var dezenas = parts[3].trim();
+      var concurso = parseInt(parts[1]);
+      if (!dezenas || isNaN(concurso)) return;
+      var dup = lista.some(function(j){{ return j.concurso === concurso && j.dezenas === dezenas; }});
+      if (dup) return;
+      var sorted = dezenas.split('-').map(Number).sort(function(a,b){{return a-b;}});
+      var soma = sorted.reduce(function(a,b){{return a+b;}},0);
+      var pares = sorted.filter(function(d){{return d%2===0;}}).length;
+      lista.push({{ concurso: concurso, data: parts[0].trim(), dezenas: dezenas, soma: soma, pares: pares, impares: 15-pares }});
+      adicionados++;
+    }});
+    mjSave(lista);
+    mjRenderLista();
+    alert('✅ ' + adicionados + ' jogo(s) importado(s)!');
+  }};
+  reader.readAsText(file);
+}}
+
+// Inicializa ao carregar
+document.addEventListener('DOMContentLoaded', function() {{
+  mjRenderInfo();
+  mjRenderLista();
+}});
 </script>
 </body>
 </html>"""

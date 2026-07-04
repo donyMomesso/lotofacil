@@ -5,10 +5,11 @@ Ciclo diário completo do laboratório — pensado para rodar sozinho
   1. Busca concursos novos (a partir do último registrado) via HTTP direto.
   2. Registra cada um no histórico real.
   3. Confere os jogos de estudo que tinham esses concursos como alvo.
+  3b. Importa jogos manuais de dados/meus_jogos.csv (se existir).
   4. Gera os jogos de estudo do próximo concurso (5 métodos).
   5. Atualiza frequência/atraso e desempenho por método.
   6. Gera o relatório (reports/relatorio_estatistico.md).
-  7. Gera o painel visual (painel.html).
+  7. Gera o painel visual (painel.html + painel_jogos.html).
   8. Anexa um bloco educativo em diario_estatistico.md.
 
 Uso:
@@ -19,6 +20,8 @@ from datetime import datetime, timezone, timedelta
 import lotofacil_lib as lib
 import gerar_relatorio
 import gerar_painel
+import gerar_painel_jogos
+import conferir_meus_jogos
 from diario import montar_bloco_diario, anexar_diario
 from buscar_resultado import buscar_concurso
 
@@ -39,6 +42,9 @@ def main():
             novos_concursos.append(resultado["concurso"])
             print(f"[ok] Concurso {resultado['concurso']} ({resultado['data']}) registrado.")
         proximo_a_buscar += 1
+
+    # 3b. Importa jogos manuais antes de conferir
+    conferir_meus_jogos.importar_meus_jogos()
 
     conferencias_do_dia = []
     resultados_map = {r["concurso"]: r for r in lib.carregar_resultados()}
@@ -68,6 +74,7 @@ def main():
 
     gerar_relatorio.main()
     gerar_painel.main()
+    gerar_painel_jogos.main()
 
     total_concursos = len(lib.carregar_resultados())
     bloco = montar_bloco_diario(
