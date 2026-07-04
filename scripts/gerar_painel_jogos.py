@@ -53,8 +53,8 @@ def svg_bar_chart(datasets, labels, width=520, height=240):
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" style="overflow:visible">']
     for i in range(ticks + 1):
         y = pad_t + ch - (i / ticks) * ch
-        svg.append(f'<line x1="{pad_l}" y1="{y:.1f}" x2="{pad_l+cw}" y2="{y:.1f}" stroke="#3D2070" stroke-width="1"/>')
-        svg.append(f'<text x="{pad_l-5}" y="{y+4:.1f}" text-anchor="end" fill="#A98DC8" font-size="10">{int(i*max_v/ticks)}</text>')
+        svg.append(f'<line x1="{pad_l}" y1="{y:.1f}" x2="{pad_l+cw}" y2="{y:.1f}" stroke="#DDD0F0" stroke-width="1"/>')
+        svg.append(f'<text x="{pad_l-5}" y="{y+4:.1f}" text-anchor="end" fill="#7B5EA7" font-size="10">{int(i*max_v/ticks)}</text>')
     for gi, label in enumerate(labels):
         gx = pad_l + gi * (cw / n_g)
         for si, ds in enumerate(datasets):
@@ -65,15 +65,15 @@ def svg_bar_chart(datasets, labels, width=520, height=240):
             c = ds.get("color", CORES[si % len(CORES)])
             svg.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{bar_w:.1f}" height="{bh:.1f}" fill="{c}99" stroke="{c}" stroke-width="1" rx="2"/>')
         lx = gx + (bar_w * n_s) / 2
-        svg.append(f'<text x="{lx:.1f}" y="{pad_t+ch+15}" text-anchor="middle" fill="#A98DC8" font-size="10">{label}</text>')
-    svg.append(f'<line x1="{pad_l}" y1="{pad_t}" x2="{pad_l}" y2="{pad_t+ch}" stroke="#3D2070" stroke-width="1.5"/>')
-    svg.append(f'<line x1="{pad_l}" y1="{pad_t+ch}" x2="{pad_l+cw}" y2="{pad_t+ch}" stroke="#3D2070" stroke-width="1.5"/>')
+        svg.append(f'<text x="{lx:.1f}" y="{pad_t+ch+15}" text-anchor="middle" fill="#7B5EA7" font-size="10">{label}</text>')
+    svg.append(f'<line x1="{pad_l}" y1="{pad_t}" x2="{pad_l}" y2="{pad_t+ch}" stroke="#DDD0F0" stroke-width="1.5"/>')
+    svg.append(f'<line x1="{pad_l}" y1="{pad_t+ch}" x2="{pad_l+cw}" y2="{pad_t+ch}" stroke="#DDD0F0" stroke-width="1.5"/>')
     lx = pad_l
     ly = height - 6
     for si, ds in enumerate(datasets):
         c = ds.get("color", CORES[si % len(CORES)])
         svg.append(f'<rect x="{lx}" y="{ly-8}" width="10" height="10" fill="{c}99" stroke="{c}" rx="2"/>')
-        svg.append(f'<text x="{lx+13}" y="{ly}" fill="#A98DC8" font-size="10">{ds["label"]}</text>')
+        svg.append(f'<text x="{lx+13}" y="{ly}" fill="#7B5EA7" font-size="10">{ds["label"]}</text>')
         lx += len(ds["label"]) * 6.5 + 20
     svg.append('</svg>')
     return "\n".join(svg)
@@ -93,7 +93,7 @@ def svg_media_chart(backtest, width=520, height=240):
         x = xp(tick)
         c = "#F7941D" if tick == 9.0 else "#3D2070"
         svg.append(f'<line x1="{x:.1f}" y1="{pad_t}" x2="{x:.1f}" y2="{pad_t+ch}" stroke="{c}" stroke-width="1" stroke-dasharray="{"0" if tick==9.0 else "4,3"}"/>')
-        svg.append(f'<text x="{x:.1f}" y="{pad_t+ch+13}" text-anchor="middle" fill="#A98DC8" font-size="9">{tick}</text>')
+        svg.append(f'<text x="{x:.1f}" y="{pad_t+ch+13}" text-anchor="middle" fill="#7B5EA7" font-size="9">{tick}</text>')
     for i, b in enumerate(backtest):
         by = pad_t + i * (ch / n) + 4
         label = METODO_LABELS.get(b["metodo"], b["metodo"])
@@ -102,7 +102,7 @@ def svg_media_chart(backtest, width=520, height=240):
         bx = xp(min(media, esp))
         bw = max(abs(xp(media) - xp(esp)), 2)
         svg.append(f'<text x="{pad_l-5}" y="{by+bh/2+4:.1f}" text-anchor="end" fill="{c}" font-size="11" font-weight="600">{label}</text>')
-        svg.append(f'<rect x="{pad_l}" y="{by:.1f}" width="{cw}" height="{bh:.1f}" fill="rgba(61,32,112,.15)" rx="4"/>')
+        svg.append(f'<rect x="{pad_l}" y="{by:.1f}" width="{cw}" height="{bh:.1f}" fill="rgba(155,89,182,.06)" rx="4"/>')
         svg.append(f'<rect x="{bx:.1f}" y="{by+2:.1f}" width="{bw:.1f}" height="{bh-4:.1f}" fill="{c}99" stroke="{c}" stroke-width="1" rx="3"/>')
         vx = xp(media) + (5 if media >= esp else -5)
         anchor = "start" if media >= esp else "end"
@@ -147,7 +147,7 @@ def render_atraso_bars(freq_list):
         c = "#27AE60" if f["atraso"] == 0 else ("#F39C12" if f["atraso"] <= 2 else "#E74C3C")
         bars.append(f'''<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
           <span style="width:28px;text-align:center;font-weight:700;color:{c};font-size:13px">{f["d"]:02d}</span>
-          <div style="flex:1;height:7px;background:#3D2070;border-radius:4px;overflow:hidden">
+          <div style="flex:1;height:7px;background:#DDD0F0;border-radius:4px;overflow:hidden">
             <div style="width:{pct:.1f}%;height:100%;background:{c};border-radius:4px"></div>
           </div>
           <span style="width:65px;font-size:12px;color:#8b949e">{f["atraso"]} conc.</span>
@@ -746,40 +746,40 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
 <title>Lotofácil Lab — Painel Avançado</title>
 <style>
   :root {{
-    --bg:#160B2C; --card:#1E1040; --card2:#251550; --border:#3D2070;
-    --text:#F0E6FF; --muted:#A98DC8; --accent:#9B59B6; --green:#27AE60;
-    --yellow:#F39C12; --red:#E74C3C; --purple:#C39BD3; --orange:#F7941D;
-    --loto-roxo:#9B59B6; --loto-lilas:#C39BD3; --loto-escuro:#6C3483;
+    --bg:#F8F5FF; --card:#FFFFFF; --card2:#F3EEF9; --border:#DDD0F0;
+    --text:#2D1B4E; --muted:#7B5EA7; --accent:#9B59B6; --green:#1E8449;
+    --yellow:#D68910; --red:#C0392B; --purple:#C39BD3; --orange:#E67E22;
+    --loto-roxo:#9B59B6; --loto-lilas:#8E44AD; --loto-escuro:#6C3483;
     --caixa-azul:#005CA9; --caixa-laranja:#F7941D;
     --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }}
   *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;background-image:radial-gradient(ellipse at 20% 0%,rgba(155,89,182,.15) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(108,52,131,.1) 0%,transparent 60%)}}
+  body{{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;background-image:radial-gradient(ellipse at 20% 0%,rgba(155,89,182,.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(108,52,131,.05) 0%,transparent 60%)}}
 
   /* HEADER */
-  .header{{background:linear-gradient(135deg,#2D1B4E 0%,#1A0A35 60%,#160B2C 100%);border-bottom:3px solid var(--caixa-laranja);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,.5)}}
-  .header h1{{font-size:20px;font-weight:700}} .header h1 span{{color:var(--loto-lilas)}}
-  .header .sub{{color:var(--muted);font-size:12px;margin-top:3px}}
-  .badge{{background:rgba(247,148,29,.15);color:var(--caixa-laranja);border:1px solid rgba(247,148,29,.4);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600}}
-  .badge-info{{background:rgba(155,89,182,.15);color:var(--loto-lilas);border:1px solid rgba(155,89,182,.35);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600}}
+  .header{{background:linear-gradient(135deg,#9B59B6 0%,#7D3C98 60%,#6C3483 100%);border-bottom:4px solid var(--caixa-laranja);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 4px 16px rgba(108,52,131,.25)}}
+  .header h1{{font-size:20px;font-weight:700;color:#fff}} .header h1 span{{color:#F7C6FF}}
+  .header .sub{{color:rgba(255,255,255,.75);font-size:12px;margin-top:3px}}
+  .badge{{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600}}
+  .badge-info{{background:rgba(255,255,255,.15);color:#F7C6FF;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600}}
 
   /* TABS */
-  .tabs{{display:flex;border-bottom:1px solid var(--border);padding:0 28px;background:linear-gradient(180deg,#251550 0%,#1E1040 100%);overflow-x:auto}}
-  .tab{{padding:12px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;user-select:none}}
-  .tab:hover{{color:var(--text)}} .tab.active{{color:var(--loto-lilas);border-bottom-color:var(--caixa-laranja)}}
+  .tabs{{display:flex;border-bottom:2px solid var(--border);padding:0 28px;background:#fff;overflow-x:auto;box-shadow:0 2px 8px rgba(108,52,131,.08)}}
+  .tab{{padding:12px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .2s,border-color .2s;user-select:none}}
+  .tab:hover{{color:var(--loto-escuro)}} .tab.active{{color:var(--loto-lilas);border-bottom-color:var(--caixa-laranja);font-weight:700}}
 
   /* PAGES */
   .page{{display:none;padding:24px 28px;max-width:1280px;margin:0 auto}} .page.active{{display:block}}
 
   /* CARDS */
-  .card{{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:0;box-shadow:0 2px 12px rgba(0,0,0,.3)}}
-  .card-title{{font-size:11px;font-weight:600;color:var(--loto-lilas);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}}
+  .card{{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:0;box-shadow:0 2px 8px rgba(108,52,131,.1)}}
+  .card-title{{font-size:11px;font-weight:700;color:var(--loto-escuro);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}}
   .grid-2{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
   @media(max-width:768px){{.grid-2{{grid-template-columns:1fr}}}}
 
   /* STAT BOXES */
   .stat-row{{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}}
-  .stat-box{{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;flex:1;min-width:130px}}
+  .stat-box{{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;flex:1;min-width:130px;box-shadow:0 1px 4px rgba(108,52,131,.08)}}
   .stat-box .label{{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}}
   .stat-box .value{{font-size:24px;font-weight:700;margin-top:4px}} .stat-box .hint{{font-size:11px;color:var(--muted);margin-top:2px}}
   .stat-mini{{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px}}
@@ -788,47 +788,47 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
 
   /* BOLINHAS */
   .bola{{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid;flex-shrink:0}}
-  .bola-normal{{background:rgba(155,89,182,.12);border-color:rgba(155,89,182,.35);color:var(--loto-lilas)}}
-  .bola-acerto{{background:rgba(39,174,96,.2);border-color:#27AE60;color:#27AE60}}
-  .bola-erro{{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.2);color:#6C3483}}
-  .bola-sorteada{{background:rgba(0,92,169,.25);border-color:#005CA9;color:#7EC8FF}}
-  .bola-quente{{background:rgba(243,156,18,.2);border-color:#F39C12;color:#F39C12}}
-  .bola-atrasada{{background:rgba(231,76,60,.2);border-color:#E74C3C;color:#E74C3C}}
-  .bola-moldura{{background:rgba(0,92,169,.15);border-color:rgba(0,92,169,.4);color:#7EC8FF}}
-  .bola-miolo{{background:rgba(155,89,182,.2);border-color:rgba(155,89,182,.5);color:var(--loto-lilas)}}
-  .bola-miolo-off{{background:rgba(255,255,255,.02);border-color:rgba(61,32,112,.4);color:#3D2070}}
-  .bola-moldura-off{{background:rgba(255,255,255,.02);border-color:rgba(61,32,112,.4);color:#3D2070}}
+  .bola-normal{{background:#F3EEF9;border-color:#C39BD3;color:#7D3C98}}
+  .bola-acerto{{background:#D5F5E3;border-color:#1E8449;color:#1E8449}}
+  .bola-erro{{background:#FDFEFE;border-color:#DDD0F0;color:#C39BD3}}
+  .bola-sorteada{{background:#D6EAF8;border-color:#005CA9;color:#005CA9}}
+  .bola-quente{{background:#FEF9E7;border-color:#D68910;color:#D68910}}
+  .bola-atrasada{{background:#FDEDEC;border-color:#C0392B;color:#C0392B}}
+  .bola-moldura{{background:#EBF5FB;border-color:#005CA9;color:#005CA9}}
+  .bola-miolo{{background:#F5EEF8;border-color:#9B59B6;color:#7D3C98}}
+  .bola-miolo-off{{background:#F8F5FF;border-color:#DDD0F0;color:#C39BD3}}
+  .bola-moldura-off{{background:#F8F5FF;border-color:#DDD0F0;color:#C39BD3}}
   .dezenas-grid{{display:flex;flex-wrap:wrap;gap:6px}}
 
   /* BADGES */
   .metodo-badge{{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}}
-  .m1{{background:rgba(0,92,169,.2);color:#7EC8FF;border:1px solid rgba(0,92,169,.4)}}
-  .m2{{background:rgba(39,174,96,.15);color:#2ECC71;border:1px solid rgba(39,174,96,.35)}}
-  .m3{{background:rgba(243,156,18,.15);color:#F39C12;border:1px solid rgba(243,156,18,.35)}}
-  .m4{{background:rgba(231,76,60,.15);color:#E74C3C;border:1px solid rgba(231,76,60,.3)}}
-  .m5{{background:rgba(155,89,182,.2);color:var(--loto-lilas);border:1px solid rgba(155,89,182,.4)}}
+  .m1{{background:#EBF5FB;color:#005CA9;border:1px solid #AED6F1}}
+  .m2{{background:#EAFAF1;color:#1E8449;border:1px solid #A9DFBF}}
+  .m3{{background:#FEF9E7;color:#D68910;border:1px solid #F9E79F}}
+  .m4{{background:#FDEDEC;color:#C0392B;border:1px solid #F5B7B1}}
+  .m5{{background:#F5EEF8;color:#7D3C98;border:1px solid #D7BDE2}}
   .acertos-badge{{font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px}}
-  .ac-low{{background:rgba(231,76,60,.15);color:#E74C3C;border:1px solid rgba(231,76,60,.3)}}
-  .ac-mid{{background:rgba(243,156,18,.15);color:#F39C12;border:1px solid rgba(243,156,18,.3)}}
-  .ac-good{{background:rgba(39,174,96,.15);color:#27AE60;border:1px solid rgba(39,174,96,.3)}}
-  .ac-great{{background:rgba(155,89,182,.2);color:var(--loto-lilas);border:1px solid rgba(155,89,182,.4)}}
+  .ac-low{{background:#FDEDEC;color:#C0392B;border:1px solid #F5B7B1}}
+  .ac-mid{{background:#FEF9E7;color:#D68910;border:1px solid #F9E79F}}
+  .ac-good{{background:#EAFAF1;color:#1E8449;border:1px solid #A9DFBF}}
+  .ac-great{{background:#F5EEF8;color:#7D3C98;border:1px solid #D7BDE2}}
 
   /* TABELAS */
   table{{width:100%;border-collapse:collapse;font-size:13px}}
   th{{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}}
   td{{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.5);white-space:nowrap}}
-  tr:last-child td{{border-bottom:none}} tr:hover td{{background:rgba(155,89,182,.06)}}
+  tr:last-child td{{border-bottom:none}} tr:hover td{{background:#F8F2FF}}
   .table-scroll{{overflow-x:auto}}
   .desd-table th, .desd-table td{{padding:6px 8px;font-size:12px;text-align:center}}
   .desd-table th:first-child, .desd-table td:first-child{{text-align:left}}
   .desd-table th:nth-child(2), .desd-table td:nth-child(2){{text-align:left}}
   .conf-table th, .conf-table td{{padding:6px 7px;font-size:12px;text-align:center}}
   .conf-table th:first-child, .conf-table td:first-child{{text-align:left;min-width:120px}}
-  .td-quente{{background:rgba(243,156,18,.12);color:#F39C12;font-weight:700}}
-  .td-atrasada{{background:rgba(231,76,60,.1);color:#E74C3C;font-weight:700}}
-  .td-acerto{{background:rgba(39,174,96,.15);color:#27AE60;font-weight:700}}
-  .td-erro{{color:#6C3483}}
-  .chip{{display:inline-block;background:rgba(0,92,169,.15);border:1px solid rgba(0,92,169,.35);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#7EC8FF}}
+  .td-quente{{background:#FEF9E7;color:#D68910;font-weight:700}}
+  .td-atrasada{{background:#FDEDEC;color:#C0392B;font-weight:700}}
+  .td-acerto{{background:#EAFAF1;color:#1E8449;font-weight:700}}
+  .td-erro{{color:#C39BD3}}
+  .chip{{display:inline-block;background:#EBF5FB;border:1px solid #AED6F1;border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#005CA9}}
 
   /* HEATMAP */
   .heatmap{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}}
@@ -844,12 +844,12 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
 
   /* SECTION TITLE */
   .section-title{{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}}
-  .concurso-num{{font-size:22px;font-weight:700;color:var(--loto-lilas);text-shadow:0 0 20px rgba(155,89,182,.4)}}
+  .concurso-num{{font-size:22px;font-weight:700;color:var(--loto-escuro)}}
   .concurso-data{{font-size:13px;color:var(--muted)}}
 
   /* DISCLAIMER */
-  .disclaimer{{background:rgba(247,148,29,.06);border:1px solid rgba(247,148,29,.2);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6}}
-  .disclaimer b{{color:var(--caixa-laranja)}}
+  .disclaimer{{background:#FEF9E7;border:1px solid #F9E79F;border-radius:8px;padding:12px 16px;font-size:12px;color:#7B5EA7;margin-bottom:20px;line-height:1.6}}
+  .disclaimer b{{color:#E67E22}}
 
   /* MISC */
   .svg-wrap{{overflow-x:auto}}
@@ -860,9 +860,9 @@ def build_html(jogos, conferencias, backtest, freq_list, ultimos, ultima_atualiz
   /* MEUS JOGOS — VOLANTE */
   .mj-volante{{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:16px}}
   .mj-row{{display:flex;gap:6px}}
-  .mj-bola{{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);background:rgba(155,89,182,.06);color:var(--muted);transition:all .15s;user-select:none}}
-  .mj-bola:hover{{border-color:var(--loto-roxo);color:var(--loto-lilas);background:rgba(155,89,182,.15)}}
-  .mj-bola.mj-sel{{background:rgba(155,89,182,.3);border-color:var(--loto-roxo);color:#fff;transform:scale(1.08);box-shadow:0 0 12px rgba(155,89,182,.5)}}
+  .mj-bola{{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #DDD0F0;background:#F8F5FF;color:#A98DC8;transition:all .15s;user-select:none}}
+  .mj-bola:hover{{border-color:#9B59B6;color:#7D3C98;background:#EDE0F5}}
+  .mj-bola.mj-sel{{background:#9B59B6;border-color:#7D3C98;color:#fff;transform:scale(1.08);box-shadow:0 0 10px rgba(155,89,182,.4)}}
   .mj-info-row{{display:flex;gap:10px;flex-wrap:wrap}}
 </style>
 </head>
