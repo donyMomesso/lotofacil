@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lotofácil Lab — Jogos & Conferências</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --card2: #1c2230; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950;
+    --yellow: #d29922; --red: #f85149; --purple: #a78bfa; --orange: #f0883e;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; }
+
+  .header { background: linear-gradient(135deg, #161b22 0%, #1c2230 100%); border-bottom: 1px solid var(--border); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-left h1 { font-size: 20px; font-weight: 700; }
+  .header-left h1 span { color: var(--accent); }
+  .header-left .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .badge { background: rgba(240,136,62,.15); color: var(--orange); border: 1px solid rgba(240,136,62,.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 28px; background: var(--card); overflow-x: auto; }
+  .tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .2s, border-color .2s; user-select: none; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .page { display: none; padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 130px; }
+  .stat-box .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat-box .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .stat-box .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .jogo-card { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+  .jogo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .metodo-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+  .m1 { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+  .m2 { background: rgba(63,185,80,.15); color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+  .m3 { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+  .m4 { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .m5 { background: rgba(167,139,250,.15); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
+  .jogo-meta { font-size: 11px; color: var(--muted); display: flex; gap: 14px; }
+  .dezenas-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bola { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 2px solid; }
+  .bola-normal { background: rgba(255,255,255,.06); border-color: var(--border); color: var(--text); }
+  .bola-acerto { background: rgba(63,185,80,.2); border-color: #3fb950; color: #3fb950; }
+  .bola-erro { background: rgba(248,81,73,.08); border-color: rgba(248,81,73,.2); color: #8b949e; }
+  .bola-sorteada { background: rgba(88,166,255,.2); border-color: #58a6ff; color: #58a6ff; }
+
+  .acertos-badge { font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .ac-low { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .ac-mid { background: rgba(210,153,34,.15); color: #d29922; border: 1px solid rgba(210,153,34,.3); }
+  .ac-good { background: rgba(63,185,80,.15); color: #3fb950; border: 1px solid rgba(63,185,80,.3); }
+  .ac-great { background: rgba(88,166,255,.15); color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(48,54,61,.5); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .heatmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .hm-cell { border-radius: 8px; padding: 10px 6px; text-align: center; border: 1px solid; }
+  .hm-num { font-size: 15px; font-weight: 700; }
+  .hm-pct { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .hm-atraso { font-size: 10px; margin-top: 2px; }
+
+  .concurso-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .concurso-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .concurso-data { font-size: 13px; color: var(--muted); }
+
+  .disclaimer { background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.25); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .disclaimer b { color: var(--yellow); }
+
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 13px; }
+
+  .svg-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Lotofácil <span>Lab</span> — Jogos & Conferências</h1>
+    <div class="sub">Laboratório Estatístico Educativo · Atualizado em 04/07/2026 10:45</div>
+  </div>
+  <div class="badge">⚠ Apenas estudo estatístico — não é recomendação de aposta</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('jogos')">🎯 Jogos Gerados</div>
+  <div class="tab" onclick="showTab('conferencia')">✅ Conferências</div>
+  <div class="tab" onclick="showTab('backtest')">📊 Backtest</div>
+  <div class="tab" onclick="showTab('dezenas')">🔥 Dezenas</div>
+  <div class="tab" onclick="showTab('historico')">📋 Histórico</div>
+</div>
+
+<!-- PAGE: JOGOS -->
+<div class="page active" id="page-jogos">
+  <div class="disclaimer">
+    <b>Lembrete educativo:</b> Os jogos abaixo são gerados por 5 métodos estatísticos diferentes para fins de estudo comparativo.
+    Nenhum método é "melhor" ou "mais perto de acertar" — todos convergem para a média teórica de <b>9 acertos</b> no longo prazo.
+  </div>
+  <div style="margin-bottom:28px;">
+          <div class="concurso-header">
+            <span class="concurso-num">Concurso #3726</span>
+            <span class="concurso-data">Gerado em 03/07/2026</span>
+          </div>
+<div class="jogo-card">
+              <div class="jogo-header">
+                <span class="metodo-badge m1">M1 Aleatório</span>
+                <div class="jogo-meta">
+                  <span>Soma: <b>183</b></span>
+                  <span>Pares: <b>8</b></span>
+                  <span>Ímpares: <b>7</b></span>
+                </div>
+              </div>
+              <div class="dezenas-grid"><div class="bola bola-normal">01</div><div class="bola bola-normal">03</div><div class="bola bola-normal">04</div><div class="bola bola-normal">05</div><div class="bola bola-normal">06</div><div class="bola bola-normal">08</div><div class="bola bola-normal">10</div><div class="bola bola-normal">12</div><div class="bola bola-normal">15</div><div class="bola bola-normal">16</div><div class="bola bola-normal">17</div><div class="bola bola-normal">19</div><div class="bola bola-normal">20</div><div class="bola bola-normal">23</div><div class="bola bola-normal">24</div></div>
+            </div>
+<div class="jogo-card">
+              <div class="jogo-header">
+                <span class="metodo-badge m2">M2 Mais Freq.</span>
+                <div class="jogo-meta">
+                  <span>Soma: <b>181</b></span>
+                  <span>Pares: <b>8</b></span>
+                  <span>Ímpares: <b>7</b></span>
+                </div>
+              </div>
+              <div class="dezenas-grid"><div class="bola bola-normal">01</div><div class="bola bola-normal">02</div><div class="bola bola-normal">03</div><div class="bola bola-normal">04</div><div class="bola bola-normal">05</div><div class="bola bola-normal">10</div><div class="bola bola-normal">11</div><div class="bola bola-normal">12</div><div class="bola bola-normal">13</div><div class="bola bola-normal">14</div><div class="bola bola-normal">15</div><div class="bola bola-normal">20</div><div class="bola bola-normal">22</div><div class="bola bola-normal">24</div><div class="bola bola-normal">25</div></div>
+            </div>
+<div class="jogo-card">
+              <div class="jogo-header">
+                <span class="metodo-badge m3">M3 Mais Atras.</span>
+                <div class="jogo-meta">
+                  <span>Soma: <b>198</b></span>
+                  <span>Pares: <b>7</b></span>
+                  <span>Ímpares: <b>8</b></span>
+                </div>
+              </div>
+              <div class="dezenas-grid"><div class="bola bola-normal">03</div><div class="bola bola-normal">05</div><div class="bola bola-normal">06</div><div class="bola bola-normal">07</div><div class="bola bola-normal">09</div><div class="bola bola-normal">10</div><div class="bola bola-normal">11</div><div class="bola bola-normal">12</div><div class="bola bola-normal">15</div><div class="bola bola-normal">16</div><div class="bola bola-normal">18</div><div class="bola bola-normal">20</div><div class="bola bola-normal">21</div><div class="bola bola-normal">22</div><div class="bola bola-normal">23</div></div>
+            </div>
+<div class="jogo-card">
+              <div class="jogo-header">
+                <span class="metodo-badge m4">M4 Par/Ímpar</span>
+                <div class="jogo-meta">
+                  <span>Soma: <b>201</b></span>
+                  <span>Pares: <b>8</b></span>
+                  <span>Ímpares: <b>7</b></span>
+                </div>
+              </div>
+              <div class="dezenas-grid"><div class="bola bola-normal">01</div><div class="bola bola-normal">02</div><div class="bola bola-normal">04</div><div class="bola bola-normal">06</div><div class="bola bola-normal">09</div><div class="bola bola-normal">10</div><div class="bola bola-normal">11</div><div class="bola bola-normal">14</div><div class="bola bola-normal">15</div><div class="bola bola-normal">16</div><div class="bola bola-normal">19</div><div class="bola bola-normal">22</div><div class="bola bola-normal">23</div><div class="bola bola-normal">24</div><div class="bola bola-normal">25</div></div>
+            </div>
+<div class="jogo-card">
+              <div class="jogo-header">
+                <span class="metodo-badge m5">M5 Soma Faixa</span>
+                <div class="jogo-meta">
+                  <span>Soma: <b>195</b></span>
+                  <span>Pares: <b>8</b></span>
+                  <span>Ímpares: <b>7</b></span>
+                </div>
+              </div>
+              <div class="dezenas-grid"><div class="bola bola-normal">01</div><div class="bola bola-normal">02</div><div class="bola bola-normal">03</div><div class="bola bola-normal">04</div><div class="bola bola-normal">07</div><div class="bola bola-normal">13</div><div class="bola bola-normal">14</div><div class="bola bola-normal">15</div><div class="bola bola-normal">16</div><div class="bola bola-normal">17</div><div class="bola bola-normal">18</div><div class="bola bola-normal">19</div><div class="bola bola-normal">20</div><div class="bola bola-normal">22</div><div class="bola bola-normal">24</div></div>
+            </div>
+</div>
+</div>
+
+<!-- PAGE: CONFERENCIAS -->
+<div class="page" id="page-conferencia">
+  <div class="empty">
+          <div class="icon">⏳</div>
+          <p>Nenhuma conferência registrada ainda.</p>
+          <p style="margin-top:8px;font-size:12px;color:#8b949e">As conferências aparecem aqui após o sorteio do concurso alvo.<br>O ciclo diário roda às 10h e captura o resultado da noite anterior.</p>
+        </div>
+</div>
+
+<!-- PAGE: BACKTEST -->
+<div class="page" id="page-backtest">
+  <div class="disclaimer">
+    <b>Backtest em 3,724 concursos reais:</b> Simulação retroativa de todos os métodos no histórico completo.
+    A diferença entre as médias e a esperança teórica (9.0) é estatisticamente insignificante — confirmando que nenhum método tem vantagem preditiva.
+  </div>
+  <div class="stat-row">
+    <div class="stat-box" style="border-top:3px solid #58a6ff">
+          <div class="label">M1 ALEATÓRIO</div>
+          <div class="value" style="color:#58a6ff;font-size:20px">9.0003</div>
+          <div class="hint" style="color:#3fb950">Dif: +0.0003 vs esperança</div>
+        </div>
+<div class="stat-box" style="border-top:3px solid #3fb950">
+          <div class="label">M2 MAIS FREQ.</div>
+          <div class="value" style="color:#3fb950;font-size:20px">9.0336</div>
+          <div class="hint" style="color:#3fb950">Dif: +0.0336 vs esperança</div>
+        </div>
+<div class="stat-box" style="border-top:3px solid #d29922">
+          <div class="label">M3 MAIS ATRAS.</div>
+          <div class="value" style="color:#d29922;font-size:20px">9.0263</div>
+          <div class="hint" style="color:#3fb950">Dif: +0.0263 vs esperança</div>
+        </div>
+<div class="stat-box" style="border-top:3px solid #f85149">
+          <div class="label">M4 PAR/ÍMPAR</div>
+          <div class="value" style="color:#f85149;font-size:20px">8.9817</div>
+          <div class="hint" style="color:#3fb950">Dif: -0.0183 vs esperança</div>
+        </div>
+<div class="stat-box" style="border-top:3px solid #a78bfa">
+          <div class="label">M5 SOMA FAIXA</div>
+          <div class="value" style="color:#a78bfa;font-size:20px">8.9936</div>
+          <div class="hint" style="color:#3fb950">Dif: -0.0064 vs esperança</div>
+        </div>
+  </div>
+  <div class="grid-2" style="margin-top:4px;">
+    <div class="card">
+      <div class="card-title">Distribuição de Acertos por Método (faixa 6–13)</div>
+      <div class="svg-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="540" height="250" style="overflow:visible">
+<line x1="50" y1="210.0" x2="520" y2="210.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="214.0" text-anchor="end" fill="#8b949e" font-size="10">0</text>
+<line x1="50" y1="174.0" x2="520" y2="174.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="178.0" text-anchor="end" fill="#8b949e" font-size="10">245</text>
+<line x1="50" y1="138.0" x2="520" y2="138.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="142.0" text-anchor="end" fill="#8b949e" font-size="10">490</text>
+<line x1="50" y1="102.0" x2="520" y2="102.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="106.0" text-anchor="end" fill="#8b949e" font-size="10">736</text>
+<line x1="50" y1="66.0" x2="520" y2="66.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="70.0" text-anchor="end" fill="#8b949e" font-size="10">981</text>
+<line x1="50" y1="30.0" x2="520" y2="30.0" stroke="#30363d" stroke-width="1"/>
+<text x="44" y="34.0" text-anchor="end" fill="#8b949e" font-size="10">1227</text>
+<rect x="52.0" y="202.8" width="10.9" height="7.2" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="63.0" y="201.1" width="10.9" height="8.9" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="73.9" y="201.1" width="10.9" height="8.9" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="84.8" y="201.3" width="10.9" height="8.7" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="95.8" y="202.2" width="10.9" height="7.8" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="79.4" y="226" text-anchor="middle" fill="#8b949e" font-size="10">6</text>
+<rect x="110.8" y="161.6" width="10.9" height="48.4" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="121.7" y="163.8" width="10.9" height="46.2" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="132.7" y="162.8" width="10.9" height="47.2" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="143.6" y="161.0" width="10.9" height="49.0" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="154.6" y="160.1" width="10.9" height="49.9" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="138.1" y="226" text-anchor="middle" fill="#8b949e" font-size="10">7</text>
+<rect x="169.5" y="81.2" width="10.9" height="128.8" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="180.4" y="86.5" width="10.9" height="123.5" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="191.4" y="85.3" width="10.9" height="124.7" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="202.3" y="78.9" width="10.9" height="131.1" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="213.3" y="81.3" width="10.9" height="128.7" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="196.9" y="226" text-anchor="middle" fill="#8b949e" font-size="10">8</text>
+<rect x="228.2" y="30.0" width="10.9" height="180.0" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="239.2" y="32.2" width="10.9" height="177.8" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="250.2" y="35.9" width="10.9" height="174.1" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="261.1" y="33.1" width="10.9" height="176.9" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="272.1" y="34.3" width="10.9" height="175.7" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="255.6" y="226" text-anchor="middle" fill="#8b949e" font-size="10">9</text>
+<rect x="287.0" y="83.8" width="10.9" height="126.2" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="297.9" y="83.0" width="10.9" height="127.0" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="308.9" y="81.3" width="10.9" height="128.7" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="319.9" y="86.6" width="10.9" height="123.4" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="330.8" y="82.8" width="10.9" height="127.2" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="314.4" y="226" text-anchor="middle" fill="#8b949e" font-size="10">10</text>
+<rect x="345.8" y="165.0" width="10.9" height="45.0" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="356.7" y="157.0" width="10.9" height="53.0" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="367.6" y="157.3" width="10.9" height="52.7" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="378.6" y="161.4" width="10.9" height="48.6" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="389.6" y="162.5" width="10.9" height="47.5" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="373.1" y="226" text-anchor="middle" fill="#8b949e" font-size="10">11</text>
+<rect x="404.5" y="200.6" width="10.9" height="9.4" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="415.4" y="201.1" width="10.9" height="8.9" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="426.4" y="201.2" width="10.9" height="8.8" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="437.4" y="203.4" width="10.9" height="6.6" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="448.3" y="201.3" width="10.9" height="8.7" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="431.9" y="226" text-anchor="middle" fill="#8b949e" font-size="10">12</text>
+<rect x="463.2" y="209.0" width="10.9" height="1.0" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="2"/>
+<rect x="474.2" y="209.6" width="10.9" height="0.4" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="2"/>
+<rect x="485.1" y="209.4" width="10.9" height="0.6" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="2"/>
+<rect x="496.1" y="208.5" width="10.9" height="1.5" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="2"/>
+<rect x="507.1" y="209.6" width="10.9" height="0.4" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="2"/>
+<text x="490.6" y="226" text-anchor="middle" fill="#8b949e" font-size="10">13</text>
+<line x1="50" y1="30" x2="50" y2="210" stroke="#30363d" stroke-width="1.5"/>
+<line x1="50" y1="210" x2="520" y2="210" stroke="#30363d" stroke-width="1.5"/>
+<rect x="50" y="234" width="10" height="10" fill="#58a6ff99" stroke="#58a6ff" rx="2"/>
+<text x="63" y="242" fill="#8b949e" font-size="10">M1 Aleatório</text>
+<rect x="148.0" y="234" width="10" height="10" fill="#3fb95099" stroke="#3fb950" rx="2"/>
+<text x="161.0" y="242" fill="#8b949e" font-size="10">M2 Mais Freq.</text>
+<rect x="252.5" y="234" width="10" height="10" fill="#d2992299" stroke="#d29922" rx="2"/>
+<text x="265.5" y="242" fill="#8b949e" font-size="10">M3 Mais Atras.</text>
+<rect x="363.5" y="234" width="10" height="10" fill="#f8514999" stroke="#f85149" rx="2"/>
+<text x="376.5" y="242" fill="#8b949e" font-size="10">M4 Par/Ímpar</text>
+<rect x="461.5" y="234" width="10" height="10" fill="#a78bfa99" stroke="#a78bfa" rx="2"/>
+<text x="474.5" y="242" fill="#8b949e" font-size="10">M5 Soma Faixa</text>
+</svg></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Média de Acertos vs. Esperança Teórica (9.0)</div>
+      <div class="svg-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="540" height="250">
+<line x1="195.0" y1="20" x2="195.0" y2="230" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="195.0" y="244" text-anchor="middle" fill="#8b949e" font-size="9">8.9</text>
+<line x1="260.0" y1="20" x2="260.0" y2="230" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="260.0" y="244" text-anchor="middle" fill="#8b949e" font-size="9">8.95</text>
+<line x1="325.0" y1="20" x2="325.0" y2="230" stroke="#58a6ff" stroke-width="1" stroke-dasharray="0"/>
+<text x="325.0" y="244" text-anchor="middle" fill="#8b949e" font-size="9">9.0</text>
+<line x1="390.0" y1="20" x2="390.0" y2="230" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="390.0" y="244" text-anchor="middle" fill="#8b949e" font-size="9">9.05</text>
+<line x1="455.0" y1="20" x2="455.0" y2="230" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="455.0" y="244" text-anchor="middle" fill="#8b949e" font-size="9">9.1</text>
+<text x="124" y="45.0" text-anchor="end" fill="#58a6ff" font-size="11" font-weight="600">M1 Aleatório</text>
+<rect x="130" y="24.0" width="390" height="34.0" fill="#ffffff08" rx="4"/>
+<rect x="325.0" y="26.0" width="2.0" height="30.0" fill="#58a6ff99" stroke="#58a6ff" stroke-width="1" rx="3"/>
+<text x="330.4" y="45.0" text-anchor="start" fill="#58a6ff" font-size="11" font-weight="700">9.0003</text>
+<text x="124" y="87.0" text-anchor="end" fill="#3fb950" font-size="11" font-weight="600">M2 Mais Freq.</text>
+<rect x="130" y="66.0" width="390" height="34.0" fill="#ffffff08" rx="4"/>
+<rect x="325.0" y="68.0" width="43.7" height="30.0" fill="#3fb95099" stroke="#3fb950" stroke-width="1" rx="3"/>
+<text x="373.7" y="87.0" text-anchor="start" fill="#3fb950" font-size="11" font-weight="700">9.0336</text>
+<text x="124" y="129.0" text-anchor="end" fill="#d29922" font-size="11" font-weight="600">M3 Mais Atras.</text>
+<rect x="130" y="108.0" width="390" height="34.0" fill="#ffffff08" rx="4"/>
+<rect x="325.0" y="110.0" width="34.2" height="30.0" fill="#d2992299" stroke="#d29922" stroke-width="1" rx="3"/>
+<text x="364.2" y="129.0" text-anchor="start" fill="#d29922" font-size="11" font-weight="700">9.0263</text>
+<text x="124" y="171.0" text-anchor="end" fill="#f85149" font-size="11" font-weight="600">M4 Par/Ímpar</text>
+<rect x="130" y="150.0" width="390" height="34.0" fill="#ffffff08" rx="4"/>
+<rect x="301.2" y="152.0" width="23.8" height="30.0" fill="#f8514999" stroke="#f85149" stroke-width="1" rx="3"/>
+<text x="296.2" y="171.0" text-anchor="end" fill="#f85149" font-size="11" font-weight="700">8.9817</text>
+<text x="124" y="213.0" text-anchor="end" fill="#a78bfa" font-size="11" font-weight="600">M5 Soma Faixa</text>
+<rect x="130" y="192.0" width="390" height="34.0" fill="#ffffff08" rx="4"/>
+<rect x="316.7" y="194.0" width="8.3" height="30.0" fill="#a78bfa99" stroke="#a78bfa" stroke-width="1" rx="3"/>
+<text x="311.7" y="213.0" text-anchor="end" fill="#a78bfa" font-size="11" font-weight="700">8.9936</text>
+<line x1="325.0" y1="20" x2="325.0" y2="230" stroke="#58a6ff" stroke-width="2"/>
+<text x="329.0" y="32" fill="#58a6ff" font-size="10">E=9.0</text>
+</svg></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="card-title">Tabela Comparativa dos Métodos</div>
+    <table>
+      <thead><tr>
+        <th>Método</th><th>Concursos</th><th>Média</th><th>Desvio</th>
+        <th>Dif. Esperança</th><th>% 11+</th><th>% 13+</th><th>% 14+</th><th>% 15</th>
+      </tr></thead>
+      <tbody><tr>
+          <td><span class="metodo-badge m1">M1 Aleatório</span></td>
+          <td>3,724</td>
+          <td><b>9.0003</b></td>
+          <td>1.2094</td>
+          <td style="color:#3fb950;font-weight:600">+0.0003</td>
+          <td>10.15%</td>
+          <td>0.188%</td>
+          <td>0.0%</td>
+          <td>0.0%</td>
+        </tr>
+<tr>
+          <td><span class="metodo-badge m2">M2 Mais Freq.</span></td>
+          <td>3,724</td>
+          <td><b>9.0336</b></td>
+          <td>1.2275</td>
+          <td style="color:#3fb950;font-weight:600">+0.0336</td>
+          <td>11.439%</td>
+          <td>0.107%</td>
+          <td>0.0269%</td>
+          <td>0.0%</td>
+        </tr>
+<tr>
+          <td><span class="metodo-badge m3">M3 Mais Atras.</span></td>
+          <td>3,724</td>
+          <td><b>9.0263</b></td>
+          <td>1.2334</td>
+          <td style="color:#3fb950;font-weight:600">+0.0263</td>
+          <td>11.359%</td>
+          <td>0.107%</td>
+          <td>0.0%</td>
+          <td>0.0%</td>
+        </tr>
+<tr>
+          <td><span class="metodo-badge m4">M4 Par/Ímpar</span></td>
+          <td>3,724</td>
+          <td><b>8.9817</b></td>
+          <td>1.2222</td>
+          <td style="color:#3fb950;font-weight:600">-0.0183</td>
+          <td>10.392%</td>
+          <td>0.295%</td>
+          <td>0.0269%</td>
+          <td>0.0%</td>
+        </tr>
+<tr>
+          <td><span class="metodo-badge m5">M5 Soma Faixa</span></td>
+          <td>3,724</td>
+          <td><b>8.9936</b></td>
+          <td>1.2157</td>
+          <td style="color:#3fb950;font-weight:600">-0.0064</td>
+          <td>10.365%</td>
+          <td>0.081%</td>
+          <td>0.0%</td>
+          <td>0.0%</td>
+        </tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PAGE: DEZENAS -->
+<div class="page" id="page-dezenas">
+  <div class="stat-row">
+    <div class="stat-box"><div class="label">Total Concursos</div><div class="value" style="color:var(--accent)">3.725</div><div class="hint">histórico completo</div></div>
+    <div class="stat-box"><div class="label">Freq. Teórica</div><div class="value" style="color:var(--green)">60%</div><div class="hint">15/25 dezenas por sorteio</div></div>
+    <div class="stat-box"><div class="label">Mais Frequente</div><div class="value" style="color:var(--yellow)">20</div><div class="hint">62.55% (2330x)</div></div>
+    <div class="stat-box"><div class="label">Maior Atraso</div><div class="value" style="color:var(--red)">09</div><div class="hint">3 concurso(s)</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Mapa de Calor — Frequência das Dezenas (% de aparições)</div>
+    <div class="heatmap"><div class="hm-cell" style="background:rgba(131,165,123,0.2);border-color:rgba(131,165,123,0.5)">
+          <div class="hm-num">01</div>
+          <div class="hm-pct">60.67%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(103,151,151,0.2);border-color:rgba(103,151,151,0.5)">
+          <div class="hm-num">02</div>
+          <div class="hm-pct">59.92%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(112,156,142,0.2);border-color:rgba(112,156,142,0.5)">
+          <div class="hm-num">03</div>
+          <div class="hm-pct">60.16%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:1</div>
+        </div>
+<div class="hm-cell" style="background:rgba(124,162,130,0.2);border-color:rgba(124,162,130,0.5)">
+          <div class="hm-num">04</div>
+          <div class="hm-pct">60.48%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(109,154,145,0.2);border-color:rgba(109,154,145,0.5)">
+          <div class="hm-num">05</div>
+          <div class="hm-pct">60.08%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(63,131,191,0.2);border-color:rgba(63,131,191,0.5)">
+          <div class="hm-num">06</div>
+          <div class="hm-pct">58.82%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(73,136,181,0.2);border-color:rgba(73,136,181,0.5)">
+          <div class="hm-num">07</div>
+          <div class="hm-pct">59.09%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:1</div>
+        </div>
+<div class="hm-cell" style="background:rgba(29,114,225,0.2);border-color:rgba(29,114,225,0.5)">
+          <div class="hm-num">08</div>
+          <div class="hm-pct">57.91%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(96,148,158,0.2);border-color:rgba(96,148,158,0.5)">
+          <div class="hm-num">09</div>
+          <div class="hm-pct">59.73%</div>
+          <div class="hm-atraso" style="color:#f85149">atr:3</div>
+        </div>
+<div class="hm-cell" style="background:rgba(191,195,63,0.2);border-color:rgba(191,195,63,0.5)">
+          <div class="hm-num">10</div>
+          <div class="hm-pct">62.31%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:2</div>
+        </div>
+<div class="hm-cell" style="background:rgba(158,179,96,0.2);border-color:rgba(158,179,96,0.5)">
+          <div class="hm-num">11</div>
+          <div class="hm-pct">61.42%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(109,154,145,0.2);border-color:rgba(109,154,145,0.5)">
+          <div class="hm-num">12</div>
+          <div class="hm-pct">60.08%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:1</div>
+        </div>
+<div class="hm-cell" style="background:rgba(136,168,118,0.2);border-color:rgba(136,168,118,0.5)">
+          <div class="hm-num">13</div>
+          <div class="hm-pct">60.83%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(124,162,130,0.2);border-color:rgba(124,162,130,0.5)">
+          <div class="hm-num">14</div>
+          <div class="hm-pct">60.48%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(98,149,156,0.2);border-color:rgba(98,149,156,0.5)">
+          <div class="hm-num">15</div>
+          <div class="hm-pct">59.79%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:1</div>
+        </div>
+<div class="hm-cell" style="background:rgba(0,100,255,0.2);border-color:rgba(0,100,255,0.5)">
+          <div class="hm-num">16</div>
+          <div class="hm-pct">57.1%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(57,128,197,0.2);border-color:rgba(57,128,197,0.5)">
+          <div class="hm-num">17</div>
+          <div class="hm-pct">58.68%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(91,145,163,0.2);border-color:rgba(91,145,163,0.5)">
+          <div class="hm-num">18</div>
+          <div class="hm-pct">59.6%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:2</div>
+        </div>
+<div class="hm-cell" style="background:rgba(90,145,164,0.2);border-color:rgba(90,145,164,0.5)">
+          <div class="hm-num">19</div>
+          <div class="hm-pct">59.57%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(200,200,55,0.2);border-color:rgba(200,200,55,0.5)">
+          <div class="hm-num">20</div>
+          <div class="hm-pct">62.55%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:2</div>
+        </div>
+<div class="hm-cell" style="background:rgba(85,142,169,0.2);border-color:rgba(85,142,169,0.5)">
+          <div class="hm-num">21</div>
+          <div class="hm-pct">59.44%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(97,148,157,0.2);border-color:rgba(97,148,157,0.5)">
+          <div class="hm-num">22</div>
+          <div class="hm-pct">59.76%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:1</div>
+        </div>
+<div class="hm-cell" style="background:rgba(56,128,198,0.2);border-color:rgba(56,128,198,0.5)">
+          <div class="hm-num">23</div>
+          <div class="hm-pct">58.63%</div>
+          <div class="hm-atraso" style="color:#d29922">atr:2</div>
+        </div>
+<div class="hm-cell" style="background:rgba(133,166,121,0.2);border-color:rgba(133,166,121,0.5)">
+          <div class="hm-num">24</div>
+          <div class="hm-pct">60.75%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div>
+<div class="hm-cell" style="background:rgba(185,192,69,0.2);border-color:rgba(185,192,69,0.5)">
+          <div class="hm-num">25</div>
+          <div class="hm-pct">62.15%</div>
+          <div class="hm-atraso" style="color:#3fb950">atr:0</div>
+        </div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Atraso Atual (concursos sem sair)</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#f85149;font-size:13px">09</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:100.0%;height:100%;background:#f85149;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">3 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">10</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:66.7%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">2 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">18</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:66.7%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">2 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">20</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:66.7%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">2 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">23</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:66.7%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">2 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">03</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:33.3%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">1 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">07</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:33.3%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">1 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">12</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:33.3%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">1 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">15</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:33.3%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">1 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#d29922;font-size:13px">22</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:33.3%;height:100%;background:#d29922;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">1 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">01</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">02</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">04</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">05</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">06</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">08</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">11</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">13</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">14</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">16</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">17</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">19</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">21</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">24</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+          <span style="width:28px;text-align:center;font-weight:700;color:#3fb950;font-size:13px">25</span>
+          <div style="flex:1;height:7px;background:#30363d;border-radius:4px;overflow:hidden">
+            <div style="width:0.0%;height:100%;background:#3fb950;border-radius:4px"></div>
+          </div>
+          <span style="width:65px;font-size:12px;color:#8b949e">0 conc.</span>
+        </div>
+  </div>
+</div>
+
+<!-- PAGE: HISTORICO -->
+<div class="page" id="page-historico">
+  <div class="card">
+    <div class="card-title">Últimos 15 Concursos Registrados</div>
+    <table>
+      <thead><tr><th>Concurso</th><th>Data</th><th>Dezenas Sorteadas</th><th>Soma</th><th>Pares</th></tr></thead>
+      <tbody><tr>
+          <td><b style="color:#58a6ff">#3725</b></td>
+          <td style="color:#8b949e">02/07/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>186</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3724</b></td>
+          <td style="color:#8b949e">01/07/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>195</td>
+          <td>6</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3723</b></td>
+          <td style="color:#8b949e">30/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>205</td>
+          <td>8</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3722</b></td>
+          <td style="color:#8b949e">29/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span></td>
+          <td>179</td>
+          <td>6</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3721</b></td>
+          <td style="color:#8b949e">27/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span></td>
+          <td>178</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3720</b></td>
+          <td style="color:#8b949e">26/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span></td>
+          <td>196</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3719</b></td>
+          <td style="color:#8b949e">25/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>207</td>
+          <td>8</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3718</b></td>
+          <td style="color:#8b949e">23/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>217</td>
+          <td>6</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3717</b></td>
+          <td style="color:#8b949e">22/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>164</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3716</b></td>
+          <td style="color:#8b949e">20/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>207</td>
+          <td>6</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3715</b></td>
+          <td style="color:#8b949e">20/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>229</td>
+          <td>8</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3714</b></td>
+          <td style="color:#8b949e">18/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span></td>
+          <td>176</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3713</b></td>
+          <td style="color:#8b949e">17/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">02</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">07</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">11</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span></td>
+          <td>167</td>
+          <td>8</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3712</b></td>
+          <td style="color:#8b949e">16/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">03</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">04</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">14</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">18</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">19</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">21</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">23</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>220</td>
+          <td>7</td>
+        </tr>
+<tr>
+          <td><b style="color:#58a6ff">#3711</b></td>
+          <td style="color:#8b949e">15/06/2026</td>
+          <td><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">01</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">05</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">06</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">08</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">09</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">10</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">12</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">13</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">15</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">16</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">17</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">20</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">22</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">24</span><span style="display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:4px;padding:1px 5px;margin:1px;font-size:12px;font-weight:600;color:#58a6ff">25</span></td>
+          <td>203</td>
+          <td>8</td>
+        </tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  var tabs = document.querySelectorAll('.tab');
+  var names = ['jogos','conferencia','backtest','dezenas','historico'];
+  tabs.forEach(function(t, i) { t.classList.toggle('active', names[i] === name); });
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>
