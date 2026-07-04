@@ -3,8 +3,8 @@ name: Laboratório Lotofácil - ciclo diário
 on:
   workflow_dispatch:
   schedule:
-    # 13:00 UTC = 10:00 no horário de Brasília (sem horário de verão desde 2019)
-    - cron: "0 13 * * *"
+    # 01:00 UTC = 22:00 no horário de Brasília (após o sorteio das 20h)
+    - cron: "0 1 * * *"
 
 permissions:
   contents: write
@@ -29,10 +29,14 @@ jobs:
         working-directory: scripts
         run: python ciclo_diario.py
 
+      - name: Gerar painel visual de jogos e conferências
+        working-directory: scripts
+        run: python gerar_painel_jogos.py
+
       - name: Salvar tudo no repositório
         run: |
           git config user.name "lotofacil-lab-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add dados/ reports/ painel.html diario_estatistico.md
+          git add dados/ reports/ painel.html painel_jogos.html diario_estatistico.md
           git commit -m "Atualiza laboratório: novo ciclo diário" || echo "Sem alterações para commitar"
           git push
