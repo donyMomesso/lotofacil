@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lotofácil Lab — Mobile</title>
+<style>
+  :root { --bg:#faf7ff; --card:#fff; --text:#1f1235; --muted:#7c6a9b; --line:#eadffd; --purple:#7c3aed; --amber:#f59e0b; --green:#16a34a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  header { position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#5b21b6,#7c3aed 60%,#c026d3); color:white; padding:18px 16px 14px; box-shadow:0 6px 20px rgba(43,10,77,.22); }
+  h1 { margin:0; font-size:22px; }
+  .sub { margin-top:5px; color:rgba(255,255,255,.76); font-size:12.5px; line-height:1.45; }
+  .tabs { display:flex; gap:8px; overflow-x:auto; padding:12px 14px 2px; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs a { flex:0 0 auto; text-decoration:none; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:9px 12px; font-size:13px; font-weight:700; }
+  .tabs a.primary { background:var(--purple); color:white; border-color:var(--purple); }
+  main { padding:12px 14px 34px; }
+  .alert { background:linear-gradient(90deg,rgba(245,158,11,.18),rgba(245,158,11,.06)); border:1px solid rgba(245,158,11,.38); border-radius:14px; padding:13px 14px; font-size:13.5px; line-height:1.45; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 2px 10px rgba(43,10,77,.06); }
+  .label { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  .value { font-size:25px; font-weight:900; margin-top:6px; line-height:1; }
+  section { margin-top:18px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid #f0e9fb; padding:10px 0; font-size:13.5px; }
+  .row:last-child { border-bottom:none; }
+  .nums { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; color:#4c1d95; line-height:1.5; }
+  .badge { display:inline-block; border-radius:999px; padding:3px 9px; background:#ede4ff; color:var(--purple); font-size:12px; font-weight:800; white-space:nowrap; }
+  a { color:var(--purple); font-weight:800; }
+  @media (max-width:380px){ .grid{grid-template-columns:1fr;} h1{font-size:20px;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lotofácil Lab</h1>
+  <div class="sub">Painel mobile inicial · concurso 3725 · banco JSON ativo</div>
+</header>
+<nav class="tabs">
+  <a class="primary" href="#resumo">Resumo</a>
+  <a href="#ultimo">Último</a>
+  <a href="#links">Arquivos</a>
+  <a href="painel.html">Clássico</a>
+  <a href="painel_jogos.html">Jogos</a>
+</nav>
+<main>
+  <div class="alert"><b>Estudo estatístico.</b> Não é previsão, não é recomendação de aposta e não indica combinação “mais perto” de acertar.</div>
+  <section id="resumo">
+    <h2>Resumo</h2>
+    <div class="grid">
+      <div class="card"><div class="label">Concursos</div><div class="value">3725</div></div>
+      <div class="card"><div class="label">Próximo</div><div class="value">3726</div></div>
+      <div class="card"><div class="label">Esperança</div><div class="value">9.0</div></div>
+      <div class="card"><div class="label">Último</div><div class="value">3725</div></div>
+    </div>
+  </section>
+  <section id="ultimo">
+    <h2>Último resultado da base</h2>
+    <div class="card">
+      <div class="row"><div><b>Concurso 3725</b><br><span class="nums">01-02-04-05-06-08-11-13-14-16-17-19-21-24-25</span></div><span class="badge">02/07/2026</span></div>
+      <div class="row"><span>Soma</span><span class="badge">186</span></div>
+      <div class="row"><span>Pares / Ímpares</span><span class="badge">7 / 8</span></div>
+    </div>
+  </section>
+  <section id="links">
+    <h2>Banco e arquivos</h2>
+    <div class="card">
+      <div class="row"><span>Banco do projeto</span><a href="dados/banco_projeto.json">abrir</a></div>
+      <div class="row"><span>Painel clássico</span><a href="painel.html">abrir</a></div>
+      <div class="row"><span>Painel de jogos</span><a href="painel_jogos.html">abrir</a></div>
+      <div class="row"><span>Relatório</span><a href="reports/relatorio_estatistico.md">abrir</a></div>
+      <div class="row"><span>Diário</span><a href="diario_estatistico.md">abrir</a></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
