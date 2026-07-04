@@ -142,6 +142,67 @@ def main():
             "",
         ]
 
+    seqsalto_path = os.path.join(lib.DADOS_DIR, "sequencias_saltos.csv")
+    if os.path.exists(seqsalto_path):
+        with open(seqsalto_path, encoding="utf-8") as f:
+            seqsalto = list(csv.DictReader(f))
+        seq_teo = seqsalto[0]["sequencia_teorica_pct"]
+        salto_teo = seqsalto[0]["salto_teorico_pct"]
+        linhas_md += [
+            "",
+            "## Sequência e salto das dezenas (trincas consecutivas)",
+            "",
+            f"Para cada trinca de dezenas consecutivas (01-02-03 até 23-24-25), o valor teórico fixo é "
+            f"**{seq_teo}%** de chance de as 3 saírem juntas (\"sequência\") e **{salto_teo}%** de chance de "
+            "nenhuma das 3 sair (\"salto\"). A tabela abaixo compara isso com o que aconteceu de fato no "
+            "histórico — a variação entre trincas é ruído amostral, não indica trinca \"quente\" ou \"atrasada\".",
+            "",
+            "| Trinca | Sequência (qtd) | Sequência (%) | Teórico seq. | Salto (qtd) | Salto (%) | Teórico salto |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for l in seqsalto:
+            linhas_md.append(
+                f"| {l['trinca']} | {l['sequencia_qtd']} | {l['sequencia_pct']}% | {seq_teo}% | "
+                f"{l['salto_qtd']} | {l['salto_pct']}% | {salto_teo}% |"
+            )
+        linhas_md += [
+            "",
+            "Nenhuma trinca desta tabela está \"mais perto\" ou \"mais longe\" de sair — todas têm a mesma "
+            "probabilidade teórica; o que varia é só o resultado observado em uma amostra finita de concursos.",
+            "",
+        ]
+
+    exemplos_path = os.path.join(lib.DADOS_DIR, "exemplos_filtrados_backtest.csv")
+    if os.path.exists(exemplos_path):
+        with open(exemplos_path, encoding="utf-8") as f:
+            exemplos = list(csv.DictReader(f))
+        linhas_md += [
+            "",
+            "## Exemplos filtrados: combinações fixas testadas contra todo o histórico",
+            "",
+            "Cada linha abaixo é uma combinação fixa de 15 dezenas, gerada só como exemplo do "
+            "espaço filtrado (par/ímpar 8/7, soma 180-210, sem sequência de 6+, no máximo 1 linha "
+            "vazia). Cada uma foi conferida contra **todos** os concursos reais do histórico — não é "
+            "jogo para apostar, é ilustração de que combinações \"bem-comportadas\" continuam com "
+            f"média de acertos igual à esperança teórica ({lib.ESPERANCA_TEORICA}).",
+            "",
+            "| Exemplo | Dezenas | Concursos testados | Média | Dif. vs. esperança | Máx. observado | 11+ | 13+ |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for e in exemplos:
+            linhas_md.append(
+                f"| {e['exemplo']} | {e['dezenas']} | {e['total_concursos_testados']} | "
+                f"{e['media_acertos']} | {float(e['diferenca_vs_esperanca']):+.4f} | "
+                f"{e['max_acertos_observado']} | {e['pct_11_ou_mais']}% | {e['pct_13_ou_mais']}% |"
+            )
+        linhas_md += [
+            "",
+            "Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas "
+            "as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 5 "
+            "métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.",
+            "",
+        ]
+
     linhas_md += [
         "",
         "## Conclusão educativa",

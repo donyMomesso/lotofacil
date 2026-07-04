@@ -1,4 +1,20 @@
-<!DOCTYPE html>
+"""
+Gera painel-educativo.html: pagina didatica sobre probabilidade e
+esperanca matematica, com o novo design (roxo/rosa/ambar) baseado no
+mockup do manus.ai, mas com os numeros reais do laboratorio (nao os
+valores de exemplo do mockup).
+
+Uso:
+    python3 gerar_painel_educativo.py
+"""
+import json
+import os
+
+import lotofacil_lib as lib
+
+PAINEL_PATH = os.path.join(lib.BASE_DIR, "painel-educativo.html")
+
+TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -29,8 +45,8 @@
   </p>
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
     <span style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:7px 14px; border-radius:999px; font-size:13px;">Atualizado diariamente</span>
-    <span style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:7px 14px; border-radius:999px; font-size:13px;">3.726 concursos reais analisados</span>
-    <span style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:7px 14px; border-radius:999px; font-size:13px;">Esperança teórica: 9,0 acertos</span>
+    <span style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:7px 14px; border-radius:999px; font-size:13px;">__TOTAL_CONCURSOS__ concursos reais analisados</span>
+    <span style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:7px 14px; border-radius:999px; font-size:13px;">Esperança teórica: __ESPERANCA__ acertos</span>
   </div>
 </div>
 
@@ -74,23 +90,23 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin:0 0 40px;">
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px 20px;">
         <div style="font-size:12.5px; color:#8B76B0; text-transform:uppercase; letter-spacing:.03em;">Concursos analisados</div>
-        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">3.726</div>
+        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">__TOTAL_CONCURSOS__</div>
         <div style="font-size:12px; color:#8B76B0; margin-top:4px;">histórico real, crescendo todo dia</div>
       </div>
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px 20px;">
         <div style="font-size:12.5px; color:#8B76B0; text-transform:uppercase; letter-spacing:.03em;">Próximo concurso</div>
-        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">3.727</div>
+        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">__PROXIMO_CONCURSO__</div>
         <div style="font-size:12px; color:#8B76B0; margin-top:4px;">jogos de estudo já gerados</div>
       </div>
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px 20px;">
         <div style="font-size:12.5px; color:#8B76B0; text-transform:uppercase; letter-spacing:.03em;">Esperança teórica</div>
-        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif; color:#7C3AED;">9,0</div>
+        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif; color:#7C3AED;">__ESPERANCA__</div>
         <div style="font-size:12px; color:#8B76B0; margin-top:4px;">acertos por jogo, via hipergeométrica</div>
       </div>
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px 20px;">
         <div style="font-size:12.5px; color:#8B76B0; text-transform:uppercase; letter-spacing:.03em;">Dezena mais frequente</div>
-        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">20</div>
-        <div style="font-size:12px; color:#8B76B0; margin-top:4px;">62,6% dos concursos observados</div>
+        <div style="font-size:28px; font-weight:700; margin-top:6px; font-family:'Sora',sans-serif;">__DEZENA_MAIS_FREQ__</div>
+        <div style="font-size:12px; color:#8B76B0; margin-top:4px;">__PCT_MAIS_FREQ__% dos concursos observados</div>
       </div>
     </div>
 
@@ -152,7 +168,7 @@
 </footer>
 
 <script>
-const dados = {"dezenas": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25"], "freq_pct": [60.65, 59.93, 60.14, 60.47, 60.09, 58.83, 59.1, 57.89, 59.72, 62.32, 61.41, 60.06, 60.84, 60.49, 59.77, 57.09, 58.7, 59.61, 59.58, 62.56, 59.45, 59.77, 58.62, 60.76, 62.16], "atraso": [1, 0, 2, 1, 0, 0, 0, 1, 4, 0, 1, 2, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0]};
+const dados = __DADOS_JSON__;
 new Chart(document.getElementById('freqChart'), {
   type:'bar',
   data:{ labels:dados.dezenas, datasets:[{ data:dados.freq_pct, backgroundColor:'#7C3AED', borderRadius:4 }] },
@@ -168,3 +184,37 @@ new Chart(document.getElementById('atrasoChart'), {
 </script>
 </body>
 </html>
+"""
+
+
+def main():
+    freq, atraso, total = lib.frequencia_e_atraso()
+    resultados = lib.carregar_resultados()
+    proximo_concurso = (resultados[-1]["concurso"] + 1) if resultados else 1
+
+    maior_freq_valor = max(freq[d] for d in lib.TODAS_DEZENAS)
+    mais_frequentes = sorted([d for d in lib.TODAS_DEZENAS if freq[d] == maior_freq_valor])
+    dezena_mais_freq_str = " e ".join(f"{d:02d}" for d in mais_frequentes) if len(mais_frequentes) <= 3 else f"{mais_frequentes[0]:02d} (+{len(mais_frequentes)-1})"
+    pct_mais_freq = round(100 * maior_freq_valor / total, 1) if total else 0.0
+
+    dados_json = {
+        "dezenas": [f"{d:02d}" for d in lib.TODAS_DEZENAS],
+        "freq_pct": [round(100 * freq[d] / total, 2) if total else 0 for d in lib.TODAS_DEZENAS],
+        "atraso": [atraso[d] for d in lib.TODAS_DEZENAS],
+    }
+
+    html = TEMPLATE
+    html = html.replace("__TOTAL_CONCURSOS__", f"{total:,}".replace(",", "."))
+    html = html.replace("__PROXIMO_CONCURSO__", f"{proximo_concurso:,}".replace(",", "."))
+    html = html.replace("__ESPERANCA__", str(lib.ESPERANCA_TEORICA).replace(".", ","))
+    html = html.replace("__DEZENA_MAIS_FREQ__", dezena_mais_freq_str)
+    html = html.replace("__PCT_MAIS_FREQ__", str(pct_mais_freq).replace(".", ","))
+    html = html.replace("__DADOS_JSON__", json.dumps(dados_json, ensure_ascii=False))
+
+    with open(PAINEL_PATH, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"painel-educativo.html gerado em: {PAINEL_PATH}")
+
+
+if __name__ == "__main__":
+    main()

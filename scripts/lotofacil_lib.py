@@ -12,6 +12,7 @@ Lembrete de regra do laboratório: nunca reportar um método como
 e frequência relativa dos resultados de acertos (0 a 15).
 """
 import csv
+import itertools
 import os
 import random
 import statistics
@@ -319,6 +320,7 @@ def salvar_frequencia_dezenas():
             })
 
 
+<<<<<<< HEAD
 def formatar_para_extensao(matrizes_geradas):
     if not matrizes_geradas:
         return ""
@@ -329,3 +331,137 @@ def formatar_para_extensao(matrizes_geradas):
         linhas_formatadas.append(" ".join(numeros_formatados))
 
     return "\n".join(linhas_formatadas)
+=======
+# ---------- desdobramento e filtros combinatorios (estudo, não geração de apostas) ----------
+#
+# Estas funções servem só para ILUSTRAR o espaço de combinações que atendem a
+# certos critérios estruturais (soma, paridade, sequência, distribuição por
+# linha) — nunca para produzir uma lista de jogos "para jogar". Sempre usar em
+# conjunto com o backtest de combinações fixas abaixo, que mostra que mesmo
+# essas combinações "bem-comportadas" têm a mesma esperança teórica de 9,0.
+
+def desdobramento_total(dezenas_base, tamanho_linha=15):
+    """
+    Recebe uma base com mais de `tamanho_linha` dezenas (ex: 18) e retorna
+    todas as combinações possíveis de `tamanho_linha` dezenas dentro dela —
+    a mesma matemática por trás de uma aposta estendida da Lotofácil
+    (C(len(base), tamanho_linha) combinações). Ver dados/apostas_estendidas.csv
+    para o custo de cada tamanho de base.
+    """
+    if len(dezenas_base) < tamanho_linha:
+        raise ValueError(f"A base deve ter pelo menos {tamanho_linha} dezenas.")
+    matriz_gerada = list(itertools.combinations(sorted(dezenas_base), tamanho_linha))
+    return [list(linha) for linha in matriz_gerada]
+
+
+def passa_filtro_par_impar(linha, pares_min=8, pares_max=8):
+    pares = sum(1 for d in linha if d % 2 == 0)
+    return pares_min <= pares <= pares_max
+
+
+def passa_filtro_soma(linha, soma_min=180, soma_max=210):
+    return soma_min <= sum(linha) <= soma_max
+
+
+def passa_filtro_sem_sequencia_longa(linha, max_run=5):
+    """True se a linha não tem uma sequência de mais de `max_run` dezenas
+    consecutivas (ex: 10,11,12,13,14,15,16 seria uma sequência de 7)."""
+    dezenas_ordenadas = sorted(linha)
+    maior_run = 1
+    run_atual = 1
+    for i in range(1, len(dezenas_ordenadas)):
+        if dezenas_ordenadas[i] == dezenas_ordenadas[i - 1] + 1:
+            run_atual += 1
+            maior_run = max(maior_run, run_atual)
+        else:
+            run_atual = 1
+    return maior_run <= max_run
+
+
+def passa_filtro_linhas_vazias(linha, max_linhas_vazias=1):
+    """True se no máximo `max_linhas_vazias` das 5 linhas do volante
+    (1-5, 6-10, 11-15, 16-20, 21-25) ficam sem nenhuma dezena escolhida."""
+    faixas = [(1, 5), (6, 10), (11, 15), (16, 20), (21, 25)]
+    vazias = sum(1 for a, b in faixas if not any(a <= d <= b for d in linha))
+    return vazias <= max_linhas_vazias
+
+
+def aplicar_filtros_combinatorios(matriz_bidimensional, pares_min=8, pares_max=8,
+                                   soma_min=180, soma_max=210,
+                                   max_run=5, max_linhas_vazias=1):
+    """
+    Filtra uma matriz de combinações, mantendo só as linhas que atendem a
+    todos os critérios simultaneamente (par/ímpar, soma, sem sequência longa,
+    no máximo 1 linha vazia). Por padrão usa exatamente os critérios do
+    estudo "4 filtros combinados" do diário (que reduz as 3.268.760
+    combinações possíveis para 366.487 — 11,21%). Isto é só descrição do
+    espaço combinatório, não é indicação de jogo.
+    """
+    matriz_filtrada = []
+    for linha in matriz_bidimensional:
+        if (passa_filtro_par_impar(linha, pares_min, pares_max)
+                and passa_filtro_soma(linha, soma_min, soma_max)
+                and passa_filtro_sem_sequencia_longa(linha, max_run)
+                and passa_filtro_linhas_vazias(linha, max_linhas_vazias)):
+            matriz_filtrada.append(linha)
+    return matriz_filtrada
+
+
+def gerar_exemplos_filtrados(n_exemplos=5, seed=None, **filtros_kwargs):
+    """
+    Gera `n_exemplos` combinações de 15 dezenas, por amostragem aleatória
+    com rejeição, que passam pelos filtros combinados (mesma definição de
+    `aplicar_filtros_combinatorios`). Não enumera as 3.268.760 combinações
+    inteiras — amostra direto do espaço de 25 dezenas até achar exemplos
+    válidos, o que é equivalente e muito mais rápido (o filtro combinado
+    aceita ~11% das combinações aleatórias).
+    """
+    rng = random.Random(seed)
+    exemplos = []
+    tentativas = 0
+    max_tentativas = 200_000
+    while len(exemplos) < n_exemplos and tentativas < max_tentativas:
+        tentativas += 1
+        candidato = sorted(rng.sample(TODAS_DEZENAS, 15))
+        if aplicar_filtros_combinatorios([candidato], **filtros_kwargs):
+            if candidato not in exemplos:
+                exemplos.append(candidato)
+    return exemplos
+
+
+def backtest_combinacoes_fixas(combinacoes, resultados=None):
+    """
+    Para cada combinação fixa (uma lista de 15 dezenas), confere quantos
+    acertos ela teria feito em CADA concurso real do histórico. Diferente
+    do backtest dos métodos M1-M5 (que gera um jogo novo por concurso),
+    aqui é a MESMA combinação testada contra todos os sorteios já
+    realizados — serve para mostrar que mesmo uma combinação "bem
+    filtrada" tem média de acertos igual à esperança teórica no longo
+    prazo, sem nenhuma vantagem preditiva.
+    """
+    if resultados is None:
+        resultados = carregar_resultados()
+
+    linhas = []
+    for idx, combinacao in enumerate(combinacoes, start=1):
+        combinacao_set = set(combinacao)
+        acertos_lista = [len(combinacao_set & r["dezenas"]) for r in resultados]
+        n = len(acertos_lista)
+        media = statistics.mean(acertos_lista) if n else 0.0
+        desvio = statistics.pstdev(acertos_lista) if n > 1 else 0.0
+        dist = Counter(acertos_lista)
+        linhas.append({
+            "exemplo": idx,
+            "dezenas": "-".join(f"{d:02d}" for d in sorted(combinacao)),
+            "total_concursos_testados": n,
+            "media_acertos": round(media, 4),
+            "desvio_padrao_acertos": round(desvio, 4),
+            "esperanca_teorica": ESPERANCA_TEORICA,
+            "diferenca_vs_esperanca": round(media - ESPERANCA_TEORICA, 4),
+            "max_acertos_observado": max(acertos_lista) if n else "",
+            "pct_11_ou_mais": round(100 * sum(1 for a in acertos_lista if a >= 11) / n, 4) if n else 0.0,
+            "pct_13_ou_mais": round(100 * sum(1 for a in acertos_lista if a >= 13) / n, 4) if n else 0.0,
+            "qtd_15_acertos": dist.get(15, 0),
+        })
+    return linhas
+>>>>>>> c91b4f307cfc8f782f2b6e7977b31b4410e54036

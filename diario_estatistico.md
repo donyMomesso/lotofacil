@@ -199,3 +199,49 @@ A tabela de apostas estendidas (16 a 20 dezenas) foi incorporada ao relatório e
 | 18 | 816 | 2.856,00 | 10,80 | 60,14% | 47,49 |
 | 19 | 3.876 | 13.566,00 | 11,40 | 80,22% | 169,12 |
 | 20 | 15.504 | 54.264,00 | 12,00 | 94,35% | 575,15 |
+
+---
+
+## 04/07/2026 — Sequência e salto das trincas de dezenas consecutivas
+
+**1. O que foi observado**
+Calculamos, para cada trinca de 3 dezenas consecutivas (01-02-03 até 23-24-25), duas contagens no histórico de 3.726 concursos: "sequência" (quantas vezes as 3 saíram juntas no mesmo sorteio) e "salto" (quantas vezes nenhuma das 3 saiu). Os valores observados variam de 17,53% a 21,28% para sequência (média 19,56%, desvio 1,04 p.p.) e de 4,24% a 5,82% para salto (média 5,25%, desvio 0,40 p.p.).
+
+**2. O que isso pode significar estatisticamente**
+Calculamos também o valor teórico exato (hipergeométrico) que qualquer trinca específica de 3 dezenas deveria ter: 19,7826% de chance de sair inteira e 5,2174% de chance de nenhuma sair. As médias observadas praticamente coincidem com isso, e a dispersão entre trincas é do tamanho esperado para ruído amostral em 3.726 sorteios — nenhuma trinca foge do previsto pela matemática.
+
+**3. O que isso não significa**
+A trinca 10,11,12 (21,28%, a mais alta) não é uma trinca "quente", e a trinca 15,16,17 (17,53%, a mais baixa) não está "atrasada". Toda trinca de 3 dezenas consecutivas tem exatamente a mesma probabilidade teórica — a diferença entre elas na tabela é só flutuação normal de amostra.
+
+**4. Risco de confundir padrão histórico com previsão**
+Esse é um exemplo clássico de viés de confirmação: tabelas assim circulam por aí sem a linha teórica ao lado, o que convida a interpretar a variação como sinal de trinca melhor ou pior. Ao colocar o valor teórico fixo ao lado de cada linha, a tabela vira uma demonstração de ruído, não uma sugestão de escolha.
+
+**5. Conclusão educativa**
+Tabela adicionada ao relatório e ao painel (`scripts/tabela_sequencias.py`, dados em `dados/sequencias_saltos.csv`), sempre ao lado do valor teórico de referência. Reforça o padrão do laboratório: qualquer estatística de frequência, por mais que varie entre categorias, tende ao mesmo valor teórico fixo — a variação é o objeto de estudo, não um indicador de escolha.
+
+---
+
+## 04/07/2026 — Desdobramento, filtros compostos e backtest de combinações fixas
+
+**1. O que foi observado**
+Adicionamos ao `lotofacil_lib.py` funções de desdobramento (gerar todas as combinações de 15 dentro de uma base maior, a mesma matemática das apostas estendidas) e um pipeline de filtros compostos (par/ímpar, soma, sequência, linha vazia — os mesmos 4 filtros já estudados). A partir disso, geramos 5 combinações de exemplo que passam pelos 4 filtros e testamos cada uma, fixa, contra os 3.726 concursos reais do histórico inteiro. Resultado: médias entre 8,95 e 9,03 acertos (todas a menos de 0,05 da esperança teórica de 9,0), desvio padrão entre 1,20 e 1,24, máximo observado de 13-14 acertos, e zero ocorrências de 15 acertos em qualquer exemplo.
+
+**2. O que isso pode significar estatisticamente**
+Isso é uma confirmação adicional, agora com combinações fixas e reais (não simuladas por concurso): mesmo escolhendo dezenas que atendem a critérios "bem-comportados" (soma central, paridade equilibrada, sem sequência longa, distribuição por linha), o resultado ao longo de milhares de sorteios reais converge para a mesma esperança teórica de qualquer combinação aleatória.
+
+**3. O que isso não significa**
+Não significa que essas 5 combinações são recomendadas, nem que qualquer uma delas teria sido "melhor" de se jogar historicamente — a diferença entre a de maior média (9,033) e a de menor (8,954) é ruído estatístico, do mesmo tamanho que já vimos entre os métodos M1-M5. Nenhuma delas é sugestão de aposta.
+
+**4. Risco de confundir padrão histórico com previsão**
+Poderia parecer tentador escolher, entre os exemplos, o que teve a maior média histórica (exemplo 4, 9,033) e tratá-lo como "o exemplo bom". Isso seria o mesmo erro de sempre: escolher depois de ver o resultado (viés de retrospectiva) não muda a probabilidade da próxima vez — o exemplo 4 tem exatamente a mesma esperança teórica de 9,0 para o concurso 3727 que qualquer um dos outros quatro.
+
+**5. Conclusão educativa**
+As novas funções (`desdobramento_total`, `aplicar_filtros_combinatorios`, `gerar_exemplos_filtrados`, `backtest_combinacoes_fixas`) ficam disponíveis para gerar mais exemplos ilustrativos no futuro, sempre acompanhados do backtest completo contra o histórico real. Dados salvos em `dados/exemplos_filtrados_backtest.csv`. O padrão se mantém: qualquer forma de escolher 15 dezenas, filtrada ou não, tem a mesma esperança matemática — o valor do estudo está em demonstrar isso repetidamente com métodos diferentes, não em encontrar uma exceção.
+
+| Exemplo | Dezenas | Média | Dif. vs. esperança | Máx. observado | 11+ | 13+ |
+|---|---|---|---|---|---|---|
+| 1 | 01-02-03-04-06-07-08-14-16-18-19-20-21-23-25 | 8,9656 | -0,0344 | 13 | 9,47% | 0,08% |
+| 2 | 01-02-05-07-08-09-10-11-16-18-19-20-22-23-24 | 8,9909 | -0,0091 | 13 | 10,52% | 0,11% |
+| 3 | 01-02-04-06-08-09-11-13-14-15-17-18-21-22-24 | 8,9828 | -0,0172 | 13 | 10,39% | 0,21% |
+| 4 | 02-03-04-06-08-11-13-14-15-17-19-20-22-24-25 | 9,0330 | +0,0330 | 13 | 11,65% | 0,19% |
+| 5 | 03-04-05-06-08-09-12-14-15-16-17-21-22-24-25 | 8,9538 | -0,0462 | 14 | 10,23% | 0,13% |

@@ -3,79 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laboratório Estatístico Lotofácil — Painel</title>
+<title>Painel Clássico — Laboratório Lotofácil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0f1420; --card: #171e2e; --card2: #1e2740; --text: #e7ebf3; --muted: #9aa6bd;
-    --accent: #5b8def; --good: #3fbf7f; --warn: #e0a838; --line: #2a3350;
-  }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-         background: var(--bg); color: var(--text); }
-  header { padding: 24px 32px 8px; }
-  h1 { margin: 0 0 4px; font-size: 22px; }
-  .sub { color: var(--muted); font-size: 13px; }
-  .disclaimer { margin: 16px 32px; padding: 14px 18px; border-radius: 10px;
-                background: linear-gradient(90deg, rgba(224,168,56,.15), rgba(224,168,56,.05));
-                border: 1px solid rgba(224,168,56,.35); font-size: 13.5px; line-height: 1.5; }
-  .disclaimer b { color: var(--warn); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 14px; margin: 8px 32px 0; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .stat .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-  .stat .value { font-size: 26px; font-weight: 700; margin-top: 6px; }
-  .stat .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  section { margin: 26px 32px; }
-  section h2 { font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
-               margin: 0 0 12px; font-weight: 600; }
-  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; }
-  tr:last-child td { border-bottom: none; }
-  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight:600; }
-  .pill.ok { background: rgba(63,191,127,.15); color: var(--good); }
-  .pill.mid { background: rgba(91,141,239,.15); color: var(--accent); }
-  footer { padding: 24px 32px 40px; color: var(--muted); font-size: 12px; }
-  canvas { max-height: 320px; }
+  body { margin:0; font-family:'Inter',sans-serif; background:#FAF7FF; color:#1F1235; min-height:100vh; }
+  table { width:100%; border-collapse:collapse; }
+  .card { background:#fff; border:1px solid #E9DFFB; border-radius:16px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); }
+  .muted { color:#8B76B0; }
+  .kicker { font-size:14px; color:#8B76B0; text-transform:uppercase; letter-spacing:.05em; font-weight:700; margin:0 0 12px; }
+  th { color:#8B76B0; font-size:11.5px; text-transform:uppercase; text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB; }
+  td { padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:13px; }
+  tr:last-child td { border-bottom:none; }
+  .pill { display:inline-block; border-radius:999px; padding:3px 10px; font-weight:700; font-size:12.5px; }
+  .pill.ok { background:#DCFCE7; color:#16A34A; }
+  .pill.mid { background:#EDE4FF; color:#7C3AED; }
+  canvas { max-height:300px; }
 </style>
 </head>
 <body>
-<header>
-  <h1>Laboratório Estatístico Lotofácil</h1>
-  <div class="sub">Painel gerado em 04/07/2026 11:06 (horário de Brasília) &middot; concurso mais recente: 3726</div>
-</header>
 
-<div class="disclaimer">
-  <b>Isto é um estudo de matemática e estatística.</b> Nenhum jogo aqui é recomendação de aposta.
-  A Lotofácil é um sorteio aleatório — nada neste painel indica que um método está "mais perto" de
-  acertar 14 ou 15 dezenas. Todos os métodos são comparados contra o valor teórico esperado
-  (9.0 acertos por jogo de 15 dezenas).
+<div style="background:linear-gradient(135deg,#5B21B6,#7C3AED 55%,#C026D3); padding:26px 32px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; box-shadow:0 6px 22px rgba(43,10,77,.25);">
+  <div>
+    <a href="index.html" style="font-size:11.5px; color:rgba(255,255,255,.65); text-decoration:none;">← Lotofácil Lab</a>
+    <h1 style="font-family:'Sora',sans-serif; font-size:22px; font-weight:800; color:#fff; margin:4px 0 2px;">Painel Clássico</h1>
+    <div style="font-size:12.5px; color:rgba(255,255,255,.75);">Painel gerado em 04/07/2026 15:01 (Brasília) · concurso mais recente: 3726</div>
+  </div>
+  <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:6px 14px; font-size:12px; color:#fff; font-weight:600;">⚠ Estudo estatístico — não é recomendação de aposta</div>
 </div>
 
-<div class="grid">
-  <div class="stat"><div class="label">Concursos no histórico</div><div class="value">3726</div></div>
-  <div class="stat"><div class="label">Próximo concurso (jogos de estudo)</div><div class="value">3727</div></div>
-  <div class="stat"><div class="label">Esperança teórica de acertos</div><div class="value">9.0</div><div class="hint">distribuição hipergeométrica</div></div>
-  <div class="stat"><div class="label">Jogos de estudo conferidos</div><div class="value">5</div></div>
+<div style="margin:22px 32px; padding:14px 18px; border-radius:12px; background:linear-gradient(90deg, rgba(245,158,11,.14), rgba(245,158,11,.05)); border:1px solid rgba(245,158,11,.35); font-size:13.5px; line-height:1.55;">
+  <b style="color:#B45309;">Isto é um estudo de matemática e estatística.</b> Nenhum jogo aqui é recomendação de aposta. Todos os métodos são comparados contra o valor teórico esperado (9.0 acertos por jogo de 15 dezenas).
 </div>
 
-<section>
-  <h2>Frequência e atraso das dezenas</h2>
-  <div class="panels">
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin:0 32px 8px;">
+  <div class="card">
+    <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;">Concursos no histórico</div>
+    <div style="font-size:27px; font-weight:800; margin-top:6px; font-family:'Sora',sans-serif;">3726</div>
+  </div>
+  <div class="card">
+    <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;">Próximo concurso</div>
+    <div style="font-size:27px; font-weight:800; margin-top:6px; font-family:'Sora',sans-serif;">3727</div>
+  </div>
+  <div class="card">
+    <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;">Esperança teórica</div>
+    <div style="font-size:27px; font-weight:800; margin-top:6px; font-family:'Sora',sans-serif; color:#7C3AED;">9.0</div>
+    <div class="muted" style="font-size:11.5px; margin-top:2px;">distribuição hipergeométrica</div>
+  </div>
+  <div class="card">
+    <div class="muted" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:600;">Jogos de estudo conferidos</div>
+    <div style="font-size:27px; font-weight:800; margin-top:6px; font-family:'Sora',sans-serif;">5</div>
+  </div>
+</div>
+
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Frequência e atraso das dezenas</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
     <div class="card"><canvas id="freqChart"></canvas></div>
     <div class="card"><canvas id="atrasoChart"></canvas></div>
   </div>
 </section>
 
-<section>
-  <h2>Desempenho comparado dos métodos</h2>
-  <div class="panels">
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Desempenho comparado dos métodos</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
     <div class="card"><canvas id="metodosChart"></canvas></div>
-    <div class="card">
+    <div class="card" style="overflow:auto;">
       <table>
         <thead><tr><th>Método</th><th>Jogos</th><th>Média</th><th>Desvio</th><th>11+</th><th>13+</th></tr></thead>
         <tbody><tr><td>M1_aleatorio_puro</td><td>1</td><td>7</td><td>0.0</td><td>0.0%</td><td>0.0%</td></tr><tr><td>M2_mais_frequentes</td><td>1</td><td>9</td><td>0.0</td><td>0.0%</td><td>0.0%</td></tr><tr><td>M3_mais_atrasadas</td><td>1</td><td>8</td><td>0.0</td><td>0.0%</td><td>0.0%</td></tr><tr><td>M4_par_impar_balanceado</td><td>1</td><td>8</td><td>0.0</td><td>0.0%</td><td>0.0%</td></tr><tr><td>M5_soma_faixa_comum</td><td>1</td><td>10</td><td>0.0</td><td>0.0%</td><td>0.0%</td></tr></tbody>
@@ -84,32 +79,24 @@
   </div>
 </section>
 
-<section>
-  <h2>Simulação retroativa (backtest em todo o histórico real)</h2>
-  <div class="panels">
-    <div class="card"><canvas id="backtestChart"></canvas></div>
-    <div class="card">
-      <table>
-        <thead><tr><th>Método</th><th>Concursos</th><th>Média</th><th>Dif. vs. esperança</th><th>13+</th></tr></thead>
-        <tbody><tr><td>M1_aleatorio_puro</td><td>3724</td><td>9.0003</td><td>+0.0003</td><td>0.188%</td></tr><tr><td>M2_mais_frequentes</td><td>3724</td><td>9.0336</td><td>+0.0336</td><td>0.107%</td></tr><tr><td>M3_mais_atrasadas</td><td>3724</td><td>9.0263</td><td>+0.0263</td><td>0.107%</td></tr><tr><td>M4_par_impar_balanceado</td><td>3724</td><td>8.9817</td><td>-0.0183</td><td>0.295%</td></tr><tr><td>M5_soma_faixa_comum</td><td>3724</td><td>8.9936</td><td>-0.0064</td><td>0.081%</td></tr></tbody>
-      </table>
-    </div>
-  </div>
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Simulação retroativa (backtest em todo o histórico real)</h2>
+  <div class="card"><canvas id="backtestChart"></canvas></div>
 </section>
 
-<section>
-  <h2>Jogos de estudo do próximo concurso</h2>
-  <div class="card">
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Jogos de estudo do próximo concurso</h2>
+  <div class="card" style="overflow:auto;">
     <table>
       <thead><tr><th>Método</th><th>Dezenas</th><th>Soma</th><th>Pares/Ímpares</th></tr></thead>
-      <tbody><tr><td>M1_aleatorio_puro</td><td>02-03-08-10-11-13-15-16-17-18-20-22-23-24-25</td><td>227</td><td>8p / 7i</td></tr><tr><td>M2_mais_frequentes</td><td>01-02-03-04-05-10-11-12-13-14-15-20-22-24-25</td><td>181</td><td>8p / 7i</td></tr><tr><td>M3_mais_atrasadas</td><td>01-03-04-05-08-09-11-12-13-15-16-18-22-23-24</td><td>184</td><td>7p / 8i</td></tr><tr><td>M4_par_impar_balanceado</td><td>01-02-03-06-08-09-16-17-18-19-20-21-22-24-25</td><td>211</td><td>8p / 7i</td></tr><tr><td>M5_soma_faixa_comum</td><td>04-05-06-08-09-10-11-12-14-16-17-18-21-23-24</td><td>198</td><td>9p / 6i</td></tr></tbody>
+      <tbody><tr><td>M1_aleatorio_puro</td><td style='font-family:monospace;'>02-03-08-10-11-13-15-16-17-18-20-22-23-24-25</td><td>227</td><td>8p / 7i</td></tr><tr><td>M2_mais_frequentes</td><td style='font-family:monospace;'>01-02-03-04-05-10-11-12-13-14-15-20-22-24-25</td><td>181</td><td>8p / 7i</td></tr><tr><td>M3_mais_atrasadas</td><td style='font-family:monospace;'>01-03-04-05-08-09-11-12-13-15-16-18-22-23-24</td><td>184</td><td>7p / 8i</td></tr><tr><td>M4_par_impar_balanceado</td><td style='font-family:monospace;'>01-02-03-06-08-09-16-17-18-19-20-21-22-24-25</td><td>211</td><td>8p / 7i</td></tr><tr><td>M5_soma_faixa_comum</td><td style='font-family:monospace;'>04-05-06-08-09-10-11-12-14-16-17-18-21-23-24</td><td>198</td><td>9p / 6i</td></tr></tbody>
     </table>
   </div>
 </section>
 
-<section>
-  <h2>Últimas conferências</h2>
-  <div class="card">
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Últimas conferências</h2>
+  <div class="card" style="overflow:auto;">
     <table>
       <thead><tr><th>Concurso</th><th>Método</th><th>Acertos</th></tr></thead>
       <tbody><tr><td>3726</td><td>M5_soma_faixa_comum</td><td><span class='pill ok'>10</span></td></tr><tr><td>3726</td><td>M4_par_impar_balanceado</td><td><span class='pill mid'>8</span></td></tr><tr><td>3726</td><td>M3_mais_atrasadas</td><td><span class='pill mid'>8</span></td></tr><tr><td>3726</td><td>M2_mais_frequentes</td><td><span class='pill ok'>9</span></td></tr><tr><td>3726</td><td>M1_aleatorio_puro</td><td><span class='pill mid'>7</span></td></tr></tbody>
@@ -117,104 +104,90 @@
   </div>
 </section>
 
-<section>
-  <h2>Apostas estendidas (16 a 20 dezenas): custo x cobertura</h2>
-  <div class="disclaimer" style="margin:0 0 14px;">
-    Isto é combinatória pura, não depende de nenhum sorteio real e <b>não é recomendação de aposta</b>.
-    Mostra que apostar com mais dezenas aumenta a média esperada de acertos, mas o custo sobe pela
-    mesma matemática — não existe vantagem de retorno por real investido.
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Apostas estendidas (16 a 20 dezenas): custo × cobertura</h2>
+  <div style="padding:14px 18px; border-radius:12px; background:linear-gradient(90deg, rgba(245,158,11,.14), rgba(245,158,11,.05)); border:1px solid rgba(245,158,11,.35); font-size:13px; line-height:1.55; margin-bottom:14px;">
+    Isto é combinatória pura, não depende de nenhum sorteio real e <b style="color:#B45309;">não é recomendação de aposta</b>. Apostar com mais dezenas aumenta a média esperada de acertos, mas o custo sobe pela mesma matemática.
   </div>
-  <div class="panels">
-    <div class="card"><canvas id="estendidasChart"></canvas></div>
-    <div class="card">
-      <table>
-        <thead><tr><th>Dezenas</th><th>Combinações</th><th>Custo</th><th>Média esp.</th><th>11+</th><th>R$ por ponto % de 11+</th></tr></thead>
-        <tbody><tr><td>15</td><td>1</td><td>R$ 3.50</td><td>9.0</td><td>10.5889%</td><td>R$ 0.33</td></tr><tr><td>16</td><td>16</td><td>R$ 56.00</td><td>9.6</td><td>22.1645%</td><td>R$ 2.53</td></tr><tr><td>17</td><td>136</td><td>R$ 476.00</td><td>10.2</td><td>39.3135%</td><td>R$ 12.11</td></tr><tr><td>18</td><td>816</td><td>R$ 2,856.00</td><td>10.8</td><td>60.1373%</td><td>R$ 47.49</td></tr><tr><td>19</td><td>3,876</td><td>R$ 13,566.00</td><td>11.4</td><td>80.2174%</td><td>R$ 169.12</td></tr><tr><td>20</td><td>15,504</td><td>R$ 54,264.00</td><td>12.0</td><td>94.3478%</td><td>R$ 575.15</td></tr></tbody>
-      </table>
-    </div>
+  <div class="card"><canvas id="estendidasChart" style="max-height:320px;"></canvas></div>
+</section>
+
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Sequência e salto das trincas de dezenas consecutivas</h2>
+  <div style="padding:14px 18px; border-radius:12px; background:linear-gradient(90deg, rgba(124,58,237,.10), rgba(124,58,237,.03)); border:1px solid rgba(124,58,237,.25); font-size:13px; line-height:1.55; margin-bottom:14px;">
+    Toda trinca de 3 dezenas consecutivas tem a mesma probabilidade teórica de sair junta (19.7826%) ou de nenhuma sair (5.2174%). A variação entre trincas abaixo é ruído amostral — nenhuma está "mais perto" ou "mais atrasada".
+  </div>
+  <div class="card" style="overflow:auto;">
+    <table>
+      <thead><tr><th>Trinca</th><th>Sequência</th><th>%</th><th>Teórico</th><th>Salto</th><th>%</th><th>Teórico</th></tr></thead>
+      <tbody><tr><td>01,02,03</td><td>741</td><td>19.89%</td><td>19.7826%</td><td>185</td><td>4.97%</td><td>5.2174%</td></tr><tr><td>02,03,04</td><td>751</td><td>20.16%</td><td>19.7826%</td><td>201</td><td>5.39%</td><td>5.2174%</td></tr><tr><td>03,04,05</td><td>743</td><td>19.94%</td><td>19.7826%</td><td>193</td><td>5.18%</td><td>5.2174%</td></tr><tr><td>04,05,06</td><td>727</td><td>19.51%</td><td>19.7826%</td><td>198</td><td>5.31%</td><td>5.2174%</td></tr><tr><td>05,06,07</td><td>688</td><td>18.46%</td><td>19.7826%</td><td>211</td><td>5.66%</td><td>5.2174%</td></tr><tr><td>06,07,08</td><td>672</td><td>18.04%</td><td>19.7826%</td><td>202</td><td>5.42%</td><td>5.2174%</td></tr><tr><td>07,08,09</td><td>688</td><td>18.46%</td><td>19.7826%</td><td>211</td><td>5.66%</td><td>5.2174%</td></tr><tr><td>08,09,10</td><td>752</td><td>20.18%</td><td>19.7826%</td><td>210</td><td>5.64%</td><td>5.2174%</td></tr><tr><td>09,10,11</td><td>790</td><td>21.2%</td><td>19.7826%</td><td>177</td><td>4.75%</td><td>5.2174%</td></tr><tr><td>10,11,12</td><td>793</td><td>21.28%</td><td>19.7826%</td><td>176</td><td>4.72%</td><td>5.2174%</td></tr><tr><td>11,12,13</td><td>746</td><td>20.02%</td><td>19.7826%</td><td>174</td><td>4.67%</td><td>5.2174%</td></tr><tr><td>12,13,14</td><td>729</td><td>19.57%</td><td>19.7826%</td><td>158</td><td>4.24%</td><td>5.2174%</td></tr><tr><td>13,14,15</td><td>737</td><td>19.78%</td><td>19.7826%</td><td>207</td><td>5.56%</td><td>5.2174%</td></tr><tr><td>14,15,16</td><td>713</td><td>19.14%</td><td>19.7826%</td><td>217</td><td>5.82%</td><td>5.2174%</td></tr><tr><td>15,16,17</td><td>653</td><td>17.53%</td><td>19.7826%</td><td>200</td><td>5.37%</td><td>5.2174%</td></tr><tr><td>16,17,18</td><td>655</td><td>17.58%</td><td>19.7826%</td><td>217</td><td>5.82%</td><td>5.2174%</td></tr><tr><td>17,18,19</td><td>723</td><td>19.4%</td><td>19.7826%</td><td>192</td><td>5.15%</td><td>5.2174%</td></tr><tr><td>18,19,20</td><td>767</td><td>20.59%</td><td>19.7826%</td><td>203</td><td>5.45%</td><td>5.2174%</td></tr><tr><td>19,20,21</td><td>770</td><td>20.67%</td><td>19.7826%</td><td>196</td><td>5.26%</td><td>5.2174%</td></tr><tr><td>20,21,22</td><td>734</td><td>19.7%</td><td>19.7826%</td><td>194</td><td>5.21%</td><td>5.2174%</td></tr><tr><td>21,22,23</td><td>694</td><td>18.63%</td><td>19.7826%</td><td>184</td><td>4.94%</td><td>5.2174%</td></tr><tr><td>22,23,24</td><td>716</td><td>19.22%</td><td>19.7826%</td><td>212</td><td>5.69%</td><td>5.2174%</td></tr><tr><td>23,24,25</td><td>778</td><td>20.88%</td><td>19.7826%</td><td>184</td><td>4.94%</td><td>5.2174%</td></tr></tbody>
+    </table>
   </div>
 </section>
 
-<footer>
-  Gerado automaticamente por scripts/gerar_painel.py &middot; ver README.md e diario_estatistico.md para o
-  raciocínio completo por trás de cada atualização.
-</footer>
+<section style="margin:26px 32px;">
+  <h2 class="kicker">Exemplos filtrados: combinações fixas testadas contra todo o histórico</h2>
+  <div style="padding:14px 18px; border-radius:12px; background:linear-gradient(90deg, rgba(124,58,237,.10), rgba(124,58,237,.03)); border:1px solid rgba(124,58,237,.25); font-size:13px; line-height:1.55; margin-bottom:14px;">
+    Cada linha é uma combinação fixa de 15 dezenas (exemplo do espaço filtrado: par/ímpar 8/7, soma 180-210, sem sequência de 6+, no máximo 1 linha vazia), conferida contra <b>todos</b> os concursos reais. Não é jogo para apostar — mostra que combinações "bem-comportadas" também convergem para a esperança teórica.
+  </div>
+  <div class="card" style="overflow:auto;">
+    <table>
+      <thead><tr><th>Exemplo</th><th>Dezenas</th><th>Concursos testados</th><th>Média</th><th>Dif. vs. esperança</th><th>Máx.</th><th>11+</th><th>13+</th></tr></thead>
+      <tbody><tr><td>1</td><td style='font-family:monospace;'>01-02-03-04-06-07-08-14-16-18-19-20-21-23-25</td><td>3726</td><td>8.9656</td><td>-0.0344</td><td>13</td><td>9.474%</td><td>0.0805%</td></tr><tr><td>2</td><td style='font-family:monospace;'>01-02-05-07-08-09-10-11-16-18-19-20-22-23-24</td><td>3726</td><td>8.9909</td><td>-0.0091</td><td>13</td><td>10.5207%</td><td>0.1074%</td></tr><tr><td>3</td><td style='font-family:monospace;'>01-02-04-06-08-09-11-13-14-15-17-18-21-22-24</td><td>3726</td><td>8.9828</td><td>-0.0172</td><td>13</td><td>10.3865%</td><td>0.2147%</td></tr><tr><td>4</td><td style='font-family:monospace;'>02-03-04-06-08-11-13-14-15-17-19-20-22-24-25</td><td>3726</td><td>9.033</td><td>+0.0330</td><td>13</td><td>11.6479%</td><td>0.1879%</td></tr><tr><td>5</td><td style='font-family:monospace;'>03-04-05-06-08-09-12-14-15-16-17-21-22-24-25</td><td>3726</td><td>8.9538</td><td>-0.0462</td><td>14</td><td>10.2254%</td><td>0.1342%</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<footer style="padding:24px 32px 44px; color:#8B76B0; font-size:12px;">Gerado automaticamente por scripts/gerar_painel.py · ver README.md e diario_estatistico.md para o raciocínio completo por trás de cada atualização.</footer>
 
 <script>
 const dados = {"dezenas": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "freq_pct": [60.65, 59.93, 60.14, 60.47, 60.09, 58.83, 59.1, 57.89, 59.72, 62.32, 61.41, 60.06, 60.84, 60.49, 59.77, 57.09, 58.7, 59.61, 59.58, 62.56, 59.45, 59.77, 58.62, 60.76, 62.16], "atraso": [1, 0, 2, 1, 0, 0, 0, 1, 4, 0, 1, 2, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0], "metodos": [{"metodo": "M1_aleatorio_puro", "media_acertos": 7}, {"metodo": "M2_mais_frequentes", "media_acertos": 9}, {"metodo": "M3_mais_atrasadas", "media_acertos": 8}, {"metodo": "M4_par_impar_balanceado", "media_acertos": 8}, {"metodo": "M5_soma_faixa_comum", "media_acertos": 10}], "esperanca": 9.0, "backtest_metodos": [{"metodo": "M1_aleatorio_puro", "media_acertos": 9.0003}, {"metodo": "M2_mais_frequentes", "media_acertos": 9.0336}, {"metodo": "M3_mais_atrasadas", "media_acertos": 9.0263}, {"metodo": "M4_par_impar_balanceado", "media_acertos": 8.9817}, {"metodo": "M5_soma_faixa_comum", "media_acertos": 8.9936}], "estendidas": [{"dezenas_na_aposta": 15, "custo_reais": 3.5, "media_acertos_esperada": 9.0}, {"dezenas_na_aposta": 16, "custo_reais": 56.0, "media_acertos_esperada": 9.6}, {"dezenas_na_aposta": 17, "custo_reais": 476.0, "media_acertos_esperada": 10.2}, {"dezenas_na_aposta": 18, "custo_reais": 2856.0, "media_acertos_esperada": 10.8}, {"dezenas_na_aposta": 19, "custo_reais": 13566.0, "media_acertos_esperada": 11.4}, {"dezenas_na_aposta": 20, "custo_reais": 54264.0, "media_acertos_esperada": 12.0}]};
+const muted = '#8B76B0';
 
 new Chart(document.getElementById('freqChart'), {
-  type: 'bar',
-  data: {
-    labels: dados.dezenas.map(d => d.toString().padStart(2,'0')),
-    datasets: [{ label: 'Frequência (%)', data: dados.freq_pct, backgroundColor: '#5b8def' }]
-  },
-  options: { plugins: { legend: { display:false }, title: { display:true, text:'Frequência relativa de cada dezena (%)', color:'#e7ebf3' } },
-    scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' } } } }
+  type:'bar',
+  data:{ labels:dados.dezenas.map(d=>d.toString().padStart(2,'0')), datasets:[{ label:'Frequência (%)', data:dados.freq_pct, backgroundColor:'#7C3AED', borderRadius:4 }] },
+  options:{ plugins:{ legend:{display:false}, title:{display:true, text:'Frequência relativa de cada dezena (%)', color:'#1F1235'} },
+    scales:{ x:{ ticks:{color:muted} }, y:{ ticks:{color:muted} } } }
 });
 
 new Chart(document.getElementById('atrasoChart'), {
-  type: 'bar',
-  data: {
-    labels: dados.dezenas.map(d => d.toString().padStart(2,'0')),
-    datasets: [{ label: 'Atraso (concursos)', data: dados.atraso, backgroundColor: '#e0a838' }]
-  },
-  options: { plugins: { legend: { display:false }, title: { display:true, text:'Concursos sem sair (atraso atual)', color:'#e7ebf3' } },
-    scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' } } } }
+  type:'bar',
+  data:{ labels:dados.dezenas.map(d=>d.toString().padStart(2,'0')), datasets:[{ label:'Atraso (concursos)', data:dados.atraso, backgroundColor:'#F59E0B', borderRadius:4 }] },
+  options:{ plugins:{ legend:{display:false}, title:{display:true, text:'Concursos sem sair (atraso atual)', color:'#1F1235'} },
+    scales:{ x:{ ticks:{color:muted} }, y:{ ticks:{color:muted} } } }
 });
 
 new Chart(document.getElementById('metodosChart'), {
-  type: 'bar',
-  data: {
-    labels: dados.metodos.map(m => m.metodo.replace(/^M[0-9]_/,'')),
-    datasets: [
-      { label: 'Média de acertos', data: dados.metodos.map(m => m.media_acertos), backgroundColor: '#5b8def' },
-      { label: 'Esperança teórica', data: dados.metodos.map(() => dados.esperanca), type: 'line',
-        borderColor: '#3fbf7f', borderDash: [6,4], pointRadius: 0 }
-    ]
-  },
-  options: { plugins: { legend: { labels: { color:'#e7ebf3' } }, title: { display:true, text:'Média de acertos por método vs. valor esperado', color:'#e7ebf3' } },
-    scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' }, suggestedMax: 15 } } }
+  data:{ labels:dados.metodos.map(m=>m.metodo.replace(/^M[0-9]_/,'')), datasets:[
+    { type:'bar', label:'Média de acertos', data:dados.metodos.map(m=>m.media_acertos), backgroundColor:'#EC4899', borderRadius:4 },
+    { type:'line', label:'Esperança teórica', data:dados.metodos.map(()=>dados.esperanca), borderColor:'#16A34A', borderDash:[6,4], pointRadius:0 }
+  ]},
+  options:{ plugins:{ legend:{labels:{color:'#1F1235'}}, title:{display:true, text:'Média de acertos por método vs. valor esperado', color:'#1F1235'} },
+    scales:{ x:{ ticks:{color:muted} }, y:{ ticks:{color:muted}, suggestedMax:15 } } }
 });
 
 if (dados.backtest_metodos && dados.backtest_metodos.length) {
   new Chart(document.getElementById('backtestChart'), {
-    type: 'bar',
-    data: {
-      labels: dados.backtest_metodos.map(m => m.metodo.replace(/^M[0-9]_/,'')),
-      datasets: [
-        { label: 'Média de acertos (backtest)', data: dados.backtest_metodos.map(m => m.media_acertos), backgroundColor: '#a78bfa' },
-        { label: 'Esperança teórica', data: dados.backtest_metodos.map(() => dados.esperanca), type: 'line',
-          borderColor: '#3fbf7f', borderDash: [6,4], pointRadius: 0 }
-      ]
-    },
-    options: { plugins: { legend: { labels: { color:'#e7ebf3' } },
-      title: { display:true, text:'Backtest em milhares de concursos reais (eixo ampliado p/ mostrar a diferença)', color:'#e7ebf3' } },
-      scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' }, min: 8.5, max: 9.5 } } }
+    data:{ labels:dados.backtest_metodos.map(m=>m.metodo.replace(/^M[0-9]_/,'')), datasets:[
+      { type:'bar', label:'Média de acertos (backtest)', data:dados.backtest_metodos.map(m=>m.media_acertos), backgroundColor:'#A855F7', borderRadius:4 },
+      { type:'line', label:'Esperança teórica', data:dados.backtest_metodos.map(()=>dados.esperanca), borderColor:'#16A34A', borderDash:[6,4], pointRadius:0 }
+    ]},
+    options:{ plugins:{ legend:{labels:{color:'#1F1235'}}, title:{display:true, text:'Backtest em milhares de concursos reais (eixo ampliado)', color:'#1F1235'} },
+      scales:{ x:{ ticks:{color:muted} }, y:{ ticks:{color:muted}, min:8.5, max:9.5 } } }
   });
 }
 
 if (dados.estendidas && dados.estendidas.length) {
   new Chart(document.getElementById('estendidasChart'), {
-    data: {
-      labels: dados.estendidas.map(e => e.dezenas_na_aposta + ' dezenas'),
-      datasets: [
-        { type: 'bar', label: 'Custo (R$, escala log)', data: dados.estendidas.map(e => e.custo_reais),
-          backgroundColor: '#e0a838', yAxisID: 'yCusto' },
-        { type: 'line', label: 'Média de acertos esperada', data: dados.estendidas.map(e => e.media_acertos_esperada),
-          borderColor: '#3fbf7f', backgroundColor: '#3fbf7f', yAxisID: 'yMedia', tension: .3 }
-      ]
-    },
-    options: {
-      plugins: { legend: { labels: { color:'#e7ebf3' } },
-        title: { display:true, text:'Custo (R$) vs. média esperada de acertos, por tamanho da aposta', color:'#e7ebf3' } },
-      scales: {
-        x: { ticks: { color:'#9aa6bd' } },
-        yCusto: { type:'logarithmic', position:'left', ticks: { color:'#9aa6bd' }, title: { display:true, text:'Custo (R$)', color:'#9aa6bd' } },
-        yMedia: { position:'right', min:8, max:13, ticks: { color:'#9aa6bd' }, grid: { drawOnChartArea:false },
-          title: { display:true, text:'Média esperada', color:'#9aa6bd' } }
-      }
-    }
+    data:{ labels:dados.estendidas.map(e=>e.dezenas_na_aposta+' dezenas'), datasets:[
+      { type:'bar', label:'Custo (R$, escala log)', data:dados.estendidas.map(e=>e.custo_reais), backgroundColor:'#F59E0B', yAxisID:'yCusto' },
+      { type:'line', label:'Média de acertos esperada', data:dados.estendidas.map(e=>e.media_acertos_esperada), borderColor:'#16A34A', backgroundColor:'#16A34A', yAxisID:'yMedia', tension:.3 }
+    ]},
+    options:{ plugins:{ legend:{labels:{color:'#1F1235'}}, title:{display:true, text:'Custo (R$) vs. média esperada de acertos, por tamanho da aposta', color:'#1F1235'} },
+      scales:{ x:{ ticks:{color:muted} },
+        yCusto:{ type:'logarithmic', position:'left', ticks:{color:muted}, title:{display:true,text:'Custo (R$)',color:muted} },
+        yMedia:{ position:'right', min:8, max:13, ticks:{color:muted}, grid:{drawOnChartArea:false}, title:{display:true,text:'Média esperada',color:muted} } } }
   });
 }
 </script>

@@ -1,4 +1,18 @@
-<!DOCTYPE html>
+"""
+Gera index.html: pagina inicial (hub) do site, com o novo design
+(gradiente roxo/rosa, cards brancos) baseado no mockup do manus.ai,
+mas com o numero de concursos real, nao fixo.
+
+Uso:
+    python3 gerar_index.py
+"""
+import os
+
+import lotofacil_lib as lib
+
+INDEX_PATH = os.path.join(lib.BASE_DIR, "index.html")
+
+TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -26,7 +40,7 @@
     Laboratório estatístico educativo da Lotofácil
   </h1>
   <p style="font-size:16px; color:rgba(255,255,255,.82); text-align:center; max-width:560px; line-height:1.6; margin:0 0 40px;">
-    Análise de 3.726 concursos reais — frequência, atraso, backtest e 5 métodos comparados sempre contra a esperança matemática.
+    Análise de __TOTAL_CONCURSOS__ concursos reais — frequência, atraso, backtest e 5 métodos comparados sempre contra a esperança matemática.
   </p>
 
   <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:20px; width:100%; max-width:920px;">
@@ -70,16 +84,21 @@
 
   <div style="margin-top:24px; font-size:11.5px; color:rgba(255,255,255,.55);">Atualizado automaticamente após cada sorteio · github.com/donyMomesso/lotofacil</div>
 
-  <a class="card" href="painel-exportacao.html">
-    <div class="card-icon">📋</div>
-    <div class="card-title">Exportador de Matrizes</div>
-    <div class="card-desc">
-      Cole o bloco gerado pelo script Python e copie o texto já formatado
-      para a extensão de preenchimento automático.
-    </div>
-  </a>
-
 </div>
 
 </body>
 </html>
+"""
+
+
+def main():
+    resultados = lib.carregar_resultados()
+    total = len(resultados)
+    html = TEMPLATE.replace("__TOTAL_CONCURSOS__", f"{total:,}".replace(",", "."))
+    with open(INDEX_PATH, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"index.html gerado em: {INDEX_PATH}")
+
+
+if __name__ == "__main__":
+    main()
