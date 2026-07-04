@@ -10,7 +10,7 @@ Ciclo diário completo do laboratório — pensado para rodar sozinho
   5. Atualiza frequência/atraso e desempenho por método.
   6. Gera o relatório (reports/relatorio_estatistico.md).
   7. Gera o banco JSON do projeto (dados/banco_projeto.json).
-  8. Gera o painel visual (painel.html + painel_jogos.html + painel_mobile.html).
+  8. Gera os painéis visuais e aplica correção mobile.
   9. Anexa um bloco educativo em diario_estatistico.md.
 
 Uso:
@@ -24,6 +24,7 @@ import gerar_banco_projeto
 import gerar_painel
 import gerar_painel_jogos
 import gerar_painel_mobile
+import otimizar_painel_jogos_mobile
 import conferir_meus_jogos
 from diario import montar_bloco_diario, anexar_diario
 from buscar_resultado import buscar_concurso
@@ -79,6 +80,7 @@ def main():
     gerar_banco_projeto.main()
     gerar_painel.main()
     gerar_painel_jogos.main()
+    otimizar_painel_jogos_mobile.main()
     gerar_painel_mobile.main()
 
     total_concursos = len(lib.carregar_resultados())
