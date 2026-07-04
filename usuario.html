@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lotofacil Lab - Meus Jogos</title>
+<style>
+  :root {
+    --bg:#f8f5ff; --text:#211538; --muted:#7b6a96; --line:#e4d9f4;
+    --primary:#6d28d9; --primary2:#4c1d95; --ok:#15803d; --danger:#b91c1c;
+    --card:#fff;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:18px 16px; background:linear-gradient(135deg,var(--primary),var(--primary2)); color:#fff; }
+  header a { color:rgba(255,255,255,.75); text-decoration:none; font-size:12px; }
+  h1 { margin:6px 0 0; font-size:22px; }
+  main { max-width:760px; margin:0 auto; padding:16px; }
+  section { margin:0 0 18px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; box-shadow:0 2px 10px rgba(76,29,149,.07); }
+  .row { display:grid; grid-template-columns:1fr; gap:10px; }
+  label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 5px; }
+  input, textarea, select { width:100%; border:1px solid var(--line); border-radius:8px; padding:11px; font:15px Arial, Helvetica, sans-serif; color:var(--text); background:#fff; }
+  textarea { min-height:92px; resize:vertical; font-family:Consolas, "Courier New", monospace; }
+  button { border:0; border-radius:8px; padding:11px 14px; font-weight:700; color:#fff; background:var(--primary); cursor:pointer; }
+  button.secondary { background:#ede9fe; color:#4c1d95; }
+  button.danger { background:#fee2e2; color:#991b1b; }
+  button.ok { background:#dcfce7; color:#166534; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .hidden { display:none !important; }
+  .status { min-height:20px; font-size:13px; color:var(--muted); margin-top:10px; }
+  .status.error { color:var(--danger); }
+  .status.ok { color:var(--ok); }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .user { font-size:13px; color:var(--muted); }
+  .game { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px; }
+  .numbers { font-family:Consolas, "Courier New", monospace; font-weight:800; letter-spacing:.02em; color:#4c1d95; line-height:1.5; }
+  .meta { margin-top:6px; font-size:12px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; background:#f3e8ff; color:#5b21b6; font-size:12px; font-weight:700; }
+  @media (min-width:640px) {
+    .row.two { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html">Voltar ao Lotofacil Lab</a>
+  <h1>Meus Jogos</h1>
+</header>
+
+<main>
+  <section id="authSection" class="panel">
+    <h2>Acesso</h2>
+    <div class="row two">
+      <div>
+        <label for="nome">Nome</label>
+        <input id="nome" autocomplete="name" placeholder="Seu nome">
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email" placeholder="voce@email.com">
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres">
+    </div>
+    <div class="actions">
+      <button id="loginBtn" type="button">Entrar</button>
+      <button id="registerBtn" type="button" class="secondary">Criar Conta</button>
+    </div>
+    <div id="authStatus" class="status"></div>
+  </section>
+
+  <section id="appSection" class="hidden">
+    <div class="topbar">
+      <div class="user" id="userLabel"></div>
+      <button id="logoutBtn" type="button" class="secondary">Sair</button>
+    </div>
+
+    <div class="panel">
+      <h2>Salvar Jogo</h2>
+      <div class="row two">
+        <div>
+          <label for="concurso">Concurso</label>
+          <input id="concurso" inputmode="numeric" placeholder="Ex: 3727">
+        </div>
+        <div>
+          <label for="metodo">Metodo</label>
+          <input id="metodo" placeholder="Ex: Manual, M1, filtro">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label for="dezenas">Dezenas</label>
+        <textarea id="dezenas" placeholder="01-02-03-04-05-06-07-08-09-10-11-12-13-14-15"></textarea>
+      </div>
+      <div style="margin-top:10px">
+        <label for="observacao">Observacao</label>
+        <input id="observacao" placeholder="Opcional">
+      </div>
+      <div class="actions">
+        <button id="saveBtn" type="button">Salvar Jogo</button>
+        <button id="refreshBtn" type="button" class="secondary">Atualizar Lista</button>
+      </div>
+      <div id="appStatus" class="status"></div>
+    </div>
+
+    <h2>Jogos Salvos</h2>
+    <div id="gamesList"></div>
+  </section>
+</main>
+
+<script>
+const TOKEN_KEY = "lotofacil_mobile_token";
+
+const el = {
+  authSection: document.getElementById("authSection"),
+  appSection: document.getElementById("appSection"),
+  authStatus: document.getElementById("authStatus"),
+  appStatus: document.getElementById("appStatus"),
+  userLabel: document.getElementById("userLabel"),
+  nome: document.getElementById("nome"),
+  email: document.getElementById("email"),
+  senha: document.getElementById("senha"),
+  concurso: document.getElementById("concurso"),
+  metodo: document.getElementById("metodo"),
+  dezenas: document.getElementById("dezenas"),
+  observacao: document.getElementById("observacao"),
+  gamesList: document.getElementById("gamesList")
+};
+
+let token = localStorage.getItem(TOKEN_KEY) || "";
+let currentUser = null;
+
+function setStatus(target, message, type) {
+  target.textContent = message || "";
+  target.className = `status ${type || ""}`;
+}
+
+async function api(path, options = {}) {
+  const headers = { "content-type": "application/json", ...(options.headers || {}) };
+
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(path, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.message || "Falha na requisicao.");
+  }
+
+  return data;
+}
+
+function showApp(user) {
+  currentUser = user;
+  el.authSection.classList.add("hidden");
+  el.appSection.classList.remove("hidden");
+  el.userLabel.textContent = `${user.nome} - ${user.email}`;
+  loadGames();
+}
+
+function showAuth() {
+  currentUser = null;
+  token = "";
+  localStorage.removeItem(TOKEN_KEY);
+  el.authSection.classList.remove("hidden");
+  el.appSection.classList.add("hidden");
+}
+
+async function login() {
+  setStatus(el.authStatus, "Entrando...");
+  const data = await api("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: el.email.value, senha: el.senha.value })
+  });
+  token = data.token;
+  localStorage.setItem(TOKEN_KEY, token);
+  setStatus(el.authStatus, "");
+  showApp(data.user);
+}
+
+async function register() {
+  setStatus(el.authStatus, "Criando conta...");
+  const data = await api("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ nome: el.nome.value, email: el.email.value, senha: el.senha.value })
+  });
+  token = data.token;
+  localStorage.setItem(TOKEN_KEY, token);
+  setStatus(el.authStatus, "");
+  showApp(data.user);
+}
+
+function renderGames(jogos) {
+  if (!jogos.length) {
+    el.gamesList.innerHTML = '<div class="panel">Nenhum jogo salvo ainda.</div>';
+    return;
+  }
+
+  el.gamesList.innerHTML = jogos.map((jogo) => `
+    <div class="game">
+      <div class="numbers">${jogo.dezenas_texto}</div>
+      <div class="meta">
+        ${jogo.concurso ? `<span class="badge">Concurso ${jogo.concurso}</span>` : ""}
+        ${jogo.metodo ? `<span class="badge">${jogo.metodo}</span>` : ""}
+        <span class="badge">${jogo.status}</span>
+        <span>${new Date(jogo.criado_em).toLocaleString("pt-BR")}</span>
+      </div>
+      ${jogo.observacao ? `<div class="meta">${jogo.observacao}</div>` : ""}
+      <div class="actions">
+        <button class="ok" type="button" data-status="jogado" data-id="${jogo.id}">Marcar jogado</button>
+        <button class="danger" type="button" data-delete="${jogo.id}">Excluir</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function loadGames() {
+  setStatus(el.appStatus, "Carregando jogos...");
+  const data = await api("/api/jogos");
+  renderGames(data.jogos);
+  setStatus(el.appStatus, "Lista atualizada.", "ok");
+}
+
+async function saveGame() {
+  setStatus(el.appStatus, "Salvando jogo...");
+  await api("/api/jogos", {
+    method: "POST",
+    body: JSON.stringify({
+      concurso: el.concurso.value,
+      metodo: el.metodo.value,
+      dezenas_texto: el.dezenas.value,
+      observacao: el.observacao.value
+    })
+  });
+  el.dezenas.value = "";
+  el.observacao.value = "";
+  setStatus(el.appStatus, "Jogo salvo.", "ok");
+  await loadGames();
+}
+
+async function bootstrap() {
+  if (!token) {
+    showAuth();
+    return;
+  }
+
+  try {
+    const data = await api("/api/me");
+    showApp(data.user);
+  } catch {
+    showAuth();
+  }
+}
+
+document.getElementById("loginBtn").addEventListener("click", () => login().catch((err) => setStatus(el.authStatus, err.message, "error")));
+document.getElementById("registerBtn").addEventListener("click", () => register().catch((err) => setStatus(el.authStatus, err.message, "error")));
+document.getElementById("saveBtn").addEventListener("click", () => saveGame().catch((err) => setStatus(el.appStatus, err.message, "error")));
+document.getElementById("refreshBtn").addEventListener("click", () => loadGames().catch((err) => setStatus(el.appStatus, err.message, "error")));
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  try { await api("/api/auth/logout", { method: "POST" }); } catch {}
+  showAuth();
+});
+el.gamesList.addEventListener("click", async (event) => {
+  const statusId = event.target.dataset.status ? event.target.dataset.id : "";
+  const deleteId = event.target.dataset.delete || "";
+
+  try {
+    if (statusId) {
+      await api(`/api/jogos/${statusId}`, { method: "PATCH", body: JSON.stringify({ status: event.target.dataset.status }) });
+      await loadGames();
+    }
+
+    if (deleteId && confirm("Excluir este jogo?")) {
+      await api(`/api/jogos/${deleteId}`, { method: "DELETE" });
+      await loadGames();
+    }
+  } catch (err) {
+    setStatus(el.appStatus, err.message, "error");
+  }
+});
+
+bootstrap();
+</script>
+</body>
+</html>

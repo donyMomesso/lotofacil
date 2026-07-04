@@ -1,6 +1,8 @@
 .git/
 .github/
 .wrangler/
+chrome-lotofacil-auto/
+migrations/
 **/.*
 scripts/
 reports/
@@ -10,5 +12,6 @@ reports/
 *.md
 *.zip
 * nv.html
+worker.js
 requirements.txt
 wrangler.jsonc

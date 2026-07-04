@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  senha_hash TEXT NOT NULL,
+  criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sessoes (
+  token TEXT PRIMARY KEY,
+  usuario_id INTEGER NOT NULL,
+  criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expira_em TEXT NOT NULL,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS jogos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario_id INTEGER NOT NULL,
+  concurso INTEGER,
+  metodo TEXT,
+  dezenas TEXT NOT NULL,
+  dezenas_texto TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'salvo',
+  observacao TEXT,
+  criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS conferencias (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  jogo_id INTEGER NOT NULL,
+  concurso INTEGER NOT NULL,
+  dezenas_sorteadas TEXT NOT NULL,
+  acertos INTEGER NOT NULL,
+  conferido_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (jogo_id) REFERENCES jogos(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessoes_usuario ON sessoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_jogos_usuario ON jogos(usuario_id, criado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_conferencias_jogo ON conferencias(jogo_id);
