@@ -1,0 +1,13 @@
+.git/
+.github/
+.wrangler/
+**/.*
+scripts/
+reports/
+**/__pycache__/
+*.py
+*.pyc
+*.md
+*.zip
+requirements.txt
+wrangler.jsonc
