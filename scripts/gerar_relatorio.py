@@ -5,6 +5,7 @@ do estado atual do laboratório, a partir de dados reais.
 Uso:
     python3 gerar_relatorio.py
 """
+import csv
 import os
 import statistics
 from datetime import datetime, timezone, timedelta
@@ -107,6 +108,40 @@ def main():
             f"{l['desvio_padrao_acertos']} | {l['pct_11_ou_mais']}% | {l['pct_13_ou_mais']}% |"
         )
 
+    estendidas_path = os.path.join(lib.DADOS_DIR, "apostas_estendidas.csv")
+    if os.path.exists(estendidas_path):
+        with open(estendidas_path, encoding="utf-8") as f:
+            estendidas = list(csv.DictReader(f))
+        linhas_md += [
+            "",
+            "## Apostas estendidas (16 a 20 dezenas): mais cobertura custa mais, na mesma proporção",
+            "",
+            "A Lotofácil permite apostar com mais de 15 dezenas por bilhete (até 20). Isso realmente "
+            "aumenta o número esperado de dezenas certas — mas o preço sobe pela mesma combinatória, "
+            "porque uma aposta de `n` dezenas equivale a pagar por C(n,15) combinações de 15 ao mesmo "
+            "tempo. Não há atalho: o retorno esperado por real investido não muda.",
+            "",
+            "| Dezenas na aposta | Combinações (C(n,15)) | Custo (R$) | Média esperada de acertos | % chance 11+ | % chance 13+ | Custo por ponto % de chance de 11+ |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for l in estendidas:
+            custo_pp = l["custo_por_ponto_percentual_de_11mais"]
+            custo_pp_fmt = f"R$ {float(custo_pp):,.2f}" if custo_pp else "-"
+            linhas_md.append(
+                f"| {l['dezenas_na_aposta']} | {int(l['combinacoes_15_embutidas']):,} | "
+                f"R$ {float(l['custo_reais']):,.2f} | {l['media_acertos_esperada']} | "
+                f"{l['pct_11_ou_mais']}% | {l['pct_13_ou_mais']}% | {custo_pp_fmt} |"
+            )
+        linhas_md += [
+            "",
+            "Repare na última coluna: o custo para ganhar cada ponto percentual de chance de 11+ não "
+            "cresce de forma linear, cresce cada vez mais rápido (de R$ 0,33 na aposta simples para "
+            "mais de R$ 575,00 na aposta de 20 dezenas). Ou seja, além de não haver vantagem de retorno "
+            "esperado, a eficiência do dinheiro investido piora conforme se tenta cobrir mais dezenas. "
+            "Isso não é uma recomendação de aposta — é a mesma matemática de sempre, só expressa em reais.",
+            "",
+        ]
+
     linhas_md += [
         "",
         "## Conclusão educativa",
@@ -115,7 +150,8 @@ def main():
         "o que vai sair no próximo concurso. Cada sorteio é independente dos anteriores. Se, com o "
         "tempo, os métodos acima convergirem para uma média de acertos parecida com a esperança "
         "teórica, isso confirma que a Lotofácil se comporta como um sorteio aleatório, não que algum "
-        "método é melhor para ganhar.",
+        "método é melhor para ganhar. O mesmo vale para apostas estendidas: cobrem mais combinações, "
+        "não criam vantagem matemática nova.",
         "",
     ]
 

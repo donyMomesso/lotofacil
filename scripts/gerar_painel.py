@@ -137,6 +137,24 @@ TEMPLATE = """<!DOCTYPE html>
   </div>
 </section>
 
+<section>
+  <h2>Apostas estendidas (16 a 20 dezenas): custo x cobertura</h2>
+  <div class="disclaimer" style="margin:0 0 14px;">
+    Isto é combinatória pura, não depende de nenhum sorteio real e <b>não é recomendação de aposta</b>.
+    Mostra que apostar com mais dezenas aumenta a média esperada de acertos, mas o custo sobe pela
+    mesma matemática — não existe vantagem de retorno por real investido.
+  </div>
+  <div class="panels">
+    <div class="card"><canvas id="estendidasChart"></canvas></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Dezenas</th><th>Combinações</th><th>Custo</th><th>Média esp.</th><th>11+</th><th>R$ por ponto % de 11+</th></tr></thead>
+        <tbody>__TABELA_ESTENDIDAS__</tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <footer>
   Gerado automaticamente por scripts/gerar_painel.py &middot; ver README.md e diario_estatistico.md para o
   raciocínio completo por trás de cada atualização.
@@ -195,6 +213,30 @@ if (dados.backtest_metodos && dados.backtest_metodos.length) {
       scales: { x: { ticks: { color:'#9aa6bd' } }, y: { ticks: { color:'#9aa6bd' }, min: 8.5, max: 9.5 } } }
   });
 }
+
+if (dados.estendidas && dados.estendidas.length) {
+  new Chart(document.getElementById('estendidasChart'), {
+    data: {
+      labels: dados.estendidas.map(e => e.dezenas_na_aposta + ' dezenas'),
+      datasets: [
+        { type: 'bar', label: 'Custo (R$, escala log)', data: dados.estendidas.map(e => e.custo_reais),
+          backgroundColor: '#e0a838', yAxisID: 'yCusto' },
+        { type: 'line', label: 'Média de acertos esperada', data: dados.estendidas.map(e => e.media_acertos_esperada),
+          borderColor: '#3fbf7f', backgroundColor: '#3fbf7f', yAxisID: 'yMedia', tension: .3 }
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color:'#e7ebf3' } },
+        title: { display:true, text:'Custo (R$) vs. média esperada de acertos, por tamanho da aposta', color:'#e7ebf3' } },
+      scales: {
+        x: { ticks: { color:'#9aa6bd' } },
+        yCusto: { type:'logarithmic', position:'left', ticks: { color:'#9aa6bd' }, title: { display:true, text:'Custo (R$)', color:'#9aa6bd' } },
+        yMedia: { position:'right', min:8, max:13, ticks: { color:'#9aa6bd' }, grid: { drawOnChartArea:false },
+          title: { display:true, text:'Média esperada', color:'#9aa6bd' } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
@@ -222,6 +264,12 @@ def main():
         with open(sim_path, encoding="utf-8") as f:
             stats_backtest = list(csv.DictReader(f))
 
+    estendidas = []
+    estendidas_path = os.path.join(lib.DADOS_DIR, "apostas_estendidas.csv")
+    if os.path.exists(estendidas_path):
+        with open(estendidas_path, encoding="utf-8") as f:
+            estendidas = list(csv.DictReader(f))
+
     dados_json = {
         "dezenas": lib.TODAS_DEZENAS,
         "freq_pct": [round(100 * freq[d] / total, 2) if total else 0 for d in lib.TODAS_DEZENAS],
@@ -229,6 +277,14 @@ def main():
         "metodos": [{"metodo": l["metodo"], "media_acertos": l["media_acertos"]} for l in stats_metodos],
         "esperanca": lib.ESPERANCA_TEORICA,
         "backtest_metodos": [{"metodo": l["metodo"], "media_acertos": float(l["media_acertos"])} for l in stats_backtest],
+        "estendidas": [
+            {
+                "dezenas_na_aposta": int(e["dezenas_na_aposta"]),
+                "custo_reais": float(e["custo_reais"]),
+                "media_acertos_esperada": float(e["media_acertos_esperada"]),
+            }
+            for e in estendidas
+        ],
     }
 
     tabela_metodos = "".join(
@@ -257,6 +313,14 @@ def main():
         for c in ultimas_conf
     ) or "<tr><td colspan=3>Ainda sem conferências.</td></tr>"
 
+    tabela_estendidas = "".join(
+        f"<tr><td>{e['dezenas_na_aposta']}</td><td>{int(e['combinacoes_15_embutidas']):,}</td>"
+        f"<td>R$ {float(e['custo_reais']):,.2f}</td><td>{e['media_acertos_esperada']}</td>"
+        f"<td>{e['pct_11_ou_mais']}%</td>"
+        f"<td>{'R$ ' + format(float(e['custo_por_ponto_percentual_de_11mais']), ',.2f') if e['custo_por_ponto_percentual_de_11mais'] else '-'}</td></tr>"
+        for e in estendidas
+    ) or "<tr><td colspan=6>Simulação ainda não rodada (scripts/simular_apostas_estendidas.py).</td></tr>"
+
     html = TEMPLATE
     html = html.replace("__ATUALIZADO_EM__", datetime.now(BRASILIA).strftime("%d/%m/%Y %H:%M"))
     html = html.replace("__ULTIMO_CONCURSO__", str(ultimo_concurso))
@@ -268,6 +332,7 @@ def main():
     html = html.replace("__TABELA_BACKTEST__", tabela_backtest)
     html = html.replace("__TABELA_JOGOS__", tabela_jogos)
     html = html.replace("__TABELA_CONFERENCIAS__", tabela_conf)
+    html = html.replace("__TABELA_ESTENDIDAS__", tabela_estendidas)
     html = html.replace("__DADOS_JSON__", json.dumps(dados_json, ensure_ascii=False))
 
     with open(PAINEL_PATH, "w", encoding="utf-8") as f:

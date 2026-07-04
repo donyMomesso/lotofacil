@@ -171,3 +171,31 @@ Esse é o ponto mais importante do laboratório inteiro: mesmo depois de simular
 
 **5. Conclusão educativa**
 Esta é a demonstração mais completa possível com os dados disponíveis: usar frequência histórica, atraso, paridade ou soma para montar um jogo não muda a média de acertos esperada. A Lotofácil se comportou, nesses 3724 concursos, exatamente como um sorteio aleatório sem memória deveria se comportar. Os arquivos `dados/simulacao_metodos.csv` (linha a linha) e `dados/estatisticas_simulacao.csv` (agregado) ficam disponíveis para quem quiser conferir os números por conta própria.
+
+---
+
+## 04/07/2026 — Apostas estendidas: por que "mirar em 11" tem preço, não truque
+
+**1. O que foi observado**
+A partir de uma dúvida legítima ("dá pra garantir uma média de acertos maior, tipo cobrir os dois lados numa moeda?"), calculamos a matemática das apostas estendidas da Lotofácil (de 16 a 20 dezenas por bilhete, em vez de 15). Resultado: a média esperada de acertos sobe de fato — 9,0 (15 dezenas) até 12,0 (20 dezenas) — mas o custo sobe pela mesma combinatória, de R$ 3,50 até R$ 54.264,00 por jogo. A chance de bater 11+ vai de 10,6% para 94,3%, só que o custo para "comprar" cada ponto percentual dessa chance cresce de R$ 0,33 para R$ 575,15 — ou seja, a eficiência do dinheiro piora conforme se tenta cobrir mais dezenas.
+
+**2. O que isso pode significar estatisticamente**
+Isso confirma, com números concretos, algo que já era esperado pela teoria: apostar em mais combinações ao mesmo tempo aumenta a chance bruta de acerto, mas não cria retorno esperado extra por real investido — porque o preço da aposta estendida é definido exatamente pelo número de combinações de 15 que ela contém (C(n,15)). É a mesma lógica de comprar vários bilhetes simples ao mesmo tempo, só que embutida em um único bilhete maior.
+
+**3. O que isso não significa**
+Não significa que existe uma forma de "prever" 9, 11 ou qualquer quantidade fixa de dezenas certas antes do sorteio. A ideia de "cobrir os dois lados como numa moeda" não se aplica aqui: apostar nos dois resultados de uma moeda não gera lucro, só devolve o valor apostado (menos taxas) — e fixar parte das dezenas de um jogo como "certas" também não funciona, porque nenhuma dezena escolhida tem prioridade sobre outra no sorteio real.
+
+**4. Risco de confundir padrão histórico com previsão**
+O risco aqui é sutil: ver a média subir de 9,0 para 12,0 pode parecer uma "vitória" da estratégia, mas essa subida não vem de nenhuma informação sobre o sorteio — vem simplesmente de pagar por milhares de combinações simultâneas. Comparar apostas de tamanhos diferentes pela média de acertos, sem considerar o custo, é uma forma de viés de confirmação: olha-se para o número que confirma a ideia (mais acertos) e ignora-se o número que a desmente (o custo por real investido não melhorou nem um pouco).
+
+**5. Conclusão educativa**
+A tabela de apostas estendidas (16 a 20 dezenas) foi incorporada ao relatório e ao painel do laboratório como um novo estudo permanente. Ela mostra, com matemática simples de combinatória, por que não existe atalho estatístico para aumentar a média de acertos "de graça": todo ganho de cobertura tem um custo proporcional (e, neste caso, um custo por ponto percentual que piora conforme a aposta cresce). Continua não sendo recomendação de aposta — é só a aritmética por trás da regra do jogo, deixada explícita.
+
+| Dezenas na aposta | Combinações (C(n,15)) | Custo (R$) | Média esperada de acertos | % chance 11+ | Custo por ponto % de chance de 11+ |
+|---|---|---|---|---|---|
+| 15 | 1 | 3,50 | 9,00 | 10,59% | 0,33 |
+| 16 | 16 | 56,00 | 9,60 | 22,16% | 2,53 |
+| 17 | 136 | 476,00 | 10,20 | 39,31% | 12,11 |
+| 18 | 816 | 2.856,00 | 10,80 | 60,14% | 47,49 |
+| 19 | 3.876 | 13.566,00 | 11,40 | 80,22% | 169,12 |
+| 20 | 15.504 | 54.264,00 | 12,00 | 94,35% | 575,15 |
