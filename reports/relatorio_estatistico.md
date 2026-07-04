@@ -1,6 +1,6 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 04/07/2026 14:31 (horário de Brasília)_
+_Atualizado em 04/07/2026 14:56 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
@@ -114,6 +114,21 @@ Para cada trinca de dezenas consecutivas (01-02-03 até 23-24-25), o valor teór
 | 23,24,25 | 778 | 20.88% | 19.7826% | 184 | 4.94% | 5.2174% |
 
 Nenhuma trinca desta tabela está "mais perto" ou "mais longe" de sair — todas têm a mesma probabilidade teórica; o que varia é só o resultado observado em uma amostra finita de concursos.
+
+
+## Exemplos filtrados: combinações fixas testadas contra todo o histórico
+
+Cada linha abaixo é uma combinação fixa de 15 dezenas, gerada só como exemplo do espaço filtrado (par/ímpar 8/7, soma 180-210, sem sequência de 6+, no máximo 1 linha vazia). Cada uma foi conferida contra **todos** os concursos reais do histórico — não é jogo para apostar, é ilustração de que combinações "bem-comportadas" continuam com média de acertos igual à esperança teórica (9.0).
+
+| Exemplo | Dezenas | Concursos testados | Média | Dif. vs. esperança | Máx. observado | 11+ | 13+ |
+|---|---|---|---|---|---|---|---|
+| 1 | 01-02-03-04-06-07-08-14-16-18-19-20-21-23-25 | 3726 | 8.9656 | -0.0344 | 13 | 9.474% | 0.0805% |
+| 2 | 01-02-05-07-08-09-10-11-16-18-19-20-22-23-24 | 3726 | 8.9909 | -0.0091 | 13 | 10.5207% | 0.1074% |
+| 3 | 01-02-04-06-08-09-11-13-14-15-17-18-21-22-24 | 3726 | 8.9828 | -0.0172 | 13 | 10.3865% | 0.2147% |
+| 4 | 02-03-04-06-08-11-13-14-15-17-19-20-22-24-25 | 3726 | 9.033 | +0.0330 | 13 | 11.6479% | 0.1879% |
+| 5 | 03-04-05-06-08-09-12-14-15-16-17-21-22-24-25 | 3726 | 8.9538 | -0.0462 | 14 | 10.2254% | 0.1342% |
+
+Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 5 métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.
 
 
 ## Conclusão educativa

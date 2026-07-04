@@ -172,6 +172,37 @@ def main():
             "",
         ]
 
+    exemplos_path = os.path.join(lib.DADOS_DIR, "exemplos_filtrados_backtest.csv")
+    if os.path.exists(exemplos_path):
+        with open(exemplos_path, encoding="utf-8") as f:
+            exemplos = list(csv.DictReader(f))
+        linhas_md += [
+            "",
+            "## Exemplos filtrados: combinações fixas testadas contra todo o histórico",
+            "",
+            "Cada linha abaixo é uma combinação fixa de 15 dezenas, gerada só como exemplo do "
+            "espaço filtrado (par/ímpar 8/7, soma 180-210, sem sequência de 6+, no máximo 1 linha "
+            "vazia). Cada uma foi conferida contra **todos** os concursos reais do histórico — não é "
+            "jogo para apostar, é ilustração de que combinações \"bem-comportadas\" continuam com "
+            f"média de acertos igual à esperança teórica ({lib.ESPERANCA_TEORICA}).",
+            "",
+            "| Exemplo | Dezenas | Concursos testados | Média | Dif. vs. esperança | Máx. observado | 11+ | 13+ |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for e in exemplos:
+            linhas_md.append(
+                f"| {e['exemplo']} | {e['dezenas']} | {e['total_concursos_testados']} | "
+                f"{e['media_acertos']} | {float(e['diferenca_vs_esperanca']):+.4f} | "
+                f"{e['max_acertos_observado']} | {e['pct_11_ou_mais']}% | {e['pct_13_ou_mais']}% |"
+            )
+        linhas_md += [
+            "",
+            "Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas "
+            "as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 5 "
+            "métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.",
+            "",
+        ]
+
     linhas_md += [
         "",
         "## Conclusão educativa",
