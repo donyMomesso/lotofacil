@@ -30,7 +30,11 @@ def main():
     jogos = lib.gerar_todos_metodos(ate_concurso=concurso_alvo - 1)
 
     gerados = []
+    matrizes_para_exportacao = []
+
     for metodo, dezenas in jogos.items():
+        matrizes_para_exportacao.append(list(dezenas))
+
         if lib.jogo_ja_gerado(concurso_alvo, metodo):
             print(f"[skip] {metodo} já gerado para concurso {concurso_alvo}")
             continue
@@ -42,6 +46,12 @@ def main():
         print(f"Nenhum jogo novo gerado (concurso {concurso_alvo} já tinha os 5 métodos).")
     else:
         print(f"\n{len(gerados)} jogo(s) gerado(s) para o concurso {concurso_alvo} (data: {data_geracao}).")
+
+    if matrizes_para_exportacao:
+        texto_para_copiar = lib.formatar_para_extensao(matrizes_para_exportacao)
+        print("\n=== COPIE O BLOCO ABAIXO ===")
+        print(texto_para_copiar)
+        print("============================================\n")
 
 
 if __name__ == "__main__":

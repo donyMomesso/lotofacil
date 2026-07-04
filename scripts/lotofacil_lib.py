@@ -317,3 +317,15 @@ def salvar_frequencia_dezenas():
                 "atraso_atual": atraso[d],
                 "total_concursos_considerados": total,
             })
+
+
+def formatar_para_extensao(matrizes_geradas):
+    if not matrizes_geradas:
+        return ""
+
+    linhas_formatadas = []
+    for matriz in matrizes_geradas:
+        numeros_formatados = [f"{numero:02d}" for numero in sorted(matriz)]
+        linhas_formatadas.append(" ".join(numeros_formatados))
+
+    return "\n".join(linhas_formatadas)

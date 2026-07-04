@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lotofácil Lab — Exportador de Matrizes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function PainelExportacao() {
+      const [jogosTexto, setJogosTexto] = useState('');
+      const [copiado, setCopiado] = useState(false);
+
+      const totalJogos = jogosTexto.trim() ? jogosTexto.trim().split('\n').length : 0;
+
+      const handleCopiar = async () => {
+        if (!jogosTexto.trim()) return;
+
+        try {
+          await navigator.clipboard.writeText(jogosTexto.trim());
+          setCopiado(true);
+          setTimeout(() => setCopiado(false), 2000);
+        } catch (err) {
+          console.error('Falha ao copiar os dados:', err);
+          alert('Erro ao copiar. O seu navegador pode ter bloqueado a ação.');
+        }
+      };
+
+      return (
+        <div className="max-w-2xl mx-auto p-6 bg-slate-900 rounded-xl border border-slate-700 shadow-2xl font-sans mt-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">Exportador de Matrizes</h2>
+            <p className="text-slate-400 text-sm">
+              Cole abaixo o bloco gerado pelo script Python para ativar a cópia formatada.
+            </p>
+          </div>
+
+          <div className="mb-6 relative">
+            <textarea
+              value={jogosTexto}
+              onChange={(e) => setJogosTexto(e.target.value)}
+              placeholder="Exemplo:&#10;01 02 03 04 05 06 07 08 09 10 11 12 13 14 15&#10;02 04 06 08 10 12 14 16 18 20 21 22 23 24 25"
+              className="w-full h-48 p-4 bg-slate-800 text-emerald-400 font-mono text-sm rounded-lg border border-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none resize-y transition-colors"
+              spellCheck="false"
+            />
+            {totalJogos > 0 && (
+              <div className="absolute bottom-4 right-4 bg-slate-900 text-slate-300 text-xs px-2 py-1 rounded border border-slate-700">
+                {totalJogos} {totalJogos === 1 ? 'linha detectada' : 'linhas detectadas'}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleCopiar}
+            disabled={!jogosTexto.trim()}
+            className={`w-full py-4 px-6 rounded-lg font-bold text-white text-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+              !jogosTexto.trim()
+                ? 'bg-slate-700 cursor-not-allowed opacity-50'
+                : copiado
+                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/50'
+                : 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/50'
+            }`}
+          >
+            {copiado ? (
+              <>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Matrizes Copiadas com Sucesso!
+              </>
+            ) : (
+              <>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                Copiar para a Extensão
+              </>
+            )}
+          </button>
+
+          <div className="mt-8 p-5 bg-slate-800/50 rounded-lg border border-slate-700/50">
+            <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Como utilizar
+            </h3>
+            <ol className="list-decimal list-inside text-sm text-slate-400 space-y-2">
+              <li>Rode o seu script Python localmente.</li>
+              <li>Copie o bloco de texto gerado no terminal.</li>
+              <li>Cole na caixa de texto acima e clique em "Copiar para a Extensão".</li>
+              <li>Abra o site oficial e utilize a sua extensão de preenchimento automático.</li>
+            </ol>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<PainelExportacao />);
+  </script>
+</body>
+</html>
