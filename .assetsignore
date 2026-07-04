@@ -9,5 +9,6 @@ reports/
 *.pyc
 *.md
 *.zip
+* nv.html
 requirements.txt
 wrangler.jsonc
