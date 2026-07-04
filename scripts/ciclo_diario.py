@@ -9,8 +9,9 @@ Ciclo diário completo do laboratório — pensado para rodar sozinho
   4. Gera os jogos de estudo do próximo concurso (5 métodos).
   5. Atualiza frequência/atraso e desempenho por método.
   6. Gera o relatório (reports/relatorio_estatistico.md).
-  7. Gera o painel visual (painel.html + painel_jogos.html).
-  8. Anexa um bloco educativo em diario_estatistico.md.
+  7. Gera o banco JSON do projeto (dados/banco_projeto.json).
+  8. Gera o painel visual (painel.html + painel_jogos.html).
+  9. Anexa um bloco educativo em diario_estatistico.md.
 
 Uso:
     python3 ciclo_diario.py
@@ -19,6 +20,7 @@ from datetime import datetime, timezone, timedelta
 
 import lotofacil_lib as lib
 import gerar_relatorio
+import gerar_banco_projeto
 import gerar_painel
 import gerar_painel_jogos
 import conferir_meus_jogos
@@ -73,6 +75,7 @@ def main():
     lib.salvar_estatisticas_metodos()
 
     gerar_relatorio.main()
+    gerar_banco_projeto.main()
     gerar_painel.main()
     gerar_painel_jogos.main()
 
