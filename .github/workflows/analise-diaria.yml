@@ -25,18 +25,14 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
-      - name: Rodar ciclo diário (busca resultado, confere, gera jogos, relatório e painel)
+      - name: Rodar ciclo diário completo
         working-directory: scripts
         run: python ciclo_diario.py
-
-      - name: Gerar painel visual de jogos e conferências
-        working-directory: scripts
-        run: python gerar_painel_jogos.py
 
       - name: Salvar tudo no repositório
         run: |
           git config user.name "lotofacil-lab-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add dados/ reports/ painel.html painel_jogos.html diario_estatistico.md
+          git add dados/ reports/ painel.html painel_jogos.html painel_mobile.html diario_estatistico.md
           git commit -m "Atualiza laboratório: novo ciclo diário" || echo "Sem alterações para commitar"
           git push
