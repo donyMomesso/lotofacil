@@ -155,6 +155,21 @@ TEMPLATE = """<!DOCTYPE html>
   </div>
 </section>
 
+<section>
+  <h2>Sequência e salto das dezenas (trincas consecutivas)</h2>
+  <div class="disclaimer" style="margin:0 0 14px;">
+    Toda trinca de 3 dezenas consecutivas tem a mesma probabilidade teórica de sair junta
+    (__SEQ_TEORICA__%) ou de nenhuma sair (__SALTO_TEORICA__%). A variação entre trincas abaixo é
+    ruído amostral — nenhuma está "mais perto" ou "mais atrasada".
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Trinca</th><th>Sequência</th><th>%</th><th>Teórico</th><th>Salto</th><th>%</th><th>Teórico</th></tr></thead>
+      <tbody>__TABELA_SEQSALTO__</tbody>
+    </table>
+  </div>
+</section>
+
 <footer>
   Gerado automaticamente por scripts/gerar_painel.py &middot; ver README.md e diario_estatistico.md para o
   raciocínio completo por trás de cada atualização.
@@ -321,6 +336,20 @@ def main():
         for e in estendidas
     ) or "<tr><td colspan=6>Simulação ainda não rodada (scripts/simular_apostas_estendidas.py).</td></tr>"
 
+    seqsalto = []
+    seqsalto_path = os.path.join(lib.DADOS_DIR, "sequencias_saltos.csv")
+    if os.path.exists(seqsalto_path):
+        with open(seqsalto_path, encoding="utf-8") as f:
+            seqsalto = list(csv.DictReader(f))
+
+    seq_teo = seqsalto[0]["sequencia_teorica_pct"] if seqsalto else "-"
+    salto_teo = seqsalto[0]["salto_teorico_pct"] if seqsalto else "-"
+    tabela_seqsalto = "".join(
+        f"<tr><td>{l['trinca']}</td><td>{l['sequencia_qtd']}</td><td>{l['sequencia_pct']}%</td>"
+        f"<td>{seq_teo}%</td><td>{l['salto_qtd']}</td><td>{l['salto_pct']}%</td><td>{salto_teo}%</td></tr>"
+        for l in seqsalto
+    ) or "<tr><td colspan=7>Ainda não calculado (scripts/tabela_sequencias.py).</td></tr>"
+
     html = TEMPLATE
     html = html.replace("__ATUALIZADO_EM__", datetime.now(BRASILIA).strftime("%d/%m/%Y %H:%M"))
     html = html.replace("__ULTIMO_CONCURSO__", str(ultimo_concurso))
@@ -333,6 +362,9 @@ def main():
     html = html.replace("__TABELA_JOGOS__", tabela_jogos)
     html = html.replace("__TABELA_CONFERENCIAS__", tabela_conf)
     html = html.replace("__TABELA_ESTENDIDAS__", tabela_estendidas)
+    html = html.replace("__TABELA_SEQSALTO__", tabela_seqsalto)
+    html = html.replace("__SEQ_TEORICA__", str(seq_teo))
+    html = html.replace("__SALTO_TEORICA__", str(salto_teo))
     html = html.replace("__DADOS_JSON__", json.dumps(dados_json, ensure_ascii=False))
 
     with open(PAINEL_PATH, "w", encoding="utf-8") as f:

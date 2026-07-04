@@ -199,3 +199,22 @@ A tabela de apostas estendidas (16 a 20 dezenas) foi incorporada ao relatório e
 | 18 | 816 | 2.856,00 | 10,80 | 60,14% | 47,49 |
 | 19 | 3.876 | 13.566,00 | 11,40 | 80,22% | 169,12 |
 | 20 | 15.504 | 54.264,00 | 12,00 | 94,35% | 575,15 |
+
+---
+
+## 04/07/2026 — Sequência e salto das trincas de dezenas consecutivas
+
+**1. O que foi observado**
+Calculamos, para cada trinca de 3 dezenas consecutivas (01-02-03 até 23-24-25), duas contagens no histórico de 3.726 concursos: "sequência" (quantas vezes as 3 saíram juntas no mesmo sorteio) e "salto" (quantas vezes nenhuma das 3 saiu). Os valores observados variam de 17,53% a 21,28% para sequência (média 19,56%, desvio 1,04 p.p.) e de 4,24% a 5,82% para salto (média 5,25%, desvio 0,40 p.p.).
+
+**2. O que isso pode significar estatisticamente**
+Calculamos também o valor teórico exato (hipergeométrico) que qualquer trinca específica de 3 dezenas deveria ter: 19,7826% de chance de sair inteira e 5,2174% de chance de nenhuma sair. As médias observadas praticamente coincidem com isso, e a dispersão entre trincas é do tamanho esperado para ruído amostral em 3.726 sorteios — nenhuma trinca foge do previsto pela matemática.
+
+**3. O que isso não significa**
+A trinca 10,11,12 (21,28%, a mais alta) não é uma trinca "quente", e a trinca 15,16,17 (17,53%, a mais baixa) não está "atrasada". Toda trinca de 3 dezenas consecutivas tem exatamente a mesma probabilidade teórica — a diferença entre elas na tabela é só flutuação normal de amostra.
+
+**4. Risco de confundir padrão histórico com previsão**
+Esse é um exemplo clássico de viés de confirmação: tabelas assim circulam por aí sem a linha teórica ao lado, o que convida a interpretar a variação como sinal de trinca melhor ou pior. Ao colocar o valor teórico fixo ao lado de cada linha, a tabela vira uma demonstração de ruído, não uma sugestão de escolha.
+
+**5. Conclusão educativa**
+Tabela adicionada ao relatório e ao painel (`scripts/tabela_sequencias.py`, dados em `dados/sequencias_saltos.csv`), sempre ao lado do valor teórico de referência. Reforça o padrão do laboratório: qualquer estatística de frequência, por mais que varie entre categorias, tende ao mesmo valor teórico fixo — a variação é o objeto de estudo, não um indicador de escolha.

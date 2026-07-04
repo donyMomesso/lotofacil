@@ -142,6 +142,36 @@ def main():
             "",
         ]
 
+    seqsalto_path = os.path.join(lib.DADOS_DIR, "sequencias_saltos.csv")
+    if os.path.exists(seqsalto_path):
+        with open(seqsalto_path, encoding="utf-8") as f:
+            seqsalto = list(csv.DictReader(f))
+        seq_teo = seqsalto[0]["sequencia_teorica_pct"]
+        salto_teo = seqsalto[0]["salto_teorico_pct"]
+        linhas_md += [
+            "",
+            "## Sequência e salto das dezenas (trincas consecutivas)",
+            "",
+            f"Para cada trinca de dezenas consecutivas (01-02-03 até 23-24-25), o valor teórico fixo é "
+            f"**{seq_teo}%** de chance de as 3 saírem juntas (\"sequência\") e **{salto_teo}%** de chance de "
+            "nenhuma das 3 sair (\"salto\"). A tabela abaixo compara isso com o que aconteceu de fato no "
+            "histórico — a variação entre trincas é ruído amostral, não indica trinca \"quente\" ou \"atrasada\".",
+            "",
+            "| Trinca | Sequência (qtd) | Sequência (%) | Teórico seq. | Salto (qtd) | Salto (%) | Teórico salto |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for l in seqsalto:
+            linhas_md.append(
+                f"| {l['trinca']} | {l['sequencia_qtd']} | {l['sequencia_pct']}% | {seq_teo}% | "
+                f"{l['salto_qtd']} | {l['salto_pct']}% | {salto_teo}% |"
+            )
+        linhas_md += [
+            "",
+            "Nenhuma trinca desta tabela está \"mais perto\" ou \"mais longe\" de sair — todas têm a mesma "
+            "probabilidade teórica; o que varia é só o resultado observado em uma amostra finita de concursos.",
+            "",
+        ]
+
     linhas_md += [
         "",
         "## Conclusão educativa",

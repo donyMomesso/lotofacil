@@ -1,6 +1,6 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 04/07/2026 11:06 (horário de Brasília)_
+_Atualizado em 04/07/2026 14:31 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
@@ -81,6 +81,39 @@ A Lotofácil permite apostar com mais de 15 dezenas por bilhete (até 20). Isso 
 | 20 | 15,504 | R$ 54,264.00 | 12.0 | 94.3478% | 30.1186% | R$ 575.15 |
 
 Repare na última coluna: o custo para ganhar cada ponto percentual de chance de 11+ não cresce de forma linear, cresce cada vez mais rápido (de R$ 0,33 na aposta simples para mais de R$ 575,00 na aposta de 20 dezenas). Ou seja, além de não haver vantagem de retorno esperado, a eficiência do dinheiro investido piora conforme se tenta cobrir mais dezenas. Isso não é uma recomendação de aposta — é a mesma matemática de sempre, só expressa em reais.
+
+
+## Sequência e salto das dezenas (trincas consecutivas)
+
+Para cada trinca de dezenas consecutivas (01-02-03 até 23-24-25), o valor teórico fixo é **19.7826%** de chance de as 3 saírem juntas ("sequência") e **5.2174%** de chance de nenhuma das 3 sair ("salto"). A tabela abaixo compara isso com o que aconteceu de fato no histórico — a variação entre trincas é ruído amostral, não indica trinca "quente" ou "atrasada".
+
+| Trinca | Sequência (qtd) | Sequência (%) | Teórico seq. | Salto (qtd) | Salto (%) | Teórico salto |
+|---|---|---|---|---|---|---|
+| 01,02,03 | 741 | 19.89% | 19.7826% | 185 | 4.97% | 5.2174% |
+| 02,03,04 | 751 | 20.16% | 19.7826% | 201 | 5.39% | 5.2174% |
+| 03,04,05 | 743 | 19.94% | 19.7826% | 193 | 5.18% | 5.2174% |
+| 04,05,06 | 727 | 19.51% | 19.7826% | 198 | 5.31% | 5.2174% |
+| 05,06,07 | 688 | 18.46% | 19.7826% | 211 | 5.66% | 5.2174% |
+| 06,07,08 | 672 | 18.04% | 19.7826% | 202 | 5.42% | 5.2174% |
+| 07,08,09 | 688 | 18.46% | 19.7826% | 211 | 5.66% | 5.2174% |
+| 08,09,10 | 752 | 20.18% | 19.7826% | 210 | 5.64% | 5.2174% |
+| 09,10,11 | 790 | 21.2% | 19.7826% | 177 | 4.75% | 5.2174% |
+| 10,11,12 | 793 | 21.28% | 19.7826% | 176 | 4.72% | 5.2174% |
+| 11,12,13 | 746 | 20.02% | 19.7826% | 174 | 4.67% | 5.2174% |
+| 12,13,14 | 729 | 19.57% | 19.7826% | 158 | 4.24% | 5.2174% |
+| 13,14,15 | 737 | 19.78% | 19.7826% | 207 | 5.56% | 5.2174% |
+| 14,15,16 | 713 | 19.14% | 19.7826% | 217 | 5.82% | 5.2174% |
+| 15,16,17 | 653 | 17.53% | 19.7826% | 200 | 5.37% | 5.2174% |
+| 16,17,18 | 655 | 17.58% | 19.7826% | 217 | 5.82% | 5.2174% |
+| 17,18,19 | 723 | 19.4% | 19.7826% | 192 | 5.15% | 5.2174% |
+| 18,19,20 | 767 | 20.59% | 19.7826% | 203 | 5.45% | 5.2174% |
+| 19,20,21 | 770 | 20.67% | 19.7826% | 196 | 5.26% | 5.2174% |
+| 20,21,22 | 734 | 19.7% | 19.7826% | 194 | 5.21% | 5.2174% |
+| 21,22,23 | 694 | 18.63% | 19.7826% | 184 | 4.94% | 5.2174% |
+| 22,23,24 | 716 | 19.22% | 19.7826% | 212 | 5.69% | 5.2174% |
+| 23,24,25 | 778 | 20.88% | 19.7826% | 184 | 4.94% | 5.2174% |
+
+Nenhuma trinca desta tabela está "mais perto" ou "mais longe" de sair — todas têm a mesma probabilidade teórica; o que varia é só o resultado observado em uma amostra finita de concursos.
 
 
 ## Conclusão educativa
