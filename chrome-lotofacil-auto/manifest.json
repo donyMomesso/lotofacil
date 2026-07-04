@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Preenchedor de Dezenas",
+  "version": "1.0.0",
+  "description": "Automatiza a selecao de dezenas em uma pagina ativa a partir de linhas de texto.",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "action": {
+    "default_title": "Preencher dezenas",
+    "default_popup": "popup.html"
+  }
+}
