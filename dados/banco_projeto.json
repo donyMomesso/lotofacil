@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "nome": "Laboratório Estatístico Lotofácil",
+    "tipo": "estudo_educativo",
+    "gerado_em": "04/07/2026",
+    "timezone": "America/Sao_Paulo",
+    "total_concursos": 3725,
+    "ultimo_concurso": {
+      "concurso": 3725,
+      "data": "02/07/2026",
+      "dezenas": [1, 2, 4, 5, 6, 8, 11, 13, 14, 16, 17, 19, 21, 24, 25],
+      "dezenas_formatadas": "01-02-04-05-06-08-11-13-14-16-17-19-21-24-25",
+      "soma": 186,
+      "pares": 7,
+      "impares": 8
+    },
+    "proximo_concurso": 3726,
+    "esperanca_teorica_acertos": 9.0,
+    "aviso": "Estudo estatístico. Não prevê resultados e não recomenda apostas."
+  },
+  "arquivos_principais": {
+    "painel_mobile": "painel_mobile.html",
+    "painel_classico": "painel.html",
+    "painel_jogos": "painel_jogos.html",
+    "readme": "README.md",
+    "diario": "diario_estatistico.md",
+    "historico_resultados": "dados/resultados_lotofacil.csv",
+    "jogos_gerados": "dados/jogos_gerados.csv",
+    "conferencias": "dados/conferencia.csv",
+    "frequencia": "dados/frequencia_dezenas.csv",
+    "estatisticas_metodos": "dados/estatisticas_metodos.csv",
+    "relatorio": "reports/relatorio_estatistico.md"
+  },
+  "links_internos": [
+    {"titulo": "Painel mobile", "arquivo": "painel_mobile.html"},
+    {"titulo": "Painel clássico", "arquivo": "painel.html"},
+    {"titulo": "Painel de jogos", "arquivo": "painel_jogos.html"},
+    {"titulo": "Relatório estatístico", "arquivo": "reports/relatorio_estatistico.md"},
+    {"titulo": "Diário estatístico", "arquivo": "diario_estatistico.md"},
+    {"titulo": "Histórico de resultados", "arquivo": "dados/resultados_lotofacil.csv"},
+    {"titulo": "Banco do projeto", "arquivo": "dados/banco_projeto.json"}
+  ],
+  "observacao": "Este arquivo inicial será atualizado automaticamente pelo script scripts/gerar_banco_projeto.py no ciclo diário."
+}
