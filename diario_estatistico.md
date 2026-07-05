@@ -245,3 +245,38 @@ As novas funções (`desdobramento_total`, `aplicar_filtros_combinatorios`, `ger
 | 3 | 01-02-04-06-08-09-11-13-14-15-17-18-21-22-24 | 8,9828 | -0,0172 | 13 | 10,39% | 0,21% |
 | 4 | 02-03-04-06-08-11-13-14-15-17-19-20-22-24-25 | 9,0330 | +0,0330 | 13 | 11,65% | 0,19% |
 | 5 | 03-04-05-06-08-09-12-14-15-16-17-21-22-24-25 | 8,9538 | -0,0462 | 14 | 10,23% | 0,13% |
+
+---
+
+## 05/07/2026
+
+**1. O que foi observado**
+
+- Concurso 3727: registrado e conferido contra os jogos de estudo — M1_aleatorio_puro: 9 acerto(s), M2_mais_frequentes: 10 acerto(s), M3_mais_atrasadas: 11 acerto(s), M4_par_impar_balanceado: 8 acerto(s), M5_soma_faixa_comum: 9 acerto(s).
+
+**2. O que isso pode significar estatisticamente**
+
+A média de acertos dos jogos de estudo hoje foi 9.40, contra a esperança teórica de 9.0 por jogo (distribuição hipergeométrica). Diferenças pontuais como essa são esperadas em qualquer sorteio aleatório e tendem a se equilibrar conforme mais concursos entram na série.
+
+**3. O que isso não significa**
+
+Não significa que algum método está "mais perto" de 14 ou 15 acertos, nem que a frequência ou o atraso de uma dezena influenciam o próximo sorteio. Cada concurso da Lotofácil é independente dos anteriores — a bola não tem memória.
+
+**4. Risco de confundir padrão histórico com previsão**
+
+Observar uma sequência de acertos altos (ou baixos) em poucos concursos pode parecer um sinal de que um método está funcionando, mas é o tipo de variação que o acaso produz sozinho em amostras pequenas. Tratar isso como previsão é viés de confirmação — e é exatamente o que este laboratório existe para demonstrar, não para praticar.
+
+**5. Conclusão educativa**
+
+O histórico real agora tem 3727 concurso(s). Quanto mais dados entram, mais estável fica a comparação entre os métodos e mais claro fica que todos oscilam ao redor do mesmo valor esperado — esse é o ponto central do laboratório: mostrar a matemática do acaso, não encontrar um método vencedor.
+
+*Jogos fictícios gerados para o concurso 3728 (estudo estatístico — não é recomendação de aposta):*
+
+| Método | Dezenas |
+|---|---|
+| M1_aleatorio_puro | 03-05-06-07-09-11-12-13-14-16-17-18-20-23-24 |
+| M2_mais_frequentes | 01-02-03-04-05-10-11-12-13-14-15-20-22-24-25 |
+| M3_mais_atrasadas | 02-03-06-07-08-10-12-14-15-17-20-21-23-24-25 |
+| M4_par_impar_balanceado | 01-02-03-06-08-09-11-12-14-15-16-18-19-20-21 |
+| M5_soma_faixa_comum | 01-02-05-06-09-12-13-14-15-16-19-20-21-23-25 |
+

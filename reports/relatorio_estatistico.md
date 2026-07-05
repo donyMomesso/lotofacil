@@ -1,13 +1,13 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 04/07/2026 14:56 (horário de Brasília)_
+_Atualizado em 05/07/2026 13:57 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
 ## Base analisada
 
-- Total de concursos no histórico: 3726
-- Concurso mais recente: 3726 (03/07/2026)
+- Total de concursos no histórico: 3727
+- Concurso mais recente: 3727 (04/07/2026)
 - Soma média das dezenas por concurso: 195.15
 - Menor soma observada: 133
 - Maior soma observada: 257
@@ -15,45 +15,45 @@ Este relatório é gerado automaticamente a partir de resultados reais da Lotof�
 
 ## Último concurso
 
-- Concurso: 3726
-- Data: 03/07/2026
-- Dezenas: 02-05-06-07-10-13-14-17-18-19-20-21-22-24-25
-- Soma: 223
-- Pares: 8 / Ímpares: 7
+- Concurso: 3727
+- Data: 04/07/2026
+- Dezenas: 01-02-03-04-05-09-10-11-13-14-16-18-19-22-23
+- Soma: 170
+- Pares: 7 / Ímpares: 8
 
 ### Distribuição por linha (faixas de 5 dezenas)
 
-- linha_01_05: 2
-- linha_06_10: 3
-- linha_11_15: 2
-- linha_16_20: 4
-- linha_21_25: 4
+- linha_01_05: 5
+- linha_06_10: 2
+- linha_11_15: 3
+- linha_16_20: 3
+- linha_21_25: 2
 
 ## Frequência das dezenas (histórico completo)
 
 ### Mais frequentes
 
-- 20: 2331 vez(es) (62.6%)
-- 10: 2322 vez(es) (62.3%)
-- 25: 2316 vez(es) (62.2%)
-- 11: 2288 vez(es) (61.4%)
-- 13: 2267 vez(es) (60.8%)
+- 20: 2331 vez(es) (62.5%)
+- 10: 2323 vez(es) (62.3%)
+- 25: 2316 vez(es) (62.1%)
+- 11: 2289 vez(es) (61.4%)
+- 13: 2268 vez(es) (60.9%)
 
 ### Menos frequentes
 
-- 16: 2127 vez(es) (57.1%)
+- 16: 2128 vez(es) (57.1%)
 - 08: 2157 vez(es) (57.9%)
-- 23: 2184 vez(es) (58.6%)
+- 23: 2185 vez(es) (58.6%)
 - 17: 2187 vez(es) (58.7%)
 - 06: 2192 vez(es) (58.8%)
 
 ### Maior atraso atual (concursos sem sair)
 
-- 09: 4 concurso(s)
-- 23: 3 concurso(s)
-- 03: 2 concurso(s)
-- 12: 2 concurso(s)
-- 15: 2 concurso(s)
+- 12: 3 concurso(s)
+- 15: 3 concurso(s)
+- 08: 2 concurso(s)
+- 06: 1 concurso(s)
+- 07: 1 concurso(s)
 
 ## Desempenho comparado dos métodos (jogos fictícios de estudo)
 
@@ -61,11 +61,11 @@ Valor teórico esperado de acertos por jogo de 15 dezenas: **9.0** (distribuiç�
 
 | Método | Jogos conferidos | Média de acertos | Desvio padrão | % com 11+ | % com 13+ |
 |---|---|---|---|---|---|
-| M1_aleatorio_puro | 1 | 7 | 0.0 | 0.0% | 0.0% |
-| M2_mais_frequentes | 1 | 9 | 0.0 | 0.0% | 0.0% |
-| M3_mais_atrasadas | 1 | 8 | 0.0 | 0.0% | 0.0% |
-| M4_par_impar_balanceado | 1 | 8 | 0.0 | 0.0% | 0.0% |
-| M5_soma_faixa_comum | 1 | 10 | 0.0 | 0.0% | 0.0% |
+| M1_aleatorio_puro | 2 | 8 | 1.0 | 0.0% | 0.0% |
+| M2_mais_frequentes | 2 | 9.5 | 0.5 | 0.0% | 0.0% |
+| M3_mais_atrasadas | 2 | 9.5 | 1.5 | 50.0% | 0.0% |
+| M4_par_impar_balanceado | 2 | 8 | 0.0 | 0.0% | 0.0% |
+| M5_soma_faixa_comum | 2 | 9.5 | 0.5 | 0.0% | 0.0% |
 
 ## Apostas estendidas (16 a 20 dezenas): mais cobertura custa mais, na mesma proporção
 

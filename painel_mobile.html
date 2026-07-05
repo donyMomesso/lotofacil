@@ -5,72 +5,162 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Lotofácil Lab — Mobile</title>
 <style>
-  :root { --bg:#faf7ff; --card:#fff; --text:#1f1235; --muted:#7c6a9b; --line:#eadffd; --purple:#7c3aed; --amber:#f59e0b; --green:#16a34a; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
-  header { position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#5b21b6,#7c3aed 60%,#c026d3); color:white; padding:18px 16px 14px; box-shadow:0 6px 20px rgba(43,10,77,.22); }
-  h1 { margin:0; font-size:22px; }
-  .sub { margin-top:5px; color:rgba(255,255,255,.76); font-size:12.5px; line-height:1.45; }
-  .tabs { display:flex; gap:8px; overflow-x:auto; padding:12px 14px 2px; scrollbar-width:none; }
-  .tabs::-webkit-scrollbar { display:none; }
-  .tabs a { flex:0 0 auto; text-decoration:none; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:9px 12px; font-size:13px; font-weight:700; }
-  .tabs a.primary { background:var(--purple); color:white; border-color:var(--purple); }
-  main { padding:12px 14px 34px; }
-  .alert { background:linear-gradient(90deg,rgba(245,158,11,.18),rgba(245,158,11,.06)); border:1px solid rgba(245,158,11,.38); border-radius:14px; padding:13px 14px; font-size:13.5px; line-height:1.45; margin-bottom:12px; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 2px 10px rgba(43,10,77,.06); }
-  .label { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
-  .value { font-size:25px; font-weight:900; margin-top:6px; line-height:1; }
-  section { margin-top:18px; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px; }
-  .row { display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid #f0e9fb; padding:10px 0; font-size:13.5px; }
-  .row:last-child { border-bottom:none; }
-  .nums { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; color:#4c1d95; line-height:1.5; }
-  .badge { display:inline-block; border-radius:999px; padding:3px 9px; background:#ede4ff; color:var(--purple); font-size:12px; font-weight:800; white-space:nowrap; }
-  a { color:var(--purple); font-weight:800; }
-  @media (max-width:380px){ .grid{grid-template-columns:1fr;} h1{font-size:20px;} }
+  :root {
+    --bg: #faf7ff;
+    --card: #ffffff;
+    --text: #1f1235;
+    --muted: #7c6a9b;
+    --line: #eadffd;
+    --purple: #7c3aed;
+    --pink: #ec4899;
+    --amber: #f59e0b;
+    --green: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #5b21b6, #7c3aed 60%, #c026d3);
+    color: white;
+    padding: 18px 16px 14px;
+    box-shadow: 0 6px 20px rgba(43,10,77,.22);
+  }
+  h1 { margin: 0; font-size: 22px; line-height: 1.15; }
+  .sub { margin-top: 5px; color: rgba(255,255,255,.76); font-size: 12.5px; line-height: 1.45; }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 14px 2px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a {
+    flex: 0 0 auto;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .tabs a.primary { background: var(--purple); color: white; border-color: var(--purple); }
+  main { padding: 12px 14px 34px; }
+  .alert {
+    background: linear-gradient(90deg, rgba(245,158,11,.18), rgba(245,158,11,.06));
+    border: 1px solid rgba(245,158,11,.38);
+    border-radius: 14px;
+    padding: 13px 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    margin-bottom: 12px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 10px rgba(43,10,77,.06);
+  }
+  .label { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+  .value { font-size: 25px; font-weight: 900; margin-top: 6px; line-height: 1; }
+  section { margin-top: 18px; scroll-margin-top: 95px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .result-row, .dezena-row, .link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid #f0e9fb;
+    padding: 10px 0;
+    font-size: 13.5px;
+  }
+  .result-row:last-child, .dezena-row:last-child, .link-row:last-child { border-bottom: none; }
+  .nums { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; color: #4c1d95; line-height: 1.5; }
+  .badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 3px 9px;
+    background: #ede4ff;
+    color: var(--purple);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .badge.green { background: #dcfce7; color: var(--green); }
+  .badge.amber { background: #fef3c7; color: #b45309; }
+  .bar {
+    height: 8px;
+    background: #f0e9fb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+  a { color: var(--purple); font-weight: 800; }
+  @media (max-width: 380px) {
+    .grid { grid-template-columns: 1fr; }
+    h1 { font-size: 20px; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Lotofácil Lab</h1>
-  <div class="sub">Painel mobile inicial · concurso 3725 · banco JSON ativo</div>
+  <div class="sub">Painel mobile · atualizado em 05/07/2026 13:57 · concurso 3727</div>
 </header>
+
 <nav class="tabs">
   <a class="primary" href="#resumo">Resumo</a>
-  <a href="#ultimo">Último</a>
+  <a href="#resultados">Resultados</a>
+  <a href="#frequencia">Frequência</a>
+  <a href="#jogos">Jogos</a>
   <a href="#links">Arquivos</a>
   <a href="painel.html">Clássico</a>
   <a href="painel_jogos.html">Jogos</a>
 </nav>
+
 <main>
   <div class="alert"><b>Estudo estatístico.</b> Não é previsão, não é recomendação de aposta e não indica combinação “mais perto” de acertar.</div>
+
   <section id="resumo">
     <h2>Resumo</h2>
     <div class="grid">
-      <div class="card"><div class="label">Concursos</div><div class="value">3725</div></div>
-      <div class="card"><div class="label">Próximo</div><div class="value">3726</div></div>
+      <div class="card"><div class="label">Concursos</div><div class="value">3727</div></div>
+      <div class="card"><div class="label">Próximo</div><div class="value">3728</div></div>
       <div class="card"><div class="label">Esperança</div><div class="value">9.0</div></div>
-      <div class="card"><div class="label">Último</div><div class="value">3725</div></div>
+      <div class="card"><div class="label">Último</div><div class="value">3727</div></div>
     </div>
   </section>
-  <section id="ultimo">
-    <h2>Último resultado da base</h2>
-    <div class="card">
-      <div class="row"><div><b>Concurso 3725</b><br><span class="nums">01-02-04-05-06-08-11-13-14-16-17-19-21-24-25</span></div><span class="badge">02/07/2026</span></div>
-      <div class="row"><span>Soma</span><span class="badge">186</span></div>
-      <div class="row"><span>Pares / Ímpares</span><span class="badge">7 / 8</span></div>
-    </div>
+
+  <section id="resultados">
+    <h2>Últimos resultados</h2>
+    <div class="card"><div class='result-row'><div><b>Concurso 3727</b><br><span class='nums'>01-02-03-04-05-09-10-11-13-14-16-18-19-22-23</span></div><span class='badge amber'>04/07/2026</span></div><div class='result-row'><div><b>Concurso 3726</b><br><span class='nums'>02-05-06-07-10-13-14-17-18-19-20-21-22-24-25</span></div><span class='badge amber'>03/07/2026</span></div><div class='result-row'><div><b>Concurso 3725</b><br><span class='nums'>01-02-04-05-06-08-11-13-14-16-17-19-21-24-25</span></div><span class='badge amber'>02/07/2026</span></div><div class='result-row'><div><b>Concurso 3724</b><br><span class='nums'>01-02-03-05-06-07-12-15-16-17-19-21-22-24-25</span></div><span class='badge amber'>01/07/2026</span></div><div class='result-row'><div><b>Concurso 3723</b><br><span class='nums'>02-04-05-06-07-10-12-15-17-18-19-20-22-23-25</span></div><span class='badge amber'>30/06/2026</span></div><div class='result-row'><div><b>Concurso 3722</b><br><span class='nums'>02-03-05-06-09-10-11-12-13-14-15-17-19-20-23</span></div><span class='badge amber'>29/06/2026</span></div><div class='result-row'><div><b>Concurso 3721</b><br><span class='nums'>01-03-04-05-07-08-10-11-12-14-15-20-21-23-24</span></div><span class='badge amber'>27/06/2026</span></div><div class='result-row'><div><b>Concurso 3720</b><br><span class='nums'>01-05-07-08-09-10-11-13-15-16-17-18-20-22-24</span></div><span class='badge amber'>26/06/2026</span></div></div>
   </section>
+
+  <section id="frequencia">
+    <h2>Frequência e atraso</h2>
+    <div class="card"><div class='dezena-row'><div><b>20</b> · 2331x · atraso 1<div class='bar'><span style='width:100.0%'></span></div></div><span class='badge'>62.54%</span></div><div class='dezena-row'><div><b>10</b> · 2323x · atraso 0<div class='bar'><span style='width:99.7%'></span></div></div><span class='badge'>62.33%</span></div><div class='dezena-row'><div><b>25</b> · 2316x · atraso 1<div class='bar'><span style='width:99.4%'></span></div></div><span class='badge'>62.14%</span></div><div class='dezena-row'><div><b>11</b> · 2289x · atraso 0<div class='bar'><span style='width:98.2%'></span></div></div><span class='badge'>61.42%</span></div><div class='dezena-row'><div><b>13</b> · 2268x · atraso 0<div class='bar'><span style='width:97.3%'></span></div></div><span class='badge'>60.85%</span></div><div class='dezena-row'><div><b>24</b> · 2264x · atraso 1<div class='bar'><span style='width:97.1%'></span></div></div><span class='badge'>60.75%</span></div><div class='dezena-row'><div><b>01</b> · 2261x · atraso 0<div class='bar'><span style='width:97.0%'></span></div></div><span class='badge'>60.67%</span></div><div class='dezena-row'><div><b>14</b> · 2255x · atraso 0<div class='bar'><span style='width:96.7%'></span></div></div><span class='badge'>60.5%</span></div><div class='dezena-row'><div><b>04</b> · 2254x · atraso 0<div class='bar'><span style='width:96.7%'></span></div></div><span class='badge'>60.48%</span></div><div class='dezena-row'><div><b>03</b> · 2242x · atraso 0<div class='bar'><span style='width:96.2%'></span></div></div><span class='badge'>60.16%</span></div></div>
+  </section>
+
+  <section id="jogos">
+    <h2>Jogos de estudo do próximo concurso</h2>
+    <div class="card"><div class='result-row'><div><b>M1_aleatorio_puro</b><br><span class='nums'>03-05-06-07-09-11-12-13-14-16-17-18-20-23-24</span></div><span class='badge green'>198</span></div><div class='result-row'><div><b>M2_mais_frequentes</b><br><span class='nums'>01-02-03-04-05-10-11-12-13-14-15-20-22-24-25</span></div><span class='badge green'>181</span></div><div class='result-row'><div><b>M3_mais_atrasadas</b><br><span class='nums'>02-03-06-07-08-10-12-14-15-17-20-21-23-24-25</span></div><span class='badge green'>207</span></div><div class='result-row'><div><b>M4_par_impar_balanceado</b><br><span class='nums'>01-02-03-06-08-09-11-12-14-15-16-18-19-20-21</span></div><span class='badge green'>175</span></div><div class='result-row'><div><b>M5_soma_faixa_comum</b><br><span class='nums'>01-02-05-06-09-12-13-14-15-16-19-20-21-23-25</span></div><span class='badge green'>201</span></div></div>
+  </section>
+
   <section id="links">
-    <h2>Banco e arquivos</h2>
-    <div class="card">
-      <div class="row"><span>Banco do projeto</span><a href="dados/banco_projeto.json">abrir</a></div>
-      <div class="row"><span>Painel clássico</span><a href="painel.html">abrir</a></div>
-      <div class="row"><span>Painel de jogos</span><a href="painel_jogos.html">abrir</a></div>
-      <div class="row"><span>Relatório</span><a href="reports/relatorio_estatistico.md">abrir</a></div>
-      <div class="row"><span>Diário</span><a href="diario_estatistico.md">abrir</a></div>
-    </div>
+    <h2>Banco e arquivos do projeto</h2>
+    <div class="card"><div class='link-row'><span>Painel mobile</span><a href='painel_mobile.html'>abrir</a></div><div class='link-row'><span>Painel visual</span><a href='painel.html'>abrir</a></div><div class='link-row'><span>Relatório estatístico</span><a href='reports/relatorio_estatistico.md'>abrir</a></div><div class='link-row'><span>Diário estatístico</span><a href='diario_estatistico.md'>abrir</a></div><div class='link-row'><span>Histórico de resultados</span><a href='dados/resultados_lotofacil.csv'>abrir</a></div><div class='link-row'><span>Banco do projeto</span><a href='dados/banco_projeto.json'>abrir</a></div></div>
   </section>
 </main>
 </body>
