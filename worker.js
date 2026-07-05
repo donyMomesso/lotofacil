@@ -880,12 +880,24 @@ async function systemStatus(env) {
     WHERE concurso = ?
     ORDER BY metodo
   `).bind(proximoConcurso).all();
+  const conferidor = latest
+    ? await env.DB.prepare(`
+        SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
+        FROM jogos_sistema
+        WHERE concurso = ?
+        ORDER BY metodo
+      `).bind(latest.concurso).all()
+    : { results: [] };
 
   return json({
     ok: true,
     ultimo_resultado: latest,
     proximo_concurso: proximoConcurso,
     jogos_gerados: generated.results.map((jogo) => ({
+      ...jogo,
+      dezenas: JSON.parse(jogo.dezenas)
+    })),
+    jogos_conferidor: conferidor.results.map((jogo) => ({
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
     }))
