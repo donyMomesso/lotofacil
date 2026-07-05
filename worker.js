@@ -441,6 +441,14 @@ async function logout(request, env) {
   return json({ ok: true });
 }
 
+async function cleanupExpiredSessions(env) {
+  const result = await env.DB.prepare(
+    "DELETE FROM sessoes WHERE datetime(expira_em) <= datetime('now')"
+  ).run();
+
+  return result.meta.changes || 0;
+}
+
 async function listJogos(user, env) {
   const result = await env.DB.prepare(`
     SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
@@ -722,59 +730,71 @@ async function salvarConferencia(env, jogo, resultado) {
 
 async function conferirPendencias(env, userId = null) {
   await seedInitialResults(env);
-  const params = [];
   const userFilter = userId ? "AND usuario_id = ?" : "";
-
-  if (userId) {
-    params.push(userId);
-  }
-
-  const jogosResult = await env.DB.prepare(`
-    SELECT id, usuario_id, concurso, dezenas, manter_salvo, descartar_apos_rodadas
-    FROM jogos
-    WHERE status IN ('salvo', 'jogado', 'conferido')
-      ${userFilter}
-    ORDER BY datetime(criado_em) ASC
-    LIMIT 500
-  `).bind(...params).all();
+  const pageSize = 500;
+  let lastId = 0;
   let novas = 0;
   let atualizadas = 0;
+  let jogosAvaliados = 0;
   const resumo = [];
 
-  for (const jogo of jogosResult.results) {
-    const conferidas = await env.DB.prepare(`
-      SELECT COUNT(*) AS total
-      FROM conferencias
-      WHERE jogo_id = ?
-    `).bind(jogo.id).first();
-    const limite = jogo.manter_salvo ? 50 : Number(jogo.descartar_apos_rodadas || 2);
-    const restantes = Math.max(0, limite - Number(conferidas.total || 0));
+  while (true) {
+    const params = userId ? [userId, lastId, pageSize] : [lastId, pageSize];
+    const jogosResult = await env.DB.prepare(`
+      SELECT id, usuario_id, concurso, dezenas, manter_salvo, descartar_apos_rodadas
+      FROM jogos
+      WHERE status IN ('salvo', 'jogado', 'conferido')
+        ${userFilter}
+        AND id > ?
+      ORDER BY id ASC
+      LIMIT ?
+    `).bind(...params).all();
 
-    if (!restantes) {
-      continue;
+    if (!jogosResult.results.length) {
+      break;
     }
 
-    const resultados = await env.DB.prepare(`
-      SELECT resultados.concurso, resultados.data_sorteio, resultados.dezenas, resultados.dezenas_texto
-      FROM resultados
-      LEFT JOIN conferencias
-        ON conferencias.jogo_id = ? AND conferencias.concurso = resultados.concurso
-      WHERE conferencias.id IS NULL
-        AND (? IS NULL OR resultados.concurso >= ?)
-      ORDER BY resultados.concurso ASC
-      LIMIT ?
-    `).bind(jogo.id, jogo.concurso, jogo.concurso, restantes).all();
+    for (const jogo of jogosResult.results) {
+      lastId = Math.max(lastId, jogo.id);
+      jogosAvaliados += 1;
+      const conferidas = await env.DB.prepare(`
+        SELECT COUNT(*) AS total
+        FROM conferencias
+        WHERE jogo_id = ?
+      `).bind(jogo.id).first();
+      const limite = jogo.manter_salvo ? 50 : Number(jogo.descartar_apos_rodadas || 2);
+      const restantes = Math.max(0, limite - Number(conferidas.total || 0));
 
-    for (const resultado of resultados.results) {
-      const conferencia = await salvarConferencia(env, jogo, resultado);
-
-      if (conferencia.nova) {
-        novas += 1;
-      } else {
-        atualizadas += 1;
+      if (!restantes) {
+        continue;
       }
 
-      resumo.push(conferencia);
+      const resultados = await env.DB.prepare(`
+        SELECT resultados.concurso, resultados.data_sorteio, resultados.dezenas, resultados.dezenas_texto
+        FROM resultados
+        LEFT JOIN conferencias
+          ON conferencias.jogo_id = ? AND conferencias.concurso = resultados.concurso
+        WHERE conferencias.id IS NULL
+          AND (? IS NULL OR resultados.concurso >= ?)
+        ORDER BY resultados.concurso ASC
+        LIMIT ?
+      `).bind(jogo.id, jogo.concurso, jogo.concurso, restantes).all();
+
+      for (const resultado of resultados.results) {
+        const conferencia = await salvarConferencia(env, jogo, resultado);
+
+        if (conferencia.nova) {
+          novas += 1;
+        } else {
+          atualizadas += 1;
+        }
+
+        resumo.push(conferencia);
+      }
+    }
+
+    if (jogosResult.results.length < pageSize) {
+      break;
     }
   }
 
@@ -792,6 +812,7 @@ async function conferirPendencias(env, userId = null) {
 
   return {
     ok: true,
+    jogos_avaliados: jogosAvaliados,
     jogos_conferidos: new Set(resumo.map((item) => item.jogo_id)).size,
     conferencias_novas: novas,
     conferencias_atualizadas: atualizadas,
@@ -831,6 +852,7 @@ async function conferirResultadoParaJogos(env, resultado) {
 }
 
 async function runAutoCycle(env) {
+  const sessoesExpiradas = await cleanupExpiredSessions(env);
   const latest = await latestResult(env);
   let nextToFetch = latest ? latest.concurso + 1 : 1;
   const novos = [];
@@ -865,6 +887,7 @@ async function runAutoCycle(env) {
     novos_concursos: novos.map((resultado) => resultado.concurso),
     conferencias,
     jogos_descartados: pendentes.jogos_descartados,
+    sessoes_expiradas: sessoesExpiradas,
     proximo_concurso: proximoConcurso,
     jogos_gerados: jogosGerados.length
   };

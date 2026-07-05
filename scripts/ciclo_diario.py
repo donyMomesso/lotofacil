@@ -75,6 +75,8 @@ def main():
 
     lib.salvar_frequencia_dezenas()
     lib.salvar_estatisticas_metodos()
+    estatisticas_json = lib.exportar_estatisticas_para_json()
+    print(f"[ok] JSON estatistico atualizado: {estatisticas_json}")
 
     gerar_relatorio.main()
     gerar_banco_projeto.main()
