@@ -36,12 +36,19 @@ Resultados = List[List[int]]
 Par = Tuple[int, int]
 
 
+def dezenas_do_resultado(resultado) -> Jogo:
+    """Aceita resultado completo (dict) ou lista de dezenas e retorna dezenas ordenadas."""
+    if isinstance(resultado, dict):
+        return sorted(resultado["dezenas"])
+    return sorted(resultado)
+
+
 def carregar_resultados_dezenas(ate_concurso: Optional[int] = None) -> Resultados:
     """Carrega o histórico como lista de listas de dezenas em ordem crescente."""
     resultados = carregar_resultados()
     if ate_concurso is not None:
         resultados = [r for r in resultados if r["concurso"] <= ate_concurso]
-    return [sorted(r["dezenas"]) for r in resultados]
+    return [dezenas_do_resultado(r) for r in resultados]
 
 
 def gerar_jogo_aleatorio(rng: random.Random) -> Jogo:
@@ -71,7 +78,7 @@ def calcular_pares_recentes(
     """Retorna todos os pares que apareceram juntos nos últimos concursos."""
     pares: Set[Par] = set()
     for resultado in resultados[-n_concursos:]:
-        for a, b in combinations(sorted(resultado), 2):
+        for a, b in combinations(dezenas_do_resultado(resultado), 2):
             pares.add((a, b))
     return pares
 
@@ -190,7 +197,7 @@ def metodo_m6_filtros_combinados(
     - 8 a 11 dezenas repetidas do concurso anterior.
     """
     rng = rng or random.Random()
-    resultado_anterior = resultados[-1] if resultados else []
+    resultado_anterior = dezenas_do_resultado(resultados[-1]) if resultados else []
     pares_recentes = calcular_pares_recentes(resultados)
 
     def filtro(jogo: Jogo) -> bool:
@@ -215,7 +222,7 @@ def metodo_m7_cobertura_pares(
 ) -> List[Jogo]:
     """M7: gera 1500 jogos e ranqueia pela cobertura de pares recentes."""
     rng = rng or random.Random()
-    resultado_anterior = resultados[-1] if resultados else []
+    resultado_anterior = dezenas_do_resultado(resultados[-1]) if resultados else []
     pares_recentes = calcular_pares_recentes(resultados)
     candidatos = [gerar_jogo_aleatorio(rng) for _ in range(NUM_JOGOS_GERAR)]
     return selecionar_top_jogos(candidatos, pares_recentes, resultado_anterior)
@@ -227,7 +234,7 @@ def metodo_m8_repeticao_controlada(
 ) -> List[Jogo]:
     """M8: gera 1500 jogos e mantém apenas os com 9, 10 ou 11 repetições."""
     rng = rng or random.Random()
-    resultado_anterior = resultados[-1] if resultados else []
+    resultado_anterior = dezenas_do_resultado(resultados[-1]) if resultados else []
     pares_recentes = calcular_pares_recentes(resultados)
 
     def filtro(jogo: Jogo) -> bool:

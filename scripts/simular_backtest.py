@@ -1,13 +1,13 @@
 """
-Simulacao retroativa (backtest) dos metodos oficiais contra todos os concursos.
+Backtest retroativo dos 8 metodos estatisticos da Lotofacil.
 
-Para cada concurso N, o script gera jogos usando apenas os dados disponiveis
-ate o concurso N-1. Isso evita data leakage: o resultado real de N nunca entra
-na geracao dos jogos que serao conferidos contra ele.
+Para cada concurso N, o script gera 5 jogos por metodo usando somente o
+historico disponivel ate N-1. O resultado real de N so e usado depois, na etapa
+de conferencia, evitando data leakage.
 
-Saidas:
-    dados/simulacao_metodos.csv       -> uma linha por jogo simulado
-    dados/estatisticas_simulacao.csv  -> desempenho agregado por metodo
+Arquivos gerados:
+    dados/simulacao_metodos.csv
+    dados/estatisticas_simulacao.csv
 """
 import csv
 import os
@@ -25,6 +25,7 @@ import lotofacil_lib as lib
 
 SIMULACAO_CSV = os.path.join(lib.DADOS_DIR, "simulacao_metodos.csv")
 ESTATISTICAS_SIM_CSV = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
+JOGOS_POR_METODO = 5
 
 METODOS_BASICOS = [
     "M1_aleatorio_puro",
@@ -40,24 +41,23 @@ METODOS_AVANCADOS = {
     "M8_repeticao_controlada": metodo_m8_repeticao_controlada,
 }
 
-JOGOS_POR_METODO = 5
 
+def filtrar_historico_anterior(resultados, concurso):
+    """
+    Retorna somente concursos anteriores ao concurso em teste.
 
-def resultados_dezenas_ate(resultados, ate_concurso):
-    """Converte o historico em listas de dezenas ate o concurso informado."""
-    return [
-        sorted(r["dezenas"])
-        for r in resultados
-        if r["concurso"] <= ate_concurso
-    ]
+    Mantem o formato original retornado por lotofacil_lib.carregar_resultados():
+    dicionarios com pelo menos as chaves "concurso" e "dezenas".
+    """
+    return [r for r in resultados if r["concurso"] < concurso]
 
 
 def gerar_jogos_basicos(concurso):
     """
     Gera 5 jogos para cada metodo basico.
 
-    Cada rodada usa uma seed diferente, mas sempre considera apenas dados ate
-    concurso-1 dentro de lotofacil_lib.gerar_todos_metodos().
+    Cada variacao usa uma seed propria e a biblioteca recebe ate_concurso como
+    concurso-1, preservando a regra de nao usar o resultado atual.
     """
     jogos_por_metodo = {metodo: [] for metodo in METODOS_BASICOS}
     for jogo_idx in range(1, JOGOS_POR_METODO + 1):
@@ -68,40 +68,37 @@ def gerar_jogos_basicos(concurso):
     return jogos_por_metodo
 
 
-def gerar_jogos_avancados_para_concurso(resultados_anteriores, concurso):
+def gerar_jogos_avancados(historico_anterior, concurso):
     """
-    Gera 5 jogos para M6, M7 e M8 usando somente resultados anteriores.
+    Gera 5 jogos para M6, M7 e M8 usando apenas o historico anterior.
 
-    As funcoes avancadas recebem explicitamente o historico anterior, portanto
-    nao acessam o resultado do concurso que esta sendo testado.
+    Os metodos avancados recebem o historico no formato completo de dicionarios.
     """
-    return {
-        metodo: gerador(
-            resultados_anteriores,
-            random.Random(concurso * 1000 + offset),
-        )
-        for offset, (metodo, gerador) in enumerate(METODOS_AVANCADOS.items(), start=6)
-    }
+    jogos_por_metodo = {}
+    for offset, (metodo, gerador) in enumerate(METODOS_AVANCADOS.items(), start=6):
+        rng = random.Random(concurso * 1000 + offset)
+        jogos_por_metodo[metodo] = gerador(historico_anterior, rng)
+    return jogos_por_metodo
 
 
-def registrar_linhas_simulacao(linhas_sim, acertos_por_metodo, concurso, dezenas_reais, jogos_por_metodo):
-    """Confere jogos contra o resultado real e adiciona linhas ao CSV final."""
+def registrar_simulacoes(linhas_sim, acertos_por_metodo, concurso, dezenas_reais, jogos_por_metodo):
+    """Confere cada jogo e registra uma linha no CSV de simulacao."""
     for metodo, jogos in jogos_por_metodo.items():
         for jogo_idx, dezenas in enumerate(jogos, start=1):
-            dezenas_set = set(dezenas)
-            acertos = len(dezenas_set & dezenas_reais)
+            dezenas_ordenadas = sorted(dezenas)
+            acertos = len(set(dezenas_ordenadas) & dezenas_reais)
             acertos_por_metodo[metodo].append(acertos)
             linhas_sim.append({
                 "concurso": concurso,
                 "metodo": metodo,
                 "jogo_idx": jogo_idx,
-                "dezenas": "-".join(f"{d:02d}" for d in sorted(dezenas)),
+                "dezenas": "-".join(f"{d:02d}" for d in dezenas_ordenadas),
                 "acertos": acertos,
             })
 
 
-def calcular_linha_estatistica(metodo, acertos_lista):
-    """Calcula estatisticas agregadas de um metodo."""
+def calcular_estatisticas(metodo, acertos_lista):
+    """Calcula estatisticas completas para um metodo."""
     n = len(acertos_lista)
     dist = Counter(acertos_lista)
     media = statistics.mean(acertos_lista) if n else 0.0
@@ -125,8 +122,8 @@ def calcular_linha_estatistica(metodo, acertos_lista):
         "pct_15": round(100 * sum(1 for a in acertos_lista if a == 15) / n, 5) if n else 0.0,
     }
 
-    for k in range(16):
-        linha[f"qtd_{k}_acertos"] = dist.get(k, 0)
+    for acertos in range(16):
+        linha[f"qtd_{acertos}_acertos"] = dist.get(acertos, 0)
 
     return linha
 
@@ -134,7 +131,7 @@ def calcular_linha_estatistica(metodo, acertos_lista):
 def main():
     resultados = lib.carregar_resultados()
     if len(resultados) < 2:
-        print("Historico insuficiente para simular (precisa de pelo menos 2 concursos).")
+        print("Historico insuficiente para simular.")
         return
 
     metodos = METODOS_BASICOS + list(METODOS_AVANCADOS.keys())
@@ -145,61 +142,45 @@ def main():
         concurso = resultado["concurso"]
         dezenas_reais = resultado["dezenas"]
 
-        # O primeiro concurso nao tem historico anterior suficiente para teste.
-        if idx >= 1:
-            resultados_anteriores = resultados_dezenas_ate(resultados, concurso - 1)
+        if idx == 0:
+            continue
 
-            jogos_basicos = gerar_jogos_basicos(concurso)
-            jogos_avancados = gerar_jogos_avancados_para_concurso(
-                resultados_anteriores,
-                concurso,
-            )
-            jogos_por_metodo = {**jogos_basicos, **jogos_avancados}
+        historico_anterior = filtrar_historico_anterior(resultados, concurso)
+        jogos_basicos = gerar_jogos_basicos(concurso)
+        jogos_avancados = gerar_jogos_avancados(historico_anterior, concurso)
+        jogos_por_metodo = {**jogos_basicos, **jogos_avancados}
 
-            registrar_linhas_simulacao(
-                linhas_sim,
-                acertos_por_metodo,
-                concurso,
-                dezenas_reais,
-                jogos_por_metodo,
-            )
+        registrar_simulacoes(
+            linhas_sim,
+            acertos_por_metodo,
+            concurso,
+            dezenas_reais,
+            jogos_por_metodo,
+        )
 
         if idx % 500 == 0:
             print(f"[progresso] concurso {concurso} ({idx + 1}/{len(resultados)})")
 
-    fieldnames_sim = ["concurso", "metodo", "jogo_idx", "dezenas", "acertos"]
     with open(SIMULACAO_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames_sim)
+        writer = csv.DictWriter(f, fieldnames=["concurso", "metodo", "jogo_idx", "dezenas", "acertos"])
         writer.writeheader()
         writer.writerows(linhas_sim)
 
     linhas_stats = [
-        calcular_linha_estatistica(metodo, acertos_por_metodo[metodo])
+        calcular_estatisticas(metodo, acertos_por_metodo[metodo])
         for metodo in metodos
     ]
 
-    fieldnames_stats = list(linhas_stats[0].keys())
     with open(ESTATISTICAS_SIM_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames_stats)
+        writer = csv.DictWriter(f, fieldnames=list(linhas_stats[0].keys()))
         writer.writeheader()
         writer.writerows(linhas_stats)
 
     print(
-        f"\nSimulacao concluida: {len(resultados) - 1} concursos backtested, "
-        f"{len(linhas_sim)} jogos simulados no total."
+        f"Backtest concluido: {len(resultados) - 1} concursos, "
+        f"{len(linhas_sim)} jogos simulados."
     )
-    print(f" - {SIMULACAO_CSV}")
-    print(f" - {ESTATISTICAS_SIM_CSV}")
-    print(f"\nResumo (esperanca teorica = {lib.ESPERANCA_TEORICA}):")
-    for linha in linhas_stats:
-        print(
-            f"  {linha['metodo']:<28} "
-            f"jogos={linha['total_jogos_simulados']:<6} "
-            f"media={linha['media_acertos']:<8} "
-            f"desvio={linha['desvio_padrao_acertos']:<8} "
-            f"11+={linha['pct_11_ou_mais']}% "
-            f"13+={linha['pct_13_ou_mais']}%"
-        )
+    print(f"Arquivos atualizados: {SIMULACAO_CSV} e {ESTATISTICAS_SIM_CSV}")
 
 
 if __name__ == "__main__":
