@@ -2,7 +2,7 @@
   "meta": {
     "nome": "Laboratório Estatístico Lotofácil",
     "tipo": "estudo_educativo",
-    "gerado_em": "05/07/2026 17:55",
+    "gerado_em": "05/07/2026 18:22",
     "timezone": "America/Sao_Paulo",
     "total_concursos": 3727,
     "ultimo_concurso": {
@@ -546,6 +546,141 @@
       "soma": "200",
       "pares": "7",
       "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "01-02-03-04-08-11-13-14-16-19-20-21-22-23-24",
+      "soma": "201",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "02-04-05-08-09-12-13-14-15-16-18-19-21-22-23",
+      "soma": "201",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "01-04-05-06-08-09-13-14-16-17-18-19-22-23-24",
+      "soma": "199",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "01-05-06-09-10-11-12-13-14-16-17-18-19-23-24",
+      "soma": "198",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "01-02-03-04-08-11-13-16-17-18-19-20-22-23-25",
+      "soma": "202",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "02-04-05-06-07-09-13-14-16-17-18-19-22-23-25",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "01-03-04-06-09-10-11-14-16-17-19-21-22-23-24",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "01-02-05-07-10-11-12-13-14-16-19-20-22-23-25",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "01-02-04-05-09-10-12-13-14-15-19-22-23-24-25",
+      "soma": "198",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "02-04-05-09-10-11-12-13-14-17-18-19-21-23-24",
+      "soma": "202",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "01-02-04-09-10-11-12-13-16-17-18-20-21-22-23",
+      "soma": "199",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "01-02-03-05-10-12-13-14-16-17-18-19-21-23-24",
+      "soma": "198",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "01-02-05-07-09-10-13-14-16-17-18-21-22-23-24",
+      "soma": "202",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "01-03-04-08-09-10-11-13-14-18-19-20-21-22-24",
+      "soma": "197",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "05/07/2026",
+      "concurso_alvo": 3728,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "02-04-05-09-10-11-12-13-14-15-16-19-20-23-24",
+      "soma": "197",
+      "pares": "8",
+      "impares": "7"
     }
   ],
   "ultimas_conferencias": [
