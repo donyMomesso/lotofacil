@@ -63,8 +63,8 @@
       </div>
 
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-        <span style="font-size:21px; font-weight:800; color:#5B21B6; font-family:'Sora',sans-serif;">Concurso #3727</span>
-        <span style="font-size:13px; color:#8B76B0;">Gerado em 04/07/2026</span>
+        <span style="font-size:21px; font-weight:800; color:#5B21B6; font-family:'Sora',sans-serif;">Concurso #{{ concursoAlvo }}</span>
+        <span style="font-size:13px; color:#8B76B0;">Geracao automatica do sistema</span>
         <span style="background:#F3E8FF; color:#7C3AED; border-radius:6px; padding:3px 10px; font-size:11.5px; font-weight:600;">Próximo sorteio</span>
       </div>
 
@@ -804,6 +804,7 @@ class Component extends DCLogic {
     authUser: null,
     authStatus: '',
     panelStatus: '',
+    systemGames: [],
     fechamentoN: 16,
     fechamentoSelected: [],
     fechamentoOpcoes: [],
@@ -839,6 +840,7 @@ class Component extends DCLogic {
     try {
       const data = await painelApi('/api/me');
       this.setState({ authLoading: false, authUser: data.user, authStatus: '' });
+      await this.loadSystemStatus();
       await this.loadSavedGames();
     } catch (err) {
       clearAuthToken();
@@ -857,6 +859,7 @@ class Component extends DCLogic {
       const data = await painelApi(path, { method:'POST', body: JSON.stringify(payload) });
       setAuthToken(data.token);
       this.setState({ authUser: data.user, authStatus: '', panelStatus: 'Acesso liberado.' });
+      await this.loadSystemStatus();
       await this.loadSavedGames();
     } catch (err) {
       this.setState({ authStatus: err.message || 'Falha no acesso.' });
@@ -871,6 +874,19 @@ class Component extends DCLogic {
       this.setState({ savedGames: data.jogos.map(j => this.localGameFromApi(j)), panelStatus: 'Jogos carregados do banco.' });
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao carregar jogos.' });
+    }
+  }
+
+  async loadSystemStatus() {
+    try {
+      const data = await painelApi('/api/sistema/status');
+      this.setState({
+        concursoAlvo: data.proximo_concurso || this.state.concursoAlvo,
+        systemGames: data.jogos_gerados || [],
+        panelStatus: `Sistema configurado para o concurso ${data.proximo_concurso}.`
+      });
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao carregar configuracao do sistema.' });
     }
   }
 
@@ -1205,7 +1221,24 @@ class Component extends DCLogic {
       parImparOk: op.a.parImparEquilibrado,
     }));
 
-    const desdobramento = METHOD_DEFS_3727.map(m => ({
+    const systemColors = [
+      { bg:'#DBEAFE', color:'#1D4ED8' },
+      { bg:'#DCFCE7', color:'#166534' },
+      { bg:'#FEF3C7', color:'#92400E' },
+      { bg:'#FCE7F3', color:'#BE185D' },
+      { bg:'#F3E8FF', color:'#5B21B6' },
+    ];
+    const sourceMethods = s.systemGames.length
+      ? s.systemGames.map((game, idx) => ({
+          label: game.metodo,
+          dezenas: game.dezenas,
+          soma: game.soma,
+          p: game.pares,
+          i: game.impares,
+          ...systemColors[idx % systemColors.length],
+        }))
+      : METHOD_DEFS_3727;
+    const desdobramento = sourceMethods.map(m => ({
       label: m.label,
       badgeStyle: `background:${m.bg};color:${m.color};border:1px solid ${m.color}33;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;`,
       cells: m.dezenas.map(n => ({ num: pad(n), style: tdStyle(n) })),

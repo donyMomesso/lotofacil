@@ -15,6 +15,7 @@ const RECENT_RESULTS = [
     dezenas: [1, 2, 4, 5, 6, 8, 11, 13, 14, 16, 17, 19, 21, 24, 25]
   }
 ];
+const LOTOFACIL_API_BASE = "https://loteriascaixa-api.herokuapp.com/api/lotofacil";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -168,6 +169,192 @@ function normalizeDezenas(input) {
 
 function dezenasTexto(dezenas) {
   return dezenas.map((dezena) => String(dezena).padStart(2, "0")).join("-");
+}
+
+function parseApiResult(data) {
+  const concurso = Number(data?.concurso || data?.numero || data?.numeroConcurso);
+  const dataSorteio = String(data?.data || data?.dataApuracao || data?.dataSorteio || "").trim();
+  const rawDezenas = data?.dezenas || data?.listaDezenas || data?.dezenasSorteadasOrdemSorteio || [];
+  const dezenas = rawDezenas.map((value) => Number(value)).filter((value) => Number.isInteger(value));
+
+  if (!concurso || dezenas.length !== 15) {
+    return null;
+  }
+
+  return {
+    concurso,
+    data: dataSorteio,
+    dezenas: dezenas.sort((a, b) => a - b)
+  };
+}
+
+async function fetchConcurso(concurso) {
+  const response = await fetch(`${LOTOFACIL_API_BASE}/${concurso}`, {
+    headers: { accept: "application/json" }
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return parseApiResult(await response.json());
+}
+
+async function seedInitialResults(env) {
+  const row = await env.DB.prepare("SELECT COUNT(*) AS total FROM resultados").first();
+
+  if (row.total) {
+    return;
+  }
+
+  for (const resultado of RECENT_RESULTS.slice().reverse()) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO resultados (concurso, data_sorteio, dezenas, dezenas_texto)
+      VALUES (?, ?, ?, ?)
+    `).bind(
+      resultado.concurso,
+      resultado.data,
+      JSON.stringify(resultado.dezenas),
+      dezenasTexto(resultado.dezenas)
+    ).run();
+  }
+}
+
+async function latestResult(env) {
+  await seedInitialResults(env);
+  const row = await env.DB.prepare(`
+    SELECT concurso, data_sorteio, dezenas, dezenas_texto
+    FROM resultados
+    ORDER BY concurso DESC
+    LIMIT 1
+  `).first();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    concurso: row.concurso,
+    data: row.data_sorteio,
+    dezenas: JSON.parse(row.dezenas),
+    dezenas_texto: row.dezenas_texto
+  };
+}
+
+async function insertResult(env, resultado) {
+  const inserted = await env.DB.prepare(`
+    INSERT OR IGNORE INTO resultados (concurso, data_sorteio, dezenas, dezenas_texto)
+    VALUES (?, ?, ?, ?)
+  `).bind(
+    resultado.concurso,
+    resultado.data,
+    JSON.stringify(resultado.dezenas),
+    dezenasTexto(resultado.dezenas)
+  ).run();
+
+  return Boolean(inserted.meta.changes);
+}
+
+function scoreSet(dezenas) {
+  const soma = dezenas.reduce((total, dezena) => total + dezena, 0);
+  const pares = dezenas.filter((dezena) => dezena % 2 === 0).length;
+
+  return { soma, pares, impares: dezenas.length - pares };
+}
+
+async function recentResultsForGeneration(env) {
+  await seedInitialResults(env);
+  const rows = await env.DB.prepare(`
+    SELECT concurso, dezenas
+    FROM resultados
+    ORDER BY concurso DESC
+    LIMIT 120
+  `).all();
+
+  return rows.results.map((row) => ({
+    concurso: row.concurso,
+    dezenas: JSON.parse(row.dezenas)
+  }));
+}
+
+function generatedGamesFromResults(results, concurso) {
+  const all = Array.from({ length: 25 }, (_, index) => index + 1);
+  const freq = new Map(all.map((number) => [number, 0]));
+  const lastSeen = new Map(all.map((number) => [number, 9999]));
+
+  results.forEach((result, idx) => {
+    const set = new Set(result.dezenas);
+    for (const number of all) {
+      if (set.has(number)) {
+        freq.set(number, freq.get(number) + 1);
+        lastSeen.set(number, Math.min(lastSeen.get(number), idx));
+      }
+    }
+  });
+
+  const byFreq = all.slice().sort((a, b) => freq.get(b) - freq.get(a) || a - b);
+  const byLate = all.slice().sort((a, b) => lastSeen.get(b) - lastSeen.get(a) || a - b);
+  const seed = (concurso * 9301 + 49297) % 233280;
+  const shuffled = all.slice().sort((a, b) => ((a * seed) % 97) - ((b * seed) % 97));
+  const balanced = [
+    ...byFreq.slice(0, 5),
+    ...byLate.slice(0, 5),
+    ...shuffled
+  ];
+  const unique15 = (list) => Array.from(new Set(list)).slice(0, 15).sort((a, b) => a - b);
+  const makeSumRange = () => {
+    let best = unique15(balanced);
+    let bestDiff = Math.abs(scoreSet(best).soma - 200);
+
+    for (let offset = 0; offset < 25; offset += 1) {
+      const candidate = unique15([...balanced.slice(offset), ...balanced.slice(0, offset), ...byFreq, ...byLate]);
+      const diff = Math.abs(scoreSet(candidate).soma - 200);
+      if (diff < bestDiff) {
+        best = candidate;
+        bestDiff = diff;
+      }
+    }
+
+    return best;
+  };
+
+  return [
+    { metodo: "M1_aleatorio_deterministico", dezenas: unique15(shuffled) },
+    { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq) },
+    { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate) },
+    { metodo: "M4_balanceado", dezenas: unique15([...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled]) },
+    { metodo: "M5_soma_faixa_comum", dezenas: makeSumRange() }
+  ];
+}
+
+async function generateNextContestGames(env, concurso) {
+  const results = await recentResultsForGeneration(env);
+  const games = generatedGamesFromResults(results, concurso);
+
+  for (const game of games) {
+    const stats = scoreSet(game.dezenas);
+    await env.DB.prepare(`
+      INSERT INTO jogos_sistema (concurso, metodo, dezenas, dezenas_texto, soma, pares, impares)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(concurso, metodo) DO UPDATE SET
+        dezenas = excluded.dezenas,
+        dezenas_texto = excluded.dezenas_texto,
+        soma = excluded.soma,
+        pares = excluded.pares,
+        impares = excluded.impares,
+        criado_em = CURRENT_TIMESTAMP
+    `).bind(
+      concurso,
+      game.metodo,
+      JSON.stringify(game.dezenas),
+      dezenasTexto(game.dezenas),
+      stats.soma,
+      stats.pares,
+      stats.impares
+    ).run();
+  }
+
+  return games;
 }
 
 async function register(request, env) {
@@ -376,6 +563,19 @@ async function deleteJogo(user, env, id) {
 }
 
 async function conferirDuasRodadas(user, env) {
+  await seedInitialResults(env);
+  const latestRows = await env.DB.prepare(`
+    SELECT concurso, data_sorteio, dezenas, dezenas_texto
+    FROM resultados
+    ORDER BY concurso DESC
+    LIMIT 2
+  `).all();
+  const rodadas = latestRows.results.map((row) => ({
+    concurso: row.concurso,
+    data: row.data_sorteio,
+    dezenas: JSON.parse(row.dezenas),
+    dezenas_texto: row.dezenas_texto
+  }));
   const result = await env.DB.prepare(`
     SELECT id, dezenas
     FROM jogos
@@ -390,9 +590,9 @@ async function conferirDuasRodadas(user, env) {
   for (const jogo of result.results) {
     const dezenas = new Set(JSON.parse(jogo.dezenas));
 
-    for (const rodada of RECENT_RESULTS.slice(0, 2)) {
+    for (const rodada of rodadas) {
       const acertos = rodada.dezenas.filter((dezena) => dezenas.has(dezena)).length;
-      const dezenasSorteadas = dezenasTexto(rodada.dezenas);
+      const dezenasSorteadas = rodada.dezenas_texto;
       const insert = await env.DB.prepare(`
         INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
         VALUES (?, ?, ?, ?)
@@ -428,15 +628,108 @@ async function conferirDuasRodadas(user, env) {
 
   return json({
     ok: true,
-    rodadas: RECENT_RESULTS.slice(0, 2).map((rodada) => ({
+    rodadas: rodadas.map((rodada) => ({
       concurso: rodada.concurso,
       data: rodada.data,
-      dezenas_sorteadas: dezenasTexto(rodada.dezenas)
+      dezenas_sorteadas: rodada.dezenas_texto
     })),
     jogos_conferidos: result.results.length,
     conferencias_novas: novas,
     conferencias_atualizadas: atualizadas,
     resumo
+  });
+}
+
+async function conferirResultadoParaJogos(env, resultado) {
+  const jogos = await env.DB.prepare(`
+    SELECT id, dezenas
+    FROM jogos
+    WHERE concurso = ? AND status IN ('salvo', 'jogado', 'conferido')
+  `).bind(resultado.concurso).all();
+  let conferidos = 0;
+
+  for (const jogo of jogos.results) {
+    const dezenas = new Set(JSON.parse(jogo.dezenas));
+    const acertos = resultado.dezenas.filter((dezena) => dezenas.has(dezena)).length;
+
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
+      VALUES (?, ?, ?, ?)
+    `).bind(jogo.id, resultado.concurso, dezenasTexto(resultado.dezenas), acertos).run();
+    await env.DB.prepare(`
+      UPDATE conferencias
+      SET dezenas_sorteadas = ?, acertos = ?, conferido_em = CURRENT_TIMESTAMP
+      WHERE jogo_id = ? AND concurso = ?
+    `).bind(dezenasTexto(resultado.dezenas), acertos, jogo.id, resultado.concurso).run();
+    conferidos += 1;
+  }
+
+  if (conferidos) {
+    await env.DB.prepare(`
+      UPDATE jogos
+      SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP
+      WHERE concurso = ? AND status IN ('salvo', 'jogado', 'conferido')
+    `).bind(resultado.concurso).run();
+  }
+
+  return conferidos;
+}
+
+async function runAutoCycle(env) {
+  const latest = await latestResult(env);
+  let nextToFetch = latest ? latest.concurso + 1 : 1;
+  const novos = [];
+  let conferencias = 0;
+
+  for (let attempts = 0; attempts < 5; attempts += 1) {
+    const resultado = await fetchConcurso(nextToFetch);
+
+    if (!resultado) {
+      break;
+    }
+
+    const inserted = await insertResult(env, resultado);
+
+    if (inserted) {
+      novos.push(resultado);
+      conferencias += await conferirResultadoParaJogos(env, resultado);
+    }
+
+    nextToFetch += 1;
+  }
+
+  const currentLatest = await latestResult(env);
+  const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
+  const jogosGerados = await generateNextContestGames(env, proximoConcurso);
+
+  return {
+    ok: true,
+    novos_concursos: novos.map((resultado) => resultado.concurso),
+    conferencias,
+    proximo_concurso: proximoConcurso,
+    jogos_gerados: jogosGerados.length
+  };
+}
+
+async function systemStatus(env) {
+  const latest = await latestResult(env);
+  const proximoConcurso = latest ? latest.concurso + 1 : 1;
+  await generateNextContestGames(env, proximoConcurso);
+  const generated = await env.DB.prepare(`
+    SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
+    FROM jogos_sistema
+    WHERE concurso = ?
+    ORDER BY metodo
+  `).bind(proximoConcurso).all();
+
+  return json({
+    ok: true,
+    ultimo_resultado: latest,
+    proximo_concurso: proximoConcurso,
+    jogos_gerados: generated.results.map((jogo) => ({
+      ...jogo,
+      dezenas: JSON.parse(jogo.dezenas)
+    }))
   });
 }
 
@@ -450,6 +743,10 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/health") {
     return json({ ok: true, service: "lotofacil" });
+  }
+
+  if (path === "/api/sistema/status" && method === "GET") {
+    return systemStatus(env);
   }
 
   if (path === "/api/auth/register" && method === "POST") {
@@ -472,6 +769,10 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/me" && method === "GET") {
     return json({ ok: true, user });
+  }
+
+  if (path === "/api/ciclo/rodar" && method === "POST") {
+    return json(await runAutoCycle(env));
   }
 
   if (path === "/api/jogos" && method === "GET") {
@@ -513,5 +814,9 @@ export default {
       console.error(err);
       return error("Erro interno do servidor.", 500);
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runAutoCycle(env));
   }
 };
