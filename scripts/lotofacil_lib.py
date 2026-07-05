@@ -200,11 +200,17 @@ def _sorteio_valido(dezenas):
     return len(set(dezenas)) == 15 and all(1 <= d <= 25 for d in dezenas)
 
 
+def _rng_or_default(rng):
+    return rng if rng is not None else random.Random()
+
+
 def metodo_aleatorio_puro(rng):
+    rng = _rng_or_default(rng)
     return set(rng.sample(TODAS_DEZENAS, 15))
 
 
 def metodo_mais_frequentes(rng, freq):
+    rng = _rng_or_default(rng)
     # ordena por frequência desc; empates quebrados aleatoriamente para não
     # favorecer sistematicamente dezenas menores
     dezenas = TODAS_DEZENAS[:]
@@ -214,6 +220,7 @@ def metodo_mais_frequentes(rng, freq):
 
 
 def metodo_mais_atrasadas(rng, atraso):
+    rng = _rng_or_default(rng)
     dezenas = TODAS_DEZENAS[:]
     rng.shuffle(dezenas)
     dezenas.sort(key=lambda d: atraso[d], reverse=True)
@@ -221,6 +228,7 @@ def metodo_mais_atrasadas(rng, atraso):
 
 
 def metodo_par_impar_balanceado(rng, alvo_pares=8, max_tentativas=500):
+    rng = _rng_or_default(rng)
     for _ in range(max_tentativas):
         candidato = rng.sample(TODAS_DEZENAS, 15)
         pares = sum(1 for d in candidato if d % 2 == 0)
@@ -230,6 +238,7 @@ def metodo_par_impar_balanceado(rng, alvo_pares=8, max_tentativas=500):
 
 
 def metodo_soma_faixa_comum(rng, faixa_min=180, faixa_max=210, max_tentativas=1000):
+    rng = _rng_or_default(rng)
     for _ in range(max_tentativas):
         candidato = rng.sample(TODAS_DEZENAS, 15)
         if faixa_min <= sum(candidato) <= faixa_max:
