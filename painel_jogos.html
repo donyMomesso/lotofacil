@@ -252,6 +252,10 @@
           <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">💾 Salvar jogo</div>
           <label style="font-size:12px; color:#8B76B0; display:block; margin-bottom:6px;">Concurso alvo</label>
           <input type="number" value="{{ concursoAlvo }}" onChange="{{ onConcursoChange }}" min="1" style="width:100%; background:#FAF7FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px; color:#1F1235; font-size:16px; font-weight:700; margin-bottom:14px;" />
+          <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#6B5B8A; line-height:1.45; margin-bottom:14px;">
+            <input type="checkbox" checked="{{ keepSaved }}" onChange="{{ onKeepSavedChange }}" style="width:auto; margin-top:2px;" />
+            <span>Manter salvo ate excluir manualmente. Se desmarcado, o jogo sai automaticamente depois de 2 conferencias.</span>
+          </label>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button onClick="{{ addGame }}" disabled="{{ addDisabled }}" style="{{ addBtnStyle }}">✅ Adicionar jogo</button>
             <button onClick="{{ clearSelected }}" style="flex:0; background:#FDF2F8; border:1px solid #FBCFE8; color:#BE185D; border-radius:8px; padding:11px 16px; cursor:pointer; font-size:14px; font-weight:600;">🗑 Limpar</button>
@@ -353,7 +357,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Jogos registrados</div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Conferir 2 rodadas</button>
+            <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Atualizar conferencias</button>
             <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
           </div>
         </div>
@@ -805,6 +809,7 @@ class Component extends DCLogic {
     authStatus: '',
     panelStatus: '',
     systemGames: [],
+    keepSaved: false,
     fechamentoN: 16,
     fechamentoSelected: [],
     fechamentoOpcoes: [],
@@ -828,6 +833,8 @@ class Component extends DCLogic {
       analise: analisarJogo(dezenas),
       status: jogo.status,
       conferencias: jogo.conferencias || [],
+      manter_salvo: Boolean(jogo.manter_salvo),
+      descartar_apos_rodadas: jogo.descartar_apos_rodadas || 2,
     };
   }
 
@@ -899,7 +906,7 @@ class Component extends DCLogic {
     try {
       const data = await painelApi('/api/jogos/conferir-duas-rodadas', { method:'POST', body: '{}' });
       const rodadas = data.rodadas.map(r => r.concurso).join(' e ');
-      this.setState({ panelStatus: `Conferencia salva: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}.` });
+      this.setState({ panelStatus: `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}. Descartados: ${data.jogos_descartados || 0}.` });
       await this.loadSavedGames();
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao conferir.' });
@@ -1003,6 +1010,10 @@ class Component extends DCLogic {
 
   setPerfil(p) { this.setState({ perfil: p }); }
 
+  setKeepSaved(e) {
+    this.setState({ keepSaved: Boolean(e?.target?.checked) });
+  }
+
   toggleLock(n) {
     this.setState(s => {
       const has = s.locked.includes(n);
@@ -1101,11 +1112,13 @@ class Component extends DCLogic {
           concurso: s.concursoAlvo,
           metodo: `Painel ${s.perfil}`,
           dezenas,
-          observacao: 'Gerado no painel avancado'
+          observacao: s.keepSaved ? 'Gerado no painel avancado - manter salvo' : 'Gerado no painel avancado - descartar apos 2 conferencias',
+          manter_salvo: s.keepSaved,
+          descartar_apos_rodadas: 2
         })
       });
-      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: 'Jogo salvo. Conferindo automaticamente...' });
-      await this.conferirDuasRodadas();
+      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: 'Jogo salvo no banco. Sera conferido automaticamente quando sair o resultado.' });
+      await this.loadSavedGames();
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao salvar jogo.' });
     }
@@ -1309,12 +1322,13 @@ class Component extends DCLogic {
       const conferenciasResumo = (g.conferencias || []).length
         ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos}`).join(' | ')
         : 'Sem conferencia';
+      const retencaoResumo = g.manter_salvo ? 'Mantido ate excluir' : `Descarta apos ${g.descartar_apos_rodadas || 2} conferencias`;
       return {
         concurso: g.concurso,
         dezenasStr: g.dezenas.map(pad).join('-'),
         soma: g.soma,
         parImpar: `${g.pares}p / ${g.impares}i`,
-        conferenciasResumo,
+        conferenciasResumo: `${conferenciasResumo} | ${retencaoResumo}`,
         analiseResumo: `Moldura ${a.moldura}/16 · Quentes ${a.quentes} · Seq.máx ${a.maxSeq} · ${a.somaFaixaComum ? 'soma comum' : 'soma fora da faixa'}`,
         classificacao: a.classificacao,
         classificacaoStyle: a.classificacao === 'Quente'
@@ -1390,7 +1404,9 @@ class Component extends DCLogic {
       selCount, selSoma, selParImpar,
       volante,
       concursoAlvo: s.concursoAlvo,
+      keepSaved: s.keepSaved,
       onConcursoChange: (e) => this.onConcursoChange(e),
+      onKeepSavedChange: (e) => this.setKeepSaved(e),
       addGame: () => this.addGame(),
       clearSelected: () => this.clearSelected(),
       conferirDuasRodadas: () => this.conferirDuasRodadas(),

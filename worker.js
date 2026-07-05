@@ -443,7 +443,8 @@ async function logout(request, env) {
 
 async function listJogos(user, env) {
   const result = await env.DB.prepare(`
-    SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao, criado_em, atualizado_em
+    SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
+           manter_salvo, descartar_apos_rodadas, criado_em, atualizado_em
     FROM jogos
     WHERE usuario_id = ?
     ORDER BY datetime(criado_em) DESC
@@ -452,6 +453,7 @@ async function listJogos(user, env) {
 
   const jogos = result.results.map((jogo) => ({
     ...jogo,
+    manter_salvo: Boolean(jogo.manter_salvo),
     dezenas: JSON.parse(jogo.dezenas),
     conferencias: []
   }));
@@ -505,11 +507,25 @@ async function createJogo(request, user, env) {
   const concurso = body.concurso ? Number(body.concurso) : null;
   const metodo = String(body.metodo || "").trim() || null;
   const observacao = String(body.observacao || "").trim() || null;
+  const manterSalvo = body.manter_salvo ? 1 : 0;
+  const descartarAposRodadas = Number(body.descartar_apos_rodadas || 2);
   const texto = dezenasTexto(dezenas);
   const result = await env.DB.prepare(`
-    INSERT INTO jogos (usuario_id, concurso, metodo, dezenas, dezenas_texto, observacao)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(user.id, concurso, metodo, JSON.stringify(dezenas), texto, observacao).run();
+    INSERT INTO jogos (
+      usuario_id, concurso, metodo, dezenas, dezenas_texto, observacao,
+      manter_salvo, descartar_apos_rodadas
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    user.id,
+    concurso,
+    metodo,
+    JSON.stringify(dezenas),
+    texto,
+    observacao,
+    manterSalvo,
+    Math.max(1, descartarAposRodadas)
+  ).run();
 
   return json({
     ok: true,
@@ -520,7 +536,9 @@ async function createJogo(request, user, env) {
       dezenas,
       dezenas_texto: texto,
       status: "salvo",
-      observacao
+      observacao,
+      manter_salvo: Boolean(manterSalvo),
+      descartar_apos_rodadas: Math.max(1, descartarAposRodadas)
     }
   }, 201);
 }
@@ -529,6 +547,7 @@ async function updateJogo(request, user, env, id) {
   const body = await readJson(request);
   const status = String(body.status || "").trim();
   const observacao = body.observacao === undefined ? undefined : String(body.observacao || "").trim();
+  const manterSalvo = body.manter_salvo === undefined ? null : (body.manter_salvo ? 1 : 0);
   const allowedStatuses = new Set(["salvo", "jogado", "conferido", "cancelado"]);
 
   if (status && !allowedStatuses.has(status)) {
@@ -547,9 +566,10 @@ async function updateJogo(request, user, env, id) {
     UPDATE jogos
     SET status = COALESCE(NULLIF(?, ''), status),
         observacao = COALESCE(?, observacao),
+        manter_salvo = COALESCE(?, manter_salvo),
         atualizado_em = CURRENT_TIMESTAMP
     WHERE id = ? AND usuario_id = ?
-  `).bind(status, observacao, id, user.id).run();
+  `).bind(status, observacao, manterSalvo, id, user.id).run();
 
   return json({ ok: true });
 }
@@ -560,6 +580,35 @@ async function deleteJogo(user, env, id) {
   ).bind(id, user.id).run();
 
   return json({ ok: true });
+}
+
+async function cleanupExpiredGames(env, userId = null) {
+  const params = [];
+  const userFilter = userId ? "AND jogos.usuario_id = ?" : "";
+
+  if (userId) {
+    params.push(userId);
+  }
+
+  const result = await env.DB.prepare(`
+    SELECT jogos.id
+    FROM jogos
+    LEFT JOIN conferencias ON conferencias.jogo_id = jogos.id
+    WHERE jogos.manter_salvo = 0
+      AND jogos.status IN ('salvo', 'jogado', 'conferido')
+      ${userFilter}
+    GROUP BY jogos.id, jogos.descartar_apos_rodadas
+    HAVING COUNT(conferencias.id) >= jogos.descartar_apos_rodadas
+  `).bind(...params).all();
+  const ids = result.results.map((row) => row.id);
+
+  if (!ids.length) {
+    return 0;
+  }
+
+  const placeholders = ids.map(() => "?").join(",");
+  await env.DB.prepare(`DELETE FROM jogos WHERE id IN (${placeholders})`).bind(...ids).run();
+  return ids.length;
 }
 
 async function conferirDuasRodadas(user, env) {
@@ -625,6 +674,7 @@ async function conferirDuasRodadas(user, env) {
       WHERE usuario_id = ? AND status IN ('salvo', 'jogado', 'conferido')
     `).bind(user.id).run();
   }
+  const descartados = await cleanupExpiredGames(env, user.id);
 
   return json({
     ok: true,
@@ -636,6 +686,7 @@ async function conferirDuasRodadas(user, env) {
     jogos_conferidos: result.results.length,
     conferencias_novas: novas,
     conferencias_atualizadas: atualizadas,
+    jogos_descartados: descartados,
     resumo
   });
 }
@@ -670,6 +721,7 @@ async function conferirResultadoParaJogos(env, resultado) {
       SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP
       WHERE concurso = ? AND status IN ('salvo', 'jogado', 'conferido')
     `).bind(resultado.concurso).run();
+    await cleanupExpiredGames(env);
   }
 
   return conferidos;
