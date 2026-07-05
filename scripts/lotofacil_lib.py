@@ -42,7 +42,20 @@ METODOS = [
     "M3_mais_atrasadas",
     "M4_par_impar_balanceado",
     "M5_soma_faixa_comum",
+    "M6_filtros_combinados",
+    "M7_cobertura_pares",
+    "M8_repeticao_controlada",
 ]
+
+NUM_CANDIDATOS_AVANCADOS = 1500
+SOMA_AVANCADA_MIN = 185
+SOMA_AVANCADA_MAX = 215
+PARES_AVANCADO_MIN = 7
+PARES_AVANCADO_MAX = 9
+REPETICOES_MIN = 8
+REPETICOES_MAX = 11
+COBERTURA_PARES_RECENTES = 30
+MIN_PARES_COBERTOS = 8
 
 
 # ---------- leitura/escrita ----------
@@ -248,15 +261,123 @@ def metodo_soma_faixa_comum(rng, faixa_min=180, faixa_max=210, max_tentativas=10
     return metodo_aleatorio_puro(rng)  # fallback
 
 
+def _resultados_como_sets(ate_concurso=None):
+    resultados = carregar_resultados()
+    if ate_concurso is not None:
+        resultados = [r for r in resultados if r["concurso"] <= ate_concurso]
+    return [set(r["dezenas"]) for r in resultados]
+
+
+def _pares_recentes(resultados_sets, n_concursos=COBERTURA_PARES_RECENTES):
+    pares = set()
+    for resultado in resultados_sets[-n_concursos:]:
+        for a, b in itertools.combinations(sorted(resultado), 2):
+            pares.add((a, b))
+    return pares
+
+
+def _contar_repeticoes(jogo, resultado_anterior):
+    return len(set(jogo) & set(resultado_anterior))
+
+
+def _cobertura_pares_adjacentes(jogo, pares_recentes):
+    jogo_sorted = sorted(jogo)
+    return sum(
+        1
+        for a, b in zip(jogo_sorted, jogo_sorted[1:])
+        if (min(a, b), max(a, b)) in pares_recentes
+    )
+
+
+def _score_avancado(jogo, pares_recentes, resultado_anterior):
+    soma = sum(jogo)
+    pares = sum(1 for d in jogo if d % 2 == 0)
+    repeticoes = _contar_repeticoes(jogo, resultado_anterior)
+    cobertura = _cobertura_pares_adjacentes(jogo, pares_recentes)
+    score = 0.0
+
+    if SOMA_AVANCADA_MIN <= soma <= SOMA_AVANCADA_MAX:
+        score += 10
+        score += 10 * (1 - abs(soma - 200) / 30)
+
+    if PARES_AVANCADO_MIN <= pares <= PARES_AVANCADO_MAX:
+        score += 8
+
+    if REPETICOES_MIN <= repeticoes <= REPETICOES_MAX:
+        score += 12
+        score += (repeticoes - 7) * 1.5
+
+    if cobertura >= MIN_PARES_COBERTOS:
+        score += 15 + (cobertura - MIN_PARES_COBERTOS) * 2
+
+    if soma < 170 or soma > 230:
+        score -= 20
+    if pares < 6 or pares > 10:
+        score -= 10
+
+    return max(0.0, score)
+
+
+def _melhor_candidato_avancado(rng, resultados_sets, filtro=None, max_tentativas=NUM_CANDIDATOS_AVANCADOS):
+    if not resultados_sets:
+        return metodo_aleatorio_puro(rng)
+
+    resultado_anterior = resultados_sets[-1]
+    pares_recentes = _pares_recentes(resultados_sets)
+    melhor = None
+    melhor_score = -1
+
+    for _ in range(max_tentativas):
+        candidato = set(rng.sample(TODAS_DEZENAS, 15))
+        if filtro and not filtro(candidato, resultado_anterior):
+            continue
+        score = _score_avancado(candidato, pares_recentes, resultado_anterior)
+        if score > melhor_score:
+            melhor = candidato
+            melhor_score = score
+
+    return melhor or metodo_aleatorio_puro(rng)
+
+
+def metodo_filtros_combinados(rng, resultados_sets):
+    def filtro(jogo, resultado_anterior):
+        soma = sum(jogo)
+        pares = sum(1 for d in jogo if d % 2 == 0)
+        repeticoes = _contar_repeticoes(jogo, resultado_anterior)
+        return (
+            SOMA_AVANCADA_MIN <= soma <= SOMA_AVANCADA_MAX
+            and PARES_AVANCADO_MIN <= pares <= PARES_AVANCADO_MAX
+            and REPETICOES_MIN <= repeticoes <= REPETICOES_MAX
+        )
+
+    return _melhor_candidato_avancado(rng, resultados_sets, filtro=filtro)
+
+
+def metodo_cobertura_pares(rng, resultados_sets):
+    return _melhor_candidato_avancado(rng, resultados_sets)
+
+
+def metodo_repeticao_controlada(rng, resultados_sets):
+    def filtro(jogo, resultado_anterior):
+        repeticoes = _contar_repeticoes(jogo, resultado_anterior)
+        return 9 <= repeticoes <= 11
+
+    return _melhor_candidato_avancado(rng, resultados_sets, filtro=filtro)
+
+
 def gerar_todos_metodos(seed=None, ate_concurso=None):
     rng = random.Random(seed)
     freq, atraso, _ = frequencia_e_atraso(ate_concurso)
+    resultados_sets = _resultados_como_sets(ate_concurso)
     return {
         "M1_aleatorio_puro": metodo_aleatorio_puro(rng),
         "M2_mais_frequentes": metodo_mais_frequentes(rng, freq),
         "M3_mais_atrasadas": metodo_mais_atrasadas(rng, atraso),
         "M4_par_impar_balanceado": metodo_par_impar_balanceado(rng),
         "M5_soma_faixa_comum": metodo_soma_faixa_comum(rng),
+        "M6_filtros_combinados": metodo_filtros_combinados(rng, resultados_sets),
+        "M7_cobertura_pares": metodo_cobertura_pares(rng, resultados_sets),
+        "M8_repeticao_controlada": metodo_repeticao_controlada(rng, resultados_sets),
     }
 
 

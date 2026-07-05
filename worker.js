@@ -338,6 +338,104 @@ function scoreSet(dezenas) {
   return { soma, pares, impares: dezenas.length - pares };
 }
 
+function seededRandom(seed) {
+  let state = seed % 2147483647;
+  if (state <= 0) state += 2147483646;
+  return () => {
+    state = state * 16807 % 2147483647;
+    return (state - 1) / 2147483646;
+  };
+}
+
+function sampleNumbers(randomFn, size = 15) {
+  const numbers = Array.from({ length: 25 }, (_, index) => index + 1);
+  for (let i = numbers.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(randomFn() * (i + 1));
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+  }
+  return numbers.slice(0, size).sort((a, b) => a - b);
+}
+
+function pairKey(a, b) {
+  return `${Math.min(a, b)}-${Math.max(a, b)}`;
+}
+
+function recentPairs(results, limit = 30) {
+  const pairs = new Set();
+  for (const result of results.slice(0, limit)) {
+    const dezenas = result.dezenas.slice().sort((a, b) => a - b);
+    for (let i = 0; i < dezenas.length; i += 1) {
+      for (let j = i + 1; j < dezenas.length; j += 1) {
+        pairs.add(pairKey(dezenas[i], dezenas[j]));
+      }
+    }
+  }
+  return pairs;
+}
+
+function repeatedCount(dezenas, previousResult) {
+  const previous = new Set(previousResult || []);
+  return dezenas.filter((dezena) => previous.has(dezena)).length;
+}
+
+function adjacentPairCoverage(dezenas, pairs) {
+  let total = 0;
+  for (let i = 1; i < dezenas.length; i += 1) {
+    if (pairs.has(pairKey(dezenas[i - 1], dezenas[i]))) {
+      total += 1;
+    }
+  }
+  return total;
+}
+
+function advancedScore(dezenas, pairs, previousResult) {
+  const { soma, pares } = scoreSet(dezenas);
+  const repeticoes = repeatedCount(dezenas, previousResult);
+  const cobertura = adjacentPairCoverage(dezenas, pairs);
+  let score = 0;
+
+  if (soma >= 185 && soma <= 215) {
+    score += 10;
+    score += 10 * (1 - Math.abs(soma - 200) / 30);
+  }
+  if (pares >= 7 && pares <= 9) score += 8;
+  if (repeticoes >= 8 && repeticoes <= 11) {
+    score += 12;
+    score += (repeticoes - 7) * 1.5;
+  }
+  if (cobertura >= 8) score += 15 + (cobertura - 8) * 2;
+  if (soma < 170 || soma > 230) score -= 20;
+  if (pares < 6 || pares > 10) score -= 10;
+
+  return Math.max(0, score);
+}
+
+function bestAdvancedGame(results, concurso, salt, filterFn = null) {
+  const previousResult = results[0]?.dezenas || [];
+  const pairs = recentPairs(results);
+  const randomFn = seededRandom(concurso * 1009 + salt * 7919);
+  let best = null;
+  let bestScore = -1;
+
+  for (let i = 0; i < 1500; i += 1) {
+    const candidate = sampleNumbers(randomFn);
+    const repeticoes = repeatedCount(candidate, previousResult);
+    const stats = scoreSet(candidate);
+
+    if (filterFn && !filterFn(candidate, stats, repeticoes)) {
+      continue;
+    }
+
+    const score = advancedScore(candidate, pairs, previousResult);
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+
+  return best || sampleNumbers(randomFn);
+}
+
 async function recentResultsForGeneration(env) {
   await seedInitialResults(env);
   const rows = await env.DB.prepare(`
@@ -399,7 +497,20 @@ function generatedGamesFromResults(results, concurso) {
     { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq) },
     { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate) },
     { metodo: "M4_balanceado", dezenas: unique15([...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled]) },
-    { metodo: "M5_soma_faixa_comum", dezenas: makeSumRange() }
+    { metodo: "M5_soma_faixa_comum", dezenas: makeSumRange() },
+    {
+      metodo: "M6_filtros_combinados",
+      dezenas: bestAdvancedGame(results, concurso, 6, (candidate, stats, repeticoes) => (
+        stats.soma >= 185 && stats.soma <= 215
+        && stats.pares >= 7 && stats.pares <= 9
+        && repeticoes >= 8 && repeticoes <= 11
+      ))
+    },
+    { metodo: "M7_cobertura_pares", dezenas: bestAdvancedGame(results, concurso, 7) },
+    {
+      metodo: "M8_repeticao_controlada",
+      dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11)
+    }
   ];
 }
 

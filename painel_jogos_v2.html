@@ -611,6 +611,23 @@ function tdStyle(n) {
   return `padding:7px 6px; border-bottom:1px solid #F1ECFB; text-align:center; font-weight:700; background:${bg}; color:${color};`;
 }
 
+const METHOD_LABELS = {
+  M1_aleatorio_deterministico: 'M1 Aleatório',
+  M1_aleatorio_puro: 'M1 Aleatório',
+  M2_mais_frequentes: 'M2 Mais Freq.',
+  M3_mais_atrasadas: 'M3 Mais Atras.',
+  M4_balanceado: 'M4 Balanceado',
+  M4_par_impar_balanceado: 'M4 Par/Ímpar',
+  M5_soma_faixa_comum: 'M5 Soma Faixa',
+  M6_filtros_combinados: 'M6 Filtros',
+  M7_cobertura_pares: 'M7 Cobertura',
+  M8_repeticao_controlada: 'M8 Repetição',
+};
+
+function methodLabel(metodo) {
+  return METHOD_LABELS[metodo] || metodo;
+}
+
 const METHOD_DEFS_3727 = [
   { key:'M1', label:'M1 Aleatório', color:'#1E40AF', bg:'#DBEAFE', dezenas:[2,3,8,10,11,13,15,16,17,18,20,22,23,24,25], soma:227, p:8, i:7 },
   { key:'M2', label:'M2 Mais Freq.', color:'#166534', bg:'#DCFCE7', dezenas:[1,2,3,4,5,10,11,12,13,14,15,20,22,24,25], soma:181, p:8, i:7 },
@@ -1276,10 +1293,13 @@ class Component extends DCLogic {
       { bg:'#FEF3C7', color:'#92400E' },
       { bg:'#FCE7F3', color:'#BE185D' },
       { bg:'#F3E8FF', color:'#5B21B6' },
+      { bg:'#ECFEFF', color:'#0E7490' },
+      { bg:'#F0FDF4', color:'#15803D' },
+      { bg:'#FFF1F2', color:'#BE123C' },
     ];
     const sourceMethods = s.systemGames.length
       ? s.systemGames.map((game, idx) => ({
-          label: game.metodo,
+          label: methodLabel(game.metodo),
           dezenas: game.dezenas,
           soma: game.soma,
           p: game.pares,
@@ -1317,7 +1337,7 @@ class Component extends DCLogic {
       : SORTEIOS_RECENTES;
     const conferidorSource = s.conferidorGames.length
       ? s.conferidorGames.map((game, idx) => ({
-          label: game.metodo,
+          label: methodLabel(game.metodo),
           dezenas: game.dezenas,
           ...systemColors[idx % systemColors.length],
         }))

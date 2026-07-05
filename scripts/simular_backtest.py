@@ -1,9 +1,9 @@
 """
-Simulação retroativa (backtest) dos 5 métodos contra TODOS os concursos
+Simulação retroativa (backtest) dos métodos oficiais contra TODOS os concursos
 reais já registrados.
 
 Para cada concurso N (a partir do 2º concurso do histórico), monta os
-5 jogos de estudo usando só os dados disponíveis ANTES de N (sem
+jogos de estudo usando só os dados disponíveis ANTES de N (sem
 "olhar o futuro"), confere contra o resultado real de N, e segue em
 frente. Isso dá uma amostra muito maior (milhares de concursos) do que
 esperar o dia a dia — é um exercício histórico, não uma previsão.
@@ -20,7 +20,6 @@ Uso:
 """
 import csv
 import os
-import random
 import statistics
 from collections import Counter
 
@@ -54,14 +53,7 @@ def main():
                 else:
                     atraso[d] = idx
 
-            rng = random.Random(concurso)
-            jogos = {
-                "M1_aleatorio_puro": lib.metodo_aleatorio_puro(rng),
-                "M2_mais_frequentes": lib.metodo_mais_frequentes(rng, freq),
-                "M3_mais_atrasadas": lib.metodo_mais_atrasadas(rng, atraso),
-                "M4_par_impar_balanceado": lib.metodo_par_impar_balanceado(rng),
-                "M5_soma_faixa_comum": lib.metodo_soma_faixa_comum(rng),
-            }
+            jogos = lib.gerar_todos_metodos(seed=concurso, ate_concurso=concurso - 1)
             for metodo, dezenas in jogos.items():
                 acertos = len(dezenas & dezenas_reais)
                 acertos_por_metodo[metodo].append(acertos)
