@@ -134,6 +134,87 @@
       "qtd_13_acertos": 0,
       "qtd_14_acertos": 0,
       "qtd_15_acertos": 0
+    },
+    {
+      "metodo": "M6_filtros_combinados",
+      "total_jogos_conferidos": 0,
+      "media_acertos": 0.0,
+      "desvio_padrao_acertos": 0.0,
+      "esperanca_teorica": 9.0,
+      "min_acertos": "",
+      "max_acertos": "",
+      "pct_11_ou_mais": 0.0,
+      "pct_13_ou_mais": 0.0,
+      "qtd_0_acertos": 0,
+      "qtd_1_acertos": 0,
+      "qtd_2_acertos": 0,
+      "qtd_3_acertos": 0,
+      "qtd_4_acertos": 0,
+      "qtd_5_acertos": 0,
+      "qtd_6_acertos": 0,
+      "qtd_7_acertos": 0,
+      "qtd_8_acertos": 0,
+      "qtd_9_acertos": 0,
+      "qtd_10_acertos": 0,
+      "qtd_11_acertos": 0,
+      "qtd_12_acertos": 0,
+      "qtd_13_acertos": 0,
+      "qtd_14_acertos": 0,
+      "qtd_15_acertos": 0
+    },
+    {
+      "metodo": "M7_cobertura_pares",
+      "total_jogos_conferidos": 0,
+      "media_acertos": 0.0,
+      "desvio_padrao_acertos": 0.0,
+      "esperanca_teorica": 9.0,
+      "min_acertos": "",
+      "max_acertos": "",
+      "pct_11_ou_mais": 0.0,
+      "pct_13_ou_mais": 0.0,
+      "qtd_0_acertos": 0,
+      "qtd_1_acertos": 0,
+      "qtd_2_acertos": 0,
+      "qtd_3_acertos": 0,
+      "qtd_4_acertos": 0,
+      "qtd_5_acertos": 0,
+      "qtd_6_acertos": 0,
+      "qtd_7_acertos": 0,
+      "qtd_8_acertos": 0,
+      "qtd_9_acertos": 0,
+      "qtd_10_acertos": 0,
+      "qtd_11_acertos": 0,
+      "qtd_12_acertos": 0,
+      "qtd_13_acertos": 0,
+      "qtd_14_acertos": 0,
+      "qtd_15_acertos": 0
+    },
+    {
+      "metodo": "M8_repeticao_controlada",
+      "total_jogos_conferidos": 0,
+      "media_acertos": 0.0,
+      "desvio_padrao_acertos": 0.0,
+      "esperanca_teorica": 9.0,
+      "min_acertos": "",
+      "max_acertos": "",
+      "pct_11_ou_mais": 0.0,
+      "pct_13_ou_mais": 0.0,
+      "qtd_0_acertos": 0,
+      "qtd_1_acertos": 0,
+      "qtd_2_acertos": 0,
+      "qtd_3_acertos": 0,
+      "qtd_4_acertos": 0,
+      "qtd_5_acertos": 0,
+      "qtd_6_acertos": 0,
+      "qtd_7_acertos": 0,
+      "qtd_8_acertos": 0,
+      "qtd_9_acertos": 0,
+      "qtd_10_acertos": 0,
+      "qtd_11_acertos": 0,
+      "qtd_12_acertos": 0,
+      "qtd_13_acertos": 0,
+      "qtd_14_acertos": 0,
+      "qtd_15_acertos": 0
     }
   ],
   "ultimos_concursos": {
@@ -198,8 +279,41 @@
         "desvio_padrao_periodo": 0.5,
         "desvio_vs_esperanca_rms": 0.7071,
         "total_concursos_periodo": 2
+      },
+      {
+        "metodo": "M6_filtros_combinados",
+        "acertos_por_concurso": [
+          null,
+          null
+        ],
+        "media_periodo": 0.0,
+        "desvio_padrao_periodo": 0.0,
+        "desvio_vs_esperanca_rms": 0.0,
+        "total_concursos_periodo": 0
+      },
+      {
+        "metodo": "M7_cobertura_pares",
+        "acertos_por_concurso": [
+          null,
+          null
+        ],
+        "media_periodo": 0.0,
+        "desvio_padrao_periodo": 0.0,
+        "desvio_vs_esperanca_rms": 0.0,
+        "total_concursos_periodo": 0
+      },
+      {
+        "metodo": "M8_repeticao_controlada",
+        "acertos_por_concurso": [
+          null,
+          null
+        ],
+        "media_periodo": 0.0,
+        "desvio_padrao_periodo": 0.0,
+        "desvio_vs_esperanca_rms": 0.0,
+        "total_concursos_periodo": 0
       }
     ],
-    "metodo_mais_estavel": "M2_mais_frequentes"
+    "metodo_mais_estavel": "M6_filtros_combinados"
   }
 }

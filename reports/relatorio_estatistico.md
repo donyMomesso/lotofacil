@@ -1,6 +1,6 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 05/07/2026 13:57 (horário de Brasília)_
+_Atualizado em 05/07/2026 17:55 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
@@ -66,6 +66,9 @@ Valor teórico esperado de acertos por jogo de 15 dezenas: **9.0** (distribuiç�
 | M3_mais_atrasadas | 2 | 9.5 | 1.5 | 50.0% | 0.0% |
 | M4_par_impar_balanceado | 2 | 8 | 0.0 | 0.0% | 0.0% |
 | M5_soma_faixa_comum | 2 | 9.5 | 0.5 | 0.0% | 0.0% |
+| M6_filtros_combinados | 0 | 0.0 | 0.0 | 0.0% | 0.0% |
+| M7_cobertura_pares | 0 | 0.0 | 0.0 | 0.0% | 0.0% |
+| M8_repeticao_controlada | 0 | 0.0 | 0.0 | 0.0% | 0.0% |
 
 ## Apostas estendidas (16 a 20 dezenas): mais cobertura custa mais, na mesma proporção
 

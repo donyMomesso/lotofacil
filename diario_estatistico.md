@@ -280,3 +280,10 @@ O histórico real agora tem 3727 concurso(s). Quanto mais dados entram, mais est
 | M4_par_impar_balanceado | 01-02-03-06-08-09-11-12-14-15-16-18-19-20-21 |
 | M5_soma_faixa_comum | 01-02-05-06-09-12-13-14-15-16-19-20-21-23-25 |
 
+
+---
+
+## 05/07/2026
+
+Nenhum concurso novo encontrado nesta execução (pode ser dia sem sorteio da Lotofácil, ou a fonte de dados ainda não publicou o resultado). Nenhuma alteração feita — a tarefa tenta de novo na próxima execução.
+
