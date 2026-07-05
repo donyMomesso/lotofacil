@@ -26,7 +26,7 @@ TEMPLATE = """<!DOCTYPE html>
 <title>Painel Clássico — Laboratório Lotofácil</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body { margin:0; font-family:'Inter',sans-serif; background:#FAF7FF; color:#1F1235; min-height:100vh; }
