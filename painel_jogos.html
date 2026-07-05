@@ -15,6 +15,26 @@
 </helmet>
 
 <div style="font-family:'Inter',sans-serif; background:#FAF7FF; color:#1F1235; min-height:100vh;">
+  <sc-if value="{{ needsAuth }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:9999; background:linear-gradient(135deg,#4C1D95,#7C3AED); display:flex; align-items:center; justify-content:center; padding:22px;">
+      <div style="width:100%; max-width:420px; background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:22px; box-shadow:0 24px 80px rgba(0,0,0,.35);">
+        <div style="font-family:'Sora',sans-serif; font-size:22px; font-weight:800; color:#4C1D95; margin-bottom:6px;">Acesso ao Painel Avancado</div>
+        <div style="font-size:13px; color:#6B5B8A; line-height:1.55; margin-bottom:16px;">Entre ou crie cadastro para gerar jogos, salvar no banco e acompanhar as conferencias automaticamente.</div>
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Nome</label>
+        <input id="painelAuthNome" placeholder="Seu nome" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:10px;" />
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Email</label>
+        <input id="painelAuthEmail" type="email" placeholder="voce@email.com" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:10px;" />
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Senha</label>
+        <input id="painelAuthSenha" type="password" placeholder="Minimo 6 caracteres" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:12px;" />
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button onClick="{{ onLogin }}" style="flex:1; border:0; border-radius:8px; padding:11px 14px; background:#6D28D9; color:#fff; font-weight:800; cursor:pointer;">Entrar</button>
+          <button onClick="{{ onRegister }}" style="flex:1; border:0; border-radius:8px; padding:11px 14px; background:#EDE9FE; color:#4C1D95; font-weight:800; cursor:pointer;">Criar conta</button>
+        </div>
+        <div style="min-height:18px; margin-top:12px; font-size:12px; color:#BE185D;">{{ authStatus }}</div>
+        <div style="font-size:11px; color:#8B76B0; line-height:1.45; margin-top:10px;">Conteudo educativo. Sugestoes estatisticas nao preveem sorteios nem aumentam a chance matematica de acerto.</div>
+      </div>
+    </div>
+  </sc-if>
 
   <div style="background:{{ headerGradient }}; padding:20px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; box-shadow:0 4px 18px rgba(43,10,77,.25);">
     <div>
@@ -22,7 +42,11 @@
       <h1 style="font-family:'Sora',sans-serif; font-size:20px; font-weight:800; color:#fff; margin:4px 0 2px;">Lotofácil Lab — Painel Avançado</h1>
       <div style="font-size:12px; color:rgba(255,255,255,.75);">Laboratório Estatístico Educativo · Atualizado em 04/07/2026 11:50</div>
     </div>
-    <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:600; color:#fff;">⚠ Apenas estudo estatístico — não é recomendação de aposta</div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:600; color:#fff;">{{ authUserLabel }}</div>
+      <button onClick="{{ onLogout }}" style="background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:11.5px; font-weight:700;">Sair</button>
+      <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:600; color:#fff;">⚠ Apenas estudo estatístico — não é recomendação de aposta</div>
+    </div>
   </div>
 
   <div style="display:flex; border-bottom:2px solid #E9DFFB; padding:0 28px; background:#fff; overflow-x:auto; box-shadow:0 2px 8px rgba(43,10,77,.06);">
@@ -328,8 +352,12 @@
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Jogos registrados</div>
-          <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Conferir 2 rodadas</button>
+            <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
+          </div>
         </div>
+        <div style="font-size:12px; color:#8B76B0; margin-bottom:10px;">{{ panelStatus }}</div>
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
           <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dezenas</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Soma</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">P/Í</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Perfil</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Quente/Frio</th><th style="padding:8px 10px; border-bottom:1px solid #E9DFFB;"></th></tr></thead>
           <tbody>
@@ -342,7 +370,7 @@
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.soma }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.parImpar }}</td>
-                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}<div style="margin-top:4px; color:#4C1D95; font-weight:700;">{{ g.conferenciasResumo }}</div></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span style="{{ g.classificacaoStyle }}">{{ g.classificacao }}</span></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; text-align:right;"><span onClick="{{ g.onRemove }}" style="cursor:pointer; color:#BE185D; font-size:12px; font-weight:600;">remover</span></td>
               </tr>
@@ -739,6 +767,30 @@ function mesmaCombinacao(a, b) {
   return a.every(n => sb.has(n));
 }
 
+const AUTH_TOKEN_KEY = 'lotofacil_mobile_token';
+
+function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+}
+
+function setAuthToken(token) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+async function painelApi(path, options = {}) {
+  const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
+  const token = getAuthToken();
+  if (token) headers.authorization = `Bearer ${token}`;
+  const response = await fetch(path, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.message || 'Falha na requisicao.');
+  return data;
+}
+
 class Component extends DCLogic {
   state = {
     tab: 'jogos',
@@ -747,7 +799,11 @@ class Component extends DCLogic {
     perfil: 'equilibrado',
     suggestions: [],
     concursoAlvo: 3727,
-    savedGames: (() => { try { return JSON.parse(localStorage.getItem('lotofacil_meus_jogos') || '[]'); } catch(e) { return []; } })(),
+    savedGames: [],
+    authLoading: true,
+    authUser: null,
+    authStatus: '',
+    panelStatus: '',
     fechamentoN: 16,
     fechamentoSelected: [],
     fechamentoOpcoes: [],
@@ -755,6 +811,90 @@ class Component extends DCLogic {
     seqSort: { col: 'dezenas', dir: 'asc' },
     saltoSort: { col: 'dezenas', dir: 'asc' },
   };
+
+  localGameFromApi(jogo) {
+    const dezenas = (jogo.dezenas || []).slice().sort((a,b) => a-b);
+    const soma = dezenas.reduce((a,b) => a+b, 0);
+    const pares = dezenas.filter(n => n % 2 === 0).length;
+    return {
+      id: jogo.id,
+      concurso: jogo.concurso,
+      metodo: jogo.metodo || 'Painel Avancado',
+      dezenas,
+      soma,
+      pares,
+      impares: dezenas.length - pares,
+      analise: analisarJogo(dezenas),
+      status: jogo.status,
+      conferencias: jogo.conferencias || [],
+    };
+  }
+
+  async bootstrapAuth() {
+    const token = getAuthToken();
+    if (!token) {
+      this.setState({ authLoading: false, authUser: null, savedGames: [] });
+      return;
+    }
+    try {
+      const data = await painelApi('/api/me');
+      this.setState({ authLoading: false, authUser: data.user, authStatus: '' });
+      await this.loadSavedGames();
+    } catch (err) {
+      clearAuthToken();
+      this.setState({ authLoading: false, authUser: null, authStatus: 'Entre para acessar o painel.', savedGames: [] });
+    }
+  }
+
+  async loginOrRegister(mode) {
+    const nome = (document.getElementById('painelAuthNome')?.value || '').trim();
+    const email = (document.getElementById('painelAuthEmail')?.value || '').trim();
+    const senha = document.getElementById('painelAuthSenha')?.value || '';
+    const path = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const payload = mode === 'register' ? { nome, email, senha } : { email, senha };
+    this.setState({ authStatus: mode === 'register' ? 'Criando conta...' : 'Entrando...' });
+    try {
+      const data = await painelApi(path, { method:'POST', body: JSON.stringify(payload) });
+      setAuthToken(data.token);
+      this.setState({ authUser: data.user, authStatus: '', panelStatus: 'Acesso liberado.' });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ authStatus: err.message || 'Falha no acesso.' });
+    }
+  }
+
+  async loadSavedGames() {
+    if (!getAuthToken()) return;
+    this.setState({ panelStatus: 'Carregando jogos do banco...' });
+    try {
+      const data = await painelApi('/api/jogos');
+      this.setState({ savedGames: data.jogos.map(j => this.localGameFromApi(j)), panelStatus: 'Jogos carregados do banco.' });
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao carregar jogos.' });
+    }
+  }
+
+  async conferirDuasRodadas() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para conferir jogos.' });
+      return;
+    }
+    this.setState({ panelStatus: 'Conferindo as 2 ultimas rodadas...' });
+    try {
+      const data = await painelApi('/api/jogos/conferir-duas-rodadas', { method:'POST', body: '{}' });
+      const rodadas = data.rodadas.map(r => r.concurso).join(' e ');
+      this.setState({ panelStatus: `Conferencia salva: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}.` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao conferir.' });
+    }
+  }
+
+  async logout() {
+    try { await painelApi('/api/auth/logout', { method:'POST', body:'{}' }); } catch(e) {}
+    clearAuthToken();
+    this.setState({ authUser: null, savedGames: [], panelStatus: '', authStatus: 'Sessao encerrada.' });
+  }
 
   setQtdHistorico(q) { this.setState({ qtdHistorico: q }); }
 
@@ -929,29 +1069,52 @@ class Component extends DCLogic {
     this.setState({ concursoAlvo: isNaN(v) ? '' : v });
   }
 
-  addGame() {
-    this.setState(s => {
-      if (s.selected.length !== 15) return {};
-      const dezenas = [...s.selected].sort((a,b) => a-b);
-      const soma = dezenas.reduce((a,b) => a+b, 0);
-      const pares = dezenas.filter(n => n % 2 === 0).length;
-      const analise = analisarJogo(dezenas);
-      const game = { concurso: s.concursoAlvo, dezenas, soma, pares, impares: 15 - pares, analise };
-      const games = [...s.savedGames, game];
-      localStorage.setItem('lotofacil_meus_jogos', JSON.stringify(games));
-      return { savedGames: games, selected: [] };
-    });
+  async addGame() {
+    const s = this.state;
+    if (s.selected.length !== 15) return;
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
+      return;
+    }
+    const dezenas = [...s.selected].sort((a,b) => a-b);
+    this.setState({ panelStatus: 'Salvando jogo no banco...' });
+    try {
+      await painelApi('/api/jogos', {
+        method:'POST',
+        body: JSON.stringify({
+          concurso: s.concursoAlvo,
+          metodo: `Painel ${s.perfil}`,
+          dezenas,
+          observacao: 'Gerado no painel avancado'
+        })
+      });
+      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: 'Jogo salvo. Conferindo automaticamente...' });
+      await this.conferirDuasRodadas();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao salvar jogo.' });
+    }
   }
 
-  removeGame(idx) {
-    this.setState(s => {
-      const games = s.savedGames.filter((_, i) => i !== idx);
-      localStorage.setItem('lotofacil_meus_jogos', JSON.stringify(games));
-      return { savedGames: games };
-    });
+  async removeGame(idx) {
+    const jogo = this.state.savedGames[idx];
+    if (!jogo) return;
+    if (!jogo.id) {
+      this.setState(s => ({ savedGames: s.savedGames.filter((_, i) => i !== idx) }));
+      return;
+    }
+    this.setState({ panelStatus: 'Removendo jogo...' });
+    try {
+      await painelApi(`/api/jogos/${jogo.id}`, { method:'DELETE' });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao remover jogo.' });
+    }
   }
 
-  componentDidMount() { this.initChart(); }
+  componentDidMount() {
+    this.initChart();
+    this.bootstrapAuth();
+  }
 
   initChart() {
     if (!window.Chart) return;
@@ -1110,11 +1273,15 @@ class Component extends DCLogic {
 
     const savedGamesView = s.savedGames.map((g, idx) => {
       const a = g.analise || analisarJogo(g.dezenas);
+      const conferenciasResumo = (g.conferencias || []).length
+        ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos}`).join(' | ')
+        : 'Sem conferencia';
       return {
         concurso: g.concurso,
         dezenasStr: g.dezenas.map(pad).join('-'),
         soma: g.soma,
         parImpar: `${g.pares}p / ${g.impares}i`,
+        conferenciasResumo,
         analiseResumo: `Moldura ${a.moldura}/16 · Quentes ${a.quentes} · Seq.máx ${a.maxSeq} · ${a.somaFaixaComum ? 'soma comum' : 'soma fora da faixa'}`,
         classificacao: a.classificacao,
         classificacaoStyle: a.classificacao === 'Quente'
@@ -1143,6 +1310,13 @@ class Component extends DCLogic {
 
     return {
       headerGradient: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 55%,#3B0764 100%)',
+      needsAuth: !s.authLoading && !s.authUser,
+      authStatus: s.authStatus,
+      authUserLabel: s.authUser ? `Usuario: ${s.authUser.nome}` : 'Acesso protegido',
+      panelStatus: s.panelStatus,
+      onLogin: () => this.loginOrRegister('login'),
+      onRegister: () => this.loginOrRegister('register'),
+      onLogout: () => this.logout(),
       tabs,
       isJogos: tab === 'jogos',
       isMeusJogos: tab === 'meusjogos',
@@ -1186,6 +1360,7 @@ class Component extends DCLogic {
       onConcursoChange: (e) => this.onConcursoChange(e),
       addGame: () => this.addGame(),
       clearSelected: () => this.clearSelected(),
+      conferirDuasRodadas: () => this.conferirDuasRodadas(),
       sugerirJogo: () => this.sugerirJogo(),
       perfilOptions,
       suggestionsView,
