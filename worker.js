@@ -3,6 +3,19 @@ const JSON_HEADERS = {
   "cache-control": "no-store"
 };
 
+const RECENT_RESULTS = [
+  {
+    concurso: 3726,
+    data: "03/07/2026",
+    dezenas: [2, 5, 6, 7, 10, 13, 14, 17, 18, 19, 20, 21, 22, 24, 25]
+  },
+  {
+    concurso: 3725,
+    data: "02/07/2026",
+    dezenas: [1, 2, 4, 5, 6, 8, 11, 13, 14, 16, 17, 19, 21, 24, 25]
+  }
+];
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -250,12 +263,45 @@ async function listJogos(user, env) {
     LIMIT 200
   `).bind(user.id).all();
 
+  const jogos = result.results.map((jogo) => ({
+    ...jogo,
+    dezenas: JSON.parse(jogo.dezenas),
+    conferencias: []
+  }));
+  const ids = jogos.map((jogo) => jogo.id);
+
+  if (ids.length) {
+    const placeholders = ids.map(() => "?").join(",");
+    const confResult = await env.DB.prepare(`
+      SELECT conferencias.jogo_id,
+             conferencias.concurso,
+             conferencias.dezenas_sorteadas,
+             conferencias.acertos,
+             conferencias.conferido_em
+      FROM conferencias
+      JOIN jogos ON jogos.id = conferencias.jogo_id
+      WHERE jogos.usuario_id = ? AND conferencias.jogo_id IN (${placeholders})
+      ORDER BY conferencias.concurso DESC
+    `).bind(user.id, ...ids).all();
+    const byGame = new Map(jogos.map((jogo) => [jogo.id, jogo]));
+
+    for (const conferencia of confResult.results) {
+      const jogo = byGame.get(conferencia.jogo_id);
+
+      if (jogo) {
+        jogo.conferencias.push({
+          concurso: conferencia.concurso,
+          dezenas_sorteadas: conferencia.dezenas_sorteadas,
+          acertos: conferencia.acertos,
+          conferido_em: conferencia.conferido_em
+        });
+      }
+    }
+  }
+
   return json({
     ok: true,
-    jogos: result.results.map((jogo) => ({
-      ...jogo,
-      dezenas: JSON.parse(jogo.dezenas)
-    }))
+    jogos
   });
 }
 
@@ -329,6 +375,71 @@ async function deleteJogo(user, env, id) {
   return json({ ok: true });
 }
 
+async function conferirDuasRodadas(user, env) {
+  const result = await env.DB.prepare(`
+    SELECT id, dezenas
+    FROM jogos
+    WHERE usuario_id = ? AND status IN ('salvo', 'jogado', 'conferido')
+    ORDER BY datetime(criado_em) DESC
+    LIMIT 200
+  `).bind(user.id).all();
+  let novas = 0;
+  let atualizadas = 0;
+  const resumo = [];
+
+  for (const jogo of result.results) {
+    const dezenas = new Set(JSON.parse(jogo.dezenas));
+
+    for (const rodada of RECENT_RESULTS.slice(0, 2)) {
+      const acertos = rodada.dezenas.filter((dezena) => dezenas.has(dezena)).length;
+      const dezenasSorteadas = dezenasTexto(rodada.dezenas);
+      const insert = await env.DB.prepare(`
+        INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
+        VALUES (?, ?, ?, ?)
+      `).bind(jogo.id, rodada.concurso, dezenasSorteadas, acertos).run();
+
+      if (insert.meta.changes) {
+        novas += 1;
+      } else {
+        await env.DB.prepare(`
+          UPDATE conferencias
+          SET dezenas_sorteadas = ?, acertos = ?, conferido_em = CURRENT_TIMESTAMP
+          WHERE jogo_id = ? AND concurso = ?
+        `).bind(dezenasSorteadas, acertos, jogo.id, rodada.concurso).run();
+        atualizadas += 1;
+      }
+
+      resumo.push({
+        jogo_id: jogo.id,
+        concurso: rodada.concurso,
+        dezenas_sorteadas: dezenasSorteadas,
+        acertos
+      });
+    }
+  }
+
+  if (result.results.length) {
+    await env.DB.prepare(`
+      UPDATE jogos
+      SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP
+      WHERE usuario_id = ? AND status IN ('salvo', 'jogado', 'conferido')
+    `).bind(user.id).run();
+  }
+
+  return json({
+    ok: true,
+    rodadas: RECENT_RESULTS.slice(0, 2).map((rodada) => ({
+      concurso: rodada.concurso,
+      data: rodada.data,
+      dezenas_sorteadas: dezenasTexto(rodada.dezenas)
+    })),
+    jogos_conferidos: result.results.length,
+    conferencias_novas: novas,
+    conferencias_atualizadas: atualizadas,
+    resumo
+  });
+}
+
 async function handleApi(request, env, url) {
   const method = request.method;
   const path = url.pathname;
@@ -369,6 +480,10 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/jogos" && method === "POST") {
     return createJogo(request, user, env);
+  }
+
+  if (path === "/api/jogos/conferir-duas-rodadas" && method === "POST") {
+    return conferirDuasRodadas(user, env);
   }
 
   const jogoMatch = path.match(/^\/api\/jogos\/(\d+)$/);

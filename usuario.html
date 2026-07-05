@@ -101,6 +101,7 @@
       <div class="actions">
         <button id="saveBtn" type="button">Salvar Jogo</button>
         <button id="refreshBtn" type="button" class="secondary">Atualizar Lista</button>
+        <button id="checkBtn" type="button" class="ok">Conferir 2 Rodadas</button>
       </div>
       <div id="appStatus" class="status"></div>
     </div>
@@ -210,6 +211,11 @@ function renderGames(jogos) {
         <span>${new Date(jogo.criado_em).toLocaleString("pt-BR")}</span>
       </div>
       ${jogo.observacao ? `<div class="meta">${jogo.observacao}</div>` : ""}
+      ${jogo.conferencias && jogo.conferencias.length ? `
+        <div class="meta">
+          ${jogo.conferencias.map((conf) => `<span class="badge">Concurso ${conf.concurso}: ${conf.acertos} acertos</span>`).join("")}
+        </div>
+      ` : ""}
       <div class="actions">
         <button class="ok" type="button" data-status="jogado" data-id="${jogo.id}">Marcar jogado</button>
         <button class="danger" type="button" data-delete="${jogo.id}">Excluir</button>
@@ -242,6 +248,21 @@ async function saveGame() {
   await loadGames();
 }
 
+async function checkTwoRounds() {
+  setStatus(el.appStatus, "Conferindo jogos nas 2 ultimas rodadas...");
+  const data = await api("/api/jogos/conferir-duas-rodadas", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
+  const rodadas = data.rodadas.map((rodada) => rodada.concurso).join(" e ");
+  setStatus(
+    el.appStatus,
+    `Conferencia salva: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}.`,
+    "ok"
+  );
+  await loadGames();
+}
+
 async function bootstrap() {
   if (!token) {
     showAuth();
@@ -260,6 +281,7 @@ document.getElementById("loginBtn").addEventListener("click", () => login().catc
 document.getElementById("registerBtn").addEventListener("click", () => register().catch((err) => setStatus(el.authStatus, err.message, "error")));
 document.getElementById("saveBtn").addEventListener("click", () => saveGame().catch((err) => setStatus(el.appStatus, err.message, "error")));
 document.getElementById("refreshBtn").addEventListener("click", () => loadGames().catch((err) => setStatus(el.appStatus, err.message, "error")));
+document.getElementById("checkBtn").addEventListener("click", () => checkTwoRounds().catch((err) => setStatus(el.appStatus, err.message, "error")));
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   try { await api("/api/auth/logout", { method: "POST" }); } catch {}
   showAuth();
