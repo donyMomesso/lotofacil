@@ -258,15 +258,14 @@ async function saveGame() {
 }
 
 async function checkTwoRounds() {
-  setStatus(el.appStatus, "Atualizando conferencias recentes...");
-  const data = await api("/api/jogos/conferir-duas-rodadas", {
+  setStatus(el.appStatus, "Atualizando conferencias pendentes...");
+  const data = await api("/api/jogos/conferir-pendentes", {
     method: "POST",
     body: JSON.stringify({})
   });
-  const rodadas = data.rodadas.map((rodada) => rodada.concurso).join(" e ");
   setStatus(
     el.appStatus,
-    `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}. Descartados: ${data.jogos_descartados || 0}.`,
+    `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), ${data.conferencias_novas || 0} nova(s). Descartados: ${data.jogos_descartados || 0}.`,
     "ok"
   );
   await loadGames();

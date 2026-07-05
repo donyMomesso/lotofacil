@@ -902,11 +902,10 @@ class Component extends DCLogic {
       this.setState({ authStatus: 'Entre para conferir jogos.' });
       return;
     }
-    this.setState({ panelStatus: 'Conferindo as 2 ultimas rodadas...' });
+    this.setState({ panelStatus: 'Atualizando conferencias pendentes...' });
     try {
-      const data = await painelApi('/api/jogos/conferir-duas-rodadas', { method:'POST', body: '{}' });
-      const rodadas = data.rodadas.map(r => r.concurso).join(' e ');
-      this.setState({ panelStatus: `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), rodadas ${rodadas}. Descartados: ${data.jogos_descartados || 0}.` });
+      const data = await painelApi('/api/jogos/conferir-pendentes', { method:'POST', body: '{}' });
+      this.setState({ panelStatus: `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), ${data.conferencias_novas || 0} nova(s). Descartados: ${data.jogos_descartados || 0}.` });
       await this.loadSavedGames();
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao conferir.' });

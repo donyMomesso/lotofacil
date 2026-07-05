@@ -691,27 +691,129 @@ async function conferirDuasRodadas(user, env) {
   });
 }
 
-async function conferirResultadoParaJogos(env, resultado) {
-  const jogos = await env.DB.prepare(`
-    SELECT id, dezenas
-    FROM jogos
-    WHERE concurso = ? AND status IN ('salvo', 'jogado', 'conferido')
-  `).bind(resultado.concurso).all();
-  let conferidos = 0;
+async function salvarConferencia(env, jogo, resultado) {
+  const dezenas = new Set(JSON.parse(jogo.dezenas));
+  const resultadoDezenas = Array.isArray(resultado.dezenas)
+    ? resultado.dezenas
+    : JSON.parse(resultado.dezenas);
+  const dezenasSorteadas = resultado.dezenas_texto || dezenasTexto(resultadoDezenas);
+  const acertos = resultadoDezenas.filter((dezena) => dezenas.has(dezena)).length;
+  const insert = await env.DB.prepare(`
+    INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
+    VALUES (?, ?, ?, ?)
+  `).bind(jogo.id, resultado.concurso, dezenasSorteadas, acertos).run();
 
-  for (const jogo of jogos.results) {
-    const dezenas = new Set(JSON.parse(jogo.dezenas));
-    const acertos = resultado.dezenas.filter((dezena) => dezenas.has(dezena)).length;
-
-    await env.DB.prepare(`
-      INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
-      VALUES (?, ?, ?, ?)
-    `).bind(jogo.id, resultado.concurso, dezenasTexto(resultado.dezenas), acertos).run();
+  if (!insert.meta.changes) {
     await env.DB.prepare(`
       UPDATE conferencias
       SET dezenas_sorteadas = ?, acertos = ?, conferido_em = CURRENT_TIMESTAMP
       WHERE jogo_id = ? AND concurso = ?
-    `).bind(dezenasTexto(resultado.dezenas), acertos, jogo.id, resultado.concurso).run();
+    `).bind(dezenasSorteadas, acertos, jogo.id, resultado.concurso).run();
+  }
+
+  return {
+    nova: Boolean(insert.meta.changes),
+    jogo_id: jogo.id,
+    concurso: resultado.concurso,
+    dezenas_sorteadas: dezenasSorteadas,
+    acertos
+  };
+}
+
+async function conferirPendencias(env, userId = null) {
+  await seedInitialResults(env);
+  const params = [];
+  const userFilter = userId ? "AND usuario_id = ?" : "";
+
+  if (userId) {
+    params.push(userId);
+  }
+
+  const jogosResult = await env.DB.prepare(`
+    SELECT id, usuario_id, concurso, dezenas, manter_salvo, descartar_apos_rodadas
+    FROM jogos
+    WHERE status IN ('salvo', 'jogado', 'conferido')
+      ${userFilter}
+    ORDER BY datetime(criado_em) ASC
+    LIMIT 500
+  `).bind(...params).all();
+  let novas = 0;
+  let atualizadas = 0;
+  const resumo = [];
+
+  for (const jogo of jogosResult.results) {
+    const conferidas = await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM conferencias
+      WHERE jogo_id = ?
+    `).bind(jogo.id).first();
+    const limite = jogo.manter_salvo ? 50 : Number(jogo.descartar_apos_rodadas || 2);
+    const restantes = Math.max(0, limite - Number(conferidas.total || 0));
+
+    if (!restantes) {
+      continue;
+    }
+
+    const resultados = await env.DB.prepare(`
+      SELECT resultados.concurso, resultados.data_sorteio, resultados.dezenas, resultados.dezenas_texto
+      FROM resultados
+      LEFT JOIN conferencias
+        ON conferencias.jogo_id = ? AND conferencias.concurso = resultados.concurso
+      WHERE conferencias.id IS NULL
+        AND (? IS NULL OR resultados.concurso >= ?)
+      ORDER BY resultados.concurso ASC
+      LIMIT ?
+    `).bind(jogo.id, jogo.concurso, jogo.concurso, restantes).all();
+
+    for (const resultado of resultados.results) {
+      const conferencia = await salvarConferencia(env, jogo, resultado);
+
+      if (conferencia.nova) {
+        novas += 1;
+      } else {
+        atualizadas += 1;
+      }
+
+      resumo.push(conferencia);
+    }
+  }
+
+  if (resumo.length) {
+    const ids = [...new Set(resumo.map((item) => item.jogo_id))];
+    const placeholders = ids.map(() => "?").join(",");
+    await env.DB.prepare(`
+      UPDATE jogos
+      SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP
+      WHERE id IN (${placeholders})
+    `).bind(...ids).run();
+  }
+
+  const descartados = await cleanupExpiredGames(env, userId);
+
+  return {
+    ok: true,
+    jogos_conferidos: new Set(resumo.map((item) => item.jogo_id)).size,
+    conferencias_novas: novas,
+    conferencias_atualizadas: atualizadas,
+    jogos_descartados: descartados,
+    resumo
+  };
+}
+
+async function conferirResultadoParaJogos(env, resultado) {
+  const jogos = await env.DB.prepare(`
+    SELECT jogos.id, jogos.dezenas
+    FROM jogos
+    LEFT JOIN conferencias
+      ON conferencias.jogo_id = jogos.id AND conferencias.concurso = ?
+    WHERE jogos.status IN ('salvo', 'jogado', 'conferido')
+      AND conferencias.id IS NULL
+      AND (jogos.concurso IS NULL OR jogos.concurso <= ?)
+  `).bind(resultado.concurso, resultado.concurso).all();
+  let conferidos = 0;
+
+  for (const jogo of jogos.results) {
+    await salvarConferencia(env, jogo, resultado);
     conferidos += 1;
   }
 
@@ -719,7 +821,8 @@ async function conferirResultadoParaJogos(env, resultado) {
     await env.DB.prepare(`
       UPDATE jogos
       SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP
-      WHERE concurso = ? AND status IN ('salvo', 'jogado', 'conferido')
+      WHERE status IN ('salvo', 'jogado', 'conferido')
+        AND (concurso IS NULL OR concurso <= ?)
     `).bind(resultado.concurso).run();
     await cleanupExpiredGames(env);
   }
@@ -750,6 +853,9 @@ async function runAutoCycle(env) {
     nextToFetch += 1;
   }
 
+  const pendentes = await conferirPendencias(env);
+  conferencias += pendentes.conferencias_novas + pendentes.conferencias_atualizadas;
+
   const currentLatest = await latestResult(env);
   const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
   const jogosGerados = await generateNextContestGames(env, proximoConcurso);
@@ -758,6 +864,7 @@ async function runAutoCycle(env) {
     ok: true,
     novos_concursos: novos.map((resultado) => resultado.concurso),
     conferencias,
+    jogos_descartados: pendentes.jogos_descartados,
     proximo_concurso: proximoConcurso,
     jogos_gerados: jogosGerados.length
   };
@@ -837,6 +944,10 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/jogos/conferir-duas-rodadas" && method === "POST") {
     return conferirDuasRodadas(user, env);
+  }
+
+  if (path === "/api/jogos/conferir-pendentes" && method === "POST") {
+    return json(await conferirPendencias(env, user.id));
   }
 
   const jogoMatch = path.match(/^\/api\/jogos\/(\d+)$/);
