@@ -1,6 +1,27 @@
-const ADD_BUTTON_SELECTOR = "#botao-adicionar";
+const ADD_BUTTON_SELECTOR = "#colocarnocarrinho";
+const CLEAR_BUTTON_SELECTOR = "#limparvolante";
+const INCREASE_NUMBER_BUTTON_SELECTOR = "#aumentarnumero";
 const NUMBER_CLICK_DELAY_MS = 200;
 const NEXT_LINE_DELAY_MS = 1000;
+const NUMBER_SELECTOR = [
+  "button",
+  "a",
+  "li",
+  "[role='button']",
+  "[onclick]",
+  "[ng-click]",
+  "[data-ng-click]",
+  ".numero",
+  ".dezena",
+  ".number",
+  ".ng-binding"
+].join(",");
+const ADD_BUTTON_TEXTS = [
+  "adicionar a lista",
+  "adicionar ao carrinho",
+  "colocar no carrinho",
+  "incluir aposta"
+];
 
 let isRunning = false;
 
@@ -9,23 +30,98 @@ function sleep(ms) {
 }
 
 function normalizeText(text) {
-  return String(text || "").trim();
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
-function getClickableCandidates() {
-  return Array.from(document.querySelectorAll("li, a, button"));
+function isVisible(element) {
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+
+  return rect.width > 0
+    && rect.height > 0
+    && style.visibility !== "hidden"
+    && style.display !== "none";
+}
+
+function isDisabled(element) {
+  return element.disabled
+    || element.getAttribute("aria-disabled") === "true"
+    || element.classList.contains("disabled");
+}
+
+function getClickableAncestor(element) {
+  return element.closest("button, a, li, [role='button'], [onclick], [ng-click], [data-ng-click], .numero, .dezena, .number")
+    || element;
+}
+
+function getNumberCandidates() {
+  const directCandidates = Array.from(document.querySelectorAll(NUMBER_SELECTOR));
+  const exactTextCandidates = Array.from(document.querySelectorAll("body *"))
+    .filter((element) => /^\d{2}$/.test(normalizeText(element.innerText || element.textContent)));
+
+  return Array.from(new Set([...directCandidates, ...exactTextCandidates]));
 }
 
 function findNumberElement(number) {
   const normalizedNumber = normalizeText(number);
+  const numberById = document.getElementById(`n${normalizedNumber}`);
 
-  return getClickableCandidates().find((element) => {
-    return normalizeText(element.innerText) === normalizedNumber;
+  if (numberById && isVisible(numberById) && !isDisabled(numberById)) {
+    return getClickableAncestor(numberById);
+  }
+
+  const match = getNumberCandidates().find((element) => {
+    const text = normalizeText(element.innerText || element.textContent);
+    return text === normalizedNumber && isVisible(element) && !isDisabled(element);
   });
+
+  return match ? getClickableAncestor(match) : null;
+}
+
+function findClearButton() {
+  return document.querySelector(CLEAR_BUTTON_SELECTOR);
+}
+
+function findIncreaseNumberButton() {
+  return document.querySelector(INCREASE_NUMBER_BUTTON_SELECTOR);
 }
 
 function findAddButton() {
-  return document.querySelector(ADD_BUTTON_SELECTOR);
+  const buttonBySelector = document.querySelector(ADD_BUTTON_SELECTOR);
+
+  if (buttonBySelector) {
+    return buttonBySelector;
+  }
+
+  const candidates = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit']"));
+
+  return candidates.find((element) => {
+    const text = normalizeText(element.innerText || element.value).toLowerCase();
+    return ADD_BUTTON_TEXTS.some((label) => text.includes(label));
+  });
+}
+
+function dispatchRealClick(element) {
+  const rect = element.getBoundingClientRect();
+  const clientX = rect.left + rect.width / 2;
+  const clientY = rect.top + rect.height / 2;
+  const eventOptions = {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    clientX,
+    clientY
+  };
+
+  element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  element.dispatchEvent(new PointerEvent("pointerdown", eventOptions));
+  element.dispatchEvent(new MouseEvent("mousedown", eventOptions));
+  element.dispatchEvent(new PointerEvent("pointerup", eventOptions));
+  element.dispatchEvent(new MouseEvent("mouseup", eventOptions));
+  element.dispatchEvent(new MouseEvent("click", eventOptions));
 }
 
 async function clickNumber(number) {
@@ -36,9 +132,40 @@ async function clickNumber(number) {
     return false;
   }
 
-  element.click();
+  dispatchRealClick(element);
   await sleep(NUMBER_CLICK_DELAY_MS);
   return true;
+}
+
+async function clearVolante() {
+  const clearButton = findClearButton();
+
+  if (!clearButton) {
+    console.warn(`[Preenchedor] Botao limpar volante nao encontrado: ${CLEAR_BUTTON_SELECTOR}`);
+    return;
+  }
+
+  dispatchRealClick(clearButton);
+  await sleep(NUMBER_CLICK_DELAY_MS);
+}
+
+async function adjustNumberQuantity(line) {
+  const extraNumbers = Math.max(0, line.length - 15);
+
+  if (!extraNumbers) {
+    return;
+  }
+
+  const increaseButton = findIncreaseNumberButton();
+
+  if (!increaseButton) {
+    throw new Error(`Jogo com ${line.length} dezenas, mas nao encontrei o botao de aumentar numeros: ${INCREASE_NUMBER_BUTTON_SELECTOR}`);
+  }
+
+  for (let index = 0; index < extraNumbers; index += 1) {
+    dispatchRealClick(increaseButton);
+    await sleep(NUMBER_CLICK_DELAY_MS);
+  }
 }
 
 async function clickAddButton() {
@@ -48,14 +175,27 @@ async function clickAddButton() {
     throw new Error(`Botao de adicionar nao encontrado: ${ADD_BUTTON_SELECTOR}`);
   }
 
-  addButton.click();
+  dispatchRealClick(addButton);
 }
 
 async function processLine(line, lineIndex) {
   console.info(`[Preenchedor] Processando linha ${lineIndex + 1}:`, line);
 
+  const notClicked = [];
+
+  await clearVolante();
+  await adjustNumberQuantity(line);
+
   for (const number of line) {
-    await clickNumber(number);
+    const clicked = await clickNumber(number);
+
+    if (!clicked) {
+      notClicked.push(number);
+    }
+  }
+
+  if (notClicked.length) {
+    throw new Error(`Linha ${lineIndex + 1}: nao encontrei/click nos numeros ${notClicked.join(", ")}.`);
   }
 
   await clickAddButton();
@@ -85,20 +225,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  sendResponse({
+    ok: true,
+    message: "Preenchimento iniciado. Acompanhe na pagina da Caixa."
+  });
+
   processLines(message.lines)
-    .then(() => {
-      sendResponse({
-        ok: true,
-        message: "Preenchimento finalizado."
-      });
-    })
     .catch((error) => {
       console.error("[Preenchedor] Erro:", error);
-      sendResponse({
-        ok: false,
-        message: error.message || "Erro durante o preenchimento."
-      });
     });
 
-  return true;
+  return false;
 });
