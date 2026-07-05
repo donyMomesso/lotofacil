@@ -377,7 +377,13 @@
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.soma }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.parImpar }}</td>
-                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}<div style="margin-top:4px; color:#4C1D95; font-weight:700;">Qtd. acertos: {{ g.conferenciasResumo }}</div></td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A; min-width:280px;">
+                  <div style="color:#4C1D95; font-weight:700; margin-bottom:3px;">{{ g.perfilResumo }}</div>
+                  <div>{{ g.analiseCompleta }}</div>
+                  <div style="margin-top:3px;">{{ g.distribuicaoResumo }}</div>
+                  <div style="margin-top:4px; color:#166534; font-weight:700;">Qtd. acertos: {{ g.conferenciasResumo }}</div>
+                  <div style="margin-top:2px; color:#8B76B0;">{{ g.retencaoResumo }}</div>
+                </td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ g.classificacaoStyle }}">{{ g.classificacao }}</span></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; text-align:right;"><span onClick="{{ g.onRemove }}" style="cursor:pointer; color:#BE185D; font-size:12px; font-weight:600;">remover</span></td>
               </tr>
@@ -1349,8 +1355,12 @@ class Component extends DCLogic {
         dezenasStr: g.dezenas.map(pad).join('-'),
         soma: g.soma,
         parImpar: `${g.pares}p / ${g.impares}i`,
-        conferenciasResumo: `${conferenciasResumo} | ${retencaoResumo}`,
+        conferenciasResumo,
+        retencaoResumo,
+        perfilResumo: `Perfil: ${a.classificacao}`,
         analiseResumo: `Moldura ${a.moldura}/16 · Quentes ${a.quentes} · Seq.máx ${a.maxSeq} · ${a.somaFaixaComum ? 'soma comum' : 'soma fora da faixa'}`,
+        analiseCompleta: `Moldura ${a.moldura}/16 | Miolo ${a.miolo}/9 | Quentes ${a.quentes} | Frias ${a.frias} | Atrasadas ${a.atrasadas} | Repetidas ${a.repetidos}`,
+        distribuicaoResumo: `Seq.max ${a.maxSeq} | Linhas ${a.rowCounts.join('/')} | Colunas ${a.colCounts.join('/')} | ${a.somaFaixaComum ? 'soma comum' : 'soma fora da faixa'} | ${a.parImparEquilibrado ? 'par/impar ok' : 'par/impar fora'}`,
         classificacao: a.classificacao,
         classificacaoStyle: a.classificacao === 'Quente'
           ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;'
