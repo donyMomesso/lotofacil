@@ -968,7 +968,10 @@ function assetRequest(request, url, pathname) {
   assetUrl.pathname = pathname;
   assetUrl.search = url.search;
 
-  return new Request(assetUrl.toString(), request);
+  return new Request(assetUrl.toString(), {
+    method: "GET",
+    headers: request.headers
+  });
 }
 
 export default {
