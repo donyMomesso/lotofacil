@@ -963,6 +963,14 @@ async function handleApi(request, env, url) {
   return error("Rota nao encontrada.", 404);
 }
 
+function assetRequest(request, url, pathname) {
+  const assetUrl = new URL(request.url);
+  assetUrl.pathname = pathname;
+  assetUrl.search = url.search;
+
+  return new Request(assetUrl.toString(), request);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -970,6 +978,10 @@ export default {
     try {
       if (url.pathname.startsWith("/api/")) {
         return await handleApi(request, env, url);
+      }
+
+      if (url.pathname === "/painel_jogos" || url.pathname === "/painel_jogos.html") {
+        return env.ASSETS.fetch(assetRequest(request, url, "/painel_jogos_v2.html"));
       }
 
       return env.ASSETS.fetch(request);

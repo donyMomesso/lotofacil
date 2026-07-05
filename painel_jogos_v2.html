@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style> body { margin:0; } </style>
+</helmet>
+
+<div style="font-family:'Inter',sans-serif; background:#FAF7FF; color:#1F1235; min-height:100vh;">
+  <sc-if value="{{ needsAuth }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:9999; background:linear-gradient(135deg,#4C1D95,#7C3AED); display:flex; align-items:center; justify-content:center; padding:22px;">
+      <div style="width:100%; max-width:420px; background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:22px; box-shadow:0 24px 80px rgba(0,0,0,.35);">
+        <div style="font-family:'Sora',sans-serif; font-size:22px; font-weight:800; color:#4C1D95; margin-bottom:6px;">Acesso ao Painel Avancado</div>
+        <div style="font-size:13px; color:#6B5B8A; line-height:1.55; margin-bottom:16px;">Entre ou crie cadastro para gerar jogos, salvar no banco e acompanhar as conferencias automaticamente.</div>
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Nome</label>
+        <input id="painelAuthNome" placeholder="Seu nome" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:10px;" />
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Email</label>
+        <input id="painelAuthEmail" type="email" placeholder="voce@email.com" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:10px;" />
+        <label style="display:block; font-size:12px; font-weight:700; color:#6B5B8A; margin-bottom:5px;">Senha</label>
+        <input id="painelAuthSenha" type="password" placeholder="Minimo 6 caracteres" style="width:100%; border:1px solid #E9DFFB; border-radius:8px; padding:11px; font-size:14px; margin-bottom:12px;" />
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button onClick="{{ onLogin }}" style="flex:1; border:0; border-radius:8px; padding:11px 14px; background:#6D28D9; color:#fff; font-weight:800; cursor:pointer;">Entrar</button>
+          <button onClick="{{ onRegister }}" style="flex:1; border:0; border-radius:8px; padding:11px 14px; background:#EDE9FE; color:#4C1D95; font-weight:800; cursor:pointer;">Criar conta</button>
+        </div>
+        <div style="min-height:18px; margin-top:12px; font-size:12px; color:#BE185D;">{{ authStatus }}</div>
+        <div style="font-size:11px; color:#8B76B0; line-height:1.45; margin-top:10px;">Conteudo educativo. Sugestoes estatisticas nao preveem sorteios nem aumentam a chance matematica de acerto.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="background:{{ headerGradient }}; padding:20px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; box-shadow:0 4px 18px rgba(43,10,77,.25);">
+    <div>
+      <a href="index.html" style="font-size:11.5px; color:rgba(255,255,255,.6); text-decoration:none;">← Lotofácil Lab</a>
+      <h1 style="font-family:'Sora',sans-serif; font-size:20px; font-weight:800; color:#fff; margin:4px 0 2px;">Lotofácil Lab — Painel Avançado</h1>
+      <div style="font-size:12px; color:rgba(255,255,255,.75);">Laboratório Estatístico Educativo · Atualizado em 04/07/2026 11:50</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:600; color:#fff;">{{ authUserLabel }}</div>
+      <button onClick="{{ onLogout }}" style="background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.35); color:#fff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:11.5px; font-weight:700;">Sair</button>
+      <div style="background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:8px; padding:5px 12px; font-size:11.5px; font-weight:600; color:#fff;">⚠ Apenas estudo estatístico — não é recomendação de aposta</div>
+    </div>
+  </div>
+
+  <div style="display:flex; border-bottom:2px solid #E9DFFB; padding:0 28px; background:#fff; overflow-x:auto; box-shadow:0 2px 8px rgba(43,10,77,.06);">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+      <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+    </sc-for>
+  </div>
+
+  <!-- ===================== JOGOS & MOLDURA ===================== -->
+  <sc-if value="{{ isJogos }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+      <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
+        <b style="color:#7C2D12;">Lembrete educativo:</b> os jogos são gerados por 5 métodos estatísticos para fins de estudo comparativo. Nenhum método tem vantagem preditiva — todos convergem para a média teórica de <b>9 acertos</b> no longo prazo. Dezenas em <b style="color:#B45309;">âmbar</b> = top 5 mais frequentes · em <b style="color:#BE185D;">rosa</b> = top 5 maior atraso.
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+        <span style="font-size:21px; font-weight:800; color:#5B21B6; font-family:'Sora',sans-serif;">Concurso #{{ concursoAlvo }}</span>
+        <span style="font-size:13px; color:#8B76B0;">Geracao automatica do sistema</span>
+        <span style="background:#F3E8FF; color:#7C3AED; border-radius:6px; padding:3px 10px; font-size:11.5px; font-weight:600;">Próximo sorteio</span>
+      </div>
+
+      <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; align-items:center; font-size:12px; color:#8B76B0;">
+        <div style="display:flex; align-items:center; gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#FFFBEB;border:2px solid #F59E0B;display:inline-block;"></span> Mais frequente (top 5)</div>
+        <div style="display:flex; align-items:center; gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#FDF2F8;border:2px solid #EC4899;display:inline-block;"></span> Maior atraso (top 5)</div>
+        <div style="display:flex; align-items:center; gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#FAF7FF;border:2px solid #E9DFFB;display:inline-block;"></span> Normal</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔲 Moldura (dezenas da borda 01–25)</div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:280px; margin:0 auto;">
+            <sc-for list="{{ molduraCells }}" as="c" hint-placeholder-count="25">
+              <div style="{{ c.style }}">{{ c.num }}</div>
+            </sc-for>
+          </div>
+          <div style="margin-top:12px; font-size:11px; color:#8B76B0;">As 16 dezenas da borda do volante. Estratégia: escolha 2 para excluir do seu jogo.</div>
+        </div>
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔵 Miolo (dezenas internas)</div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:280px; margin:0 auto;">
+            <sc-for list="{{ mioloCells }}" as="c" hint-placeholder-count="25">
+              <div style="{{ c.style }}">{{ c.num }}</div>
+            </sc-for>
+          </div>
+          <div style="margin-top:12px; font-size:11px; color:#8B76B0;">As 9 dezenas do centro do volante. Estratégia: inclua pelo menos 6 no seu jogo.</div>
+        </div>
+      </div>
+
+      <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
+        <b style="color:#7C2D12;">Diretrizes observadas no histórico:</b> pares/ímpares equilibrados (entre 6 e 9 pares em 15 dezenas), soma total entre <b>180 e 220</b>, e distribuição uniforme entre as 5 linhas e 5 colunas do volante — evitando concentrar dezenas em um único lado da cartela.
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">📋 Desdobramento — 5 Métodos × 15 Dezenas</div>
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+          <thead>
+            <tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;">
+              <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:left;">Método</th>
+              <sc-for list="{{ posCols }}" as="pc" hint-placeholder-count="15"><th style="padding:6px 6px; border-bottom:1px solid #E9DFFB; text-align:center;">{{ pc }}</th></sc-for>
+              <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Soma</th>
+              <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">P</th>
+              <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Í</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ desdobramento }}" as="m" hint-placeholder-count="5">
+              <tr>
+                <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB;"><span style="{{ m.badgeStyle }}">{{ m.label }}</span></td>
+                <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td style="{{ c.style }}">{{ c.num }}</td></sc-for>
+                <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center; font-weight:700;">{{ m.soma }}</td>
+                <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center;">{{ m.p }}</td>
+                <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center;">{{ m.i }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== MEUS JOGOS ===================== -->
+  <sc-if value="{{ isMeusJogos }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+      <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
+        <b style="color:#7C2D12;">Meus Jogos Próprios:</b> registre aqui seus jogos manuais para o próximo concurso. Clique nas dezenas do volante, informe o concurso alvo e salve. Os dados ficam salvos no seu navegador.
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:6px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🔗 Fechamento combinatório (16 a 20 dezenas)</div>
+        </div>
+        <div style="font-size:12px; color:#6B5B8A; line-height:1.6; margin-bottom:14px;">
+          Em vez de escolher 15 dezenas, você escolhe um grupo maior. O sistema calcula quantos jogos de 15 dezenas são necessários para cobrir <b>todas as combinações possíveis</b> dentro do grupo — garantindo que, se as 15 dezenas sorteadas estiverem todas no seu grupo, pelo menos um jogo acerta todas.
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <span style="font-size:11px; color:#8B76B0;">Tamanho do grupo:</span>
+          <sc-for list="{{ fechamentoOptions }}" as="fo" hint-placeholder-count="5">
+            <div onClick="{{ fo.onClick }}" style="{{ fo.style }}">{{ fo.label }}</div>
+          </sc-for>
+          <button onClick="{{ autoFechamento }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:7px 14px; cursor:pointer; font-size:12px; font-weight:700; margin-left:auto;">✨ Preencher automaticamente</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:20px; align-items:start;">
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px; max-width:250px;">
+            <sc-for list="{{ fechamentoGrid }}" as="c" hint-placeholder-count="25">
+              <div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.num }}</div>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; min-width:180px;">
+            <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Selecionadas</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px;">{{ fSelCount }}/{{ fSelTotal }}</div>
+            </div>
+            <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Jogos de 15 necessários</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px; color:#7C3AED;">{{ totalCombos }}</div>
+            </div>
+            <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Custo aproximado (bilhete único)</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px; color:#D97706;">{{ custoAproximado }}</div>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ hasFechamentoJogos }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px; border-top:1px solid #F1ECFB; padding-top:14px;">
+            <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">16 jogos gerados (cobertura completa — pode ser dividido entre apostadores)</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; max-height:220px; overflow:auto;">
+              <sc-for list="{{ fechamentoJogos }}" as="fj" hint-placeholder-count="16">
+                <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:6px; padding:6px 10px; font-family:monospace; font-size:11px;">{{ fj.dezenasStr }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showGerarOpcoes }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px; border-top:1px solid #F1ECFB; padding-top:14px;">
+            <div style="font-size:11.5px; color:#6B5B8A; line-height:1.6; margin-bottom:10px;">
+              Acima de 16 dezenas o número de jogos para cobertura completa cresce muito rápido (136 a 15.504) — inviável de gerenciar manualmente. Em vez disso, geramos <b>5 opções de jogos de 15 dezenas</b> a partir do seu grupo de {{ fSelTotal }}, variando a combinação e mantendo soma, pares/ímpares e distribuição no volante dentro dos padrões observados no histórico.
+            </div>
+            <button onClick="{{ gerarOpcoesFechamento }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:9px 16px; cursor:pointer; font-size:12.5px; font-weight:700; margin-bottom:14px;">🎲 Gerar 5 opções de jogos</button>
+
+            <sc-if value="{{ hasFechamentoOpcoes }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px;">
+                <sc-for list="{{ fechamentoOpcoesView }}" as="op" hint-placeholder-count="5">
+                  <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:10px; padding:12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                      <span style="font-size:11px; font-weight:700; color:#5B21B6;">{{ op.titulo }}</span>
+                      <span style="{{ op.classificacaoStyle }}">{{ op.classificacao }}</span>
+                    </div>
+                    <div style="font-family:monospace; font-size:11.5px; color:#1F1235; line-height:1.5; margin-bottom:8px;">{{ op.dezenasStr }}</div>
+                    <div style="font-size:11px; color:#6B5B8A; line-height:1.7;">
+                      Soma: <b>{{ op.soma }}</b> · Pares/Ímpares: <b>{{ op.parImpar }}</b><br/>
+                      Moldura/Miolo: <b>{{ op.molduraMiolo }}</b> · Seq. máx: <b>{{ op.seqMax }}</b><br/>
+                      Por linha (1-25): <b>{{ op.linhasStr }}</b>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.1fr 0.85fr 1fr; gap:18px; margin-bottom:20px;">
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🎰 Volante — clique para selecionar as dezenas</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+            <span style="font-size:11px; color:#8B76B0;">Perfil da sugestão:</span>
+            <sc-for list="{{ perfilOptions }}" as="p" hint-placeholder-count="3">
+              <div onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</div>
+            </sc-for>
+            <button onClick="{{ sugerirJogo }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:12.5px; font-weight:700; box-shadow:0 3px 10px rgba(124,58,237,.35); white-space:nowrap; margin-left:auto;">✨ Sugerir combinação</button>
+          </div>
+          <div style="font-size:10.5px; color:#8B76B0; margin-bottom:10px;">🔓/🔒 clique no cadeado de uma dezena selecionada para travá-la nas próximas sugestões.</div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:300px; margin:0 auto 16px;">
+            <sc-for list="{{ volante }}" as="b" hint-placeholder-count="25">
+              <div style="position:relative;">
+                <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.num }}</div>
+                <sc-if value="{{ b.showLock }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ b.onLockClick }}" style="position:absolute; top:-6px; right:-6px; font-size:11px; cursor:pointer; background:#fff; border-radius:50%; width:16px; height:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.25);">{{ b.lockIcon }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <div style="flex:1; background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px; min-width:90px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Dezenas</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px;">{{ selCount }}/15</div>
+            </div>
+            <div style="flex:1; background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px; min-width:90px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Soma</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px; color:#7C3AED;">{{ selSoma }}</div>
+            </div>
+            <div style="flex:1; background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px; min-width:90px;">
+              <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Pares/Ímpares</div>
+              <div style="font-size:19px; font-weight:700; margin-top:2px; color:#D97706;">{{ selParImpar }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">💾 Salvar jogo</div>
+          <label style="font-size:12px; color:#8B76B0; display:block; margin-bottom:6px;">Concurso alvo</label>
+          <input type="number" value="{{ concursoAlvo }}" onChange="{{ onConcursoChange }}" min="1" style="width:100%; background:#FAF7FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px; color:#1F1235; font-size:16px; font-weight:700; margin-bottom:14px;" />
+          <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:#6B5B8A; line-height:1.45; margin-bottom:14px;">
+            <input type="checkbox" checked="{{ keepSaved }}" onChange="{{ onKeepSavedChange }}" style="width:auto; margin-top:2px;" />
+            <span>Manter salvo ate excluir manualmente. Se desmarcado, o jogo sai automaticamente depois de 2 conferencias.</span>
+          </label>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onClick="{{ addGame }}" disabled="{{ addDisabled }}" style="{{ addBtnStyle }}">✅ Adicionar jogo</button>
+            <button onClick="{{ clearSelected }}" style="flex:0; background:#FDF2F8; border:1px solid #FBCFE8; color:#BE185D; border-radius:8px; padding:11px 16px; cursor:pointer; font-size:14px; font-weight:600;">🗑 Limpar</button>
+          </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔥 Mapa de calor — orientação</div>
+
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:16px;">
+            <sc-for list="{{ heatmap }}" as="h" hint-placeholder-count="25">
+              <div style="{{ h.style }}">
+                <div style="font-size:12px; font-weight:700;">{{ h.num }}</div>
+                <div style="font-size:8.5px; opacity:.75;">{{ h.freq }}%</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:10px; font-weight:700; color:#B45309; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Top 5 mais frequentes</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <sc-for list="{{ topFreq }}" as="n" hint-placeholder-count="5">
+                <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#FFFBEB;border:2px solid #F59E0B;color:#92400E;">{{ n }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px; font-weight:700; color:#9D174D; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Top 5 maior atraso</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <sc-for list="{{ topAtraso }}" as="n" hint-placeholder-count="5">
+                <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#FDF2F8;border:2px solid #EC4899;color:#9D174D;">{{ n }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ hasSuggestions }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom:20px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px;">✨ 3 sugestões baseadas no estudo</div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px;">
+            <sc-for list="{{ suggestionsView }}" as="sg" hint-placeholder-count="3">
+              <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:16px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                  <span style="{{ sg.classificacaoStyle }}">{{ sg.classificacao }}</span>
+                  <span style="font-size:11px; color:#8B76B0;">Soma {{ sg.soma }}</span>
+                </div>
+                <div style="font-family:monospace; font-size:12.5px; color:#1F1235; line-height:1.6; margin-bottom:10px;">{{ sg.dezenasStr }}</div>
+                <sc-for list="{{ sg.motivos }}" as="m" hint-placeholder-count="4">
+                  <div style="font-size:11px; color:#6B5B8A; line-height:1.5; margin-bottom:3px;">• {{ m }}</div>
+                </sc-for>
+                <button onClick="{{ sg.onUse }}" style="width:100%; margin-top:10px; background:#F3E8FF; border:1px solid #7C3AED; color:#5B21B6; border-radius:8px; padding:8px; cursor:pointer; font-size:12.5px; font-weight:700;">Usar esta combinação</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📈 Análise do jogo {{ analysisPartialLabel }}</div>
+          <span style="{{ liveAnalysis.classificacaoStyle }}">{{ liveAnalysis.classificacao }}</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;">
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Moldura / Miolo</div>
+            <div style="font-size:17px; font-weight:700; margin-top:2px;">{{ liveAnalysis.moldura }}/16 · {{ liveAnalysis.miolo }}/9</div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Quentes / Atrasadas</div>
+            <div style="font-size:17px; font-weight:700; margin-top:2px; color:#B45309;">{{ liveAnalysis.quentes }}/5 · <span style="color:#BE185D;">{{ liveAnalysis.atrasadas }}/5</span></div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Sequência máxima</div>
+            <div style="font-size:17px; font-weight:700; margin-top:2px;">{{ liveAnalysis.maxSeq }} seguidas</div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Repetição vs. concurso 3726</div>
+            <div style="font-size:17px; font-weight:700; margin-top:2px;">{{ liveAnalysis.repetidos }}/15</div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Soma na faixa comum (180–220)</div>
+            <div style="font-size:17px; font-weight:700; margin-top:2px; color:{{ liveAnalysis.somaCorClass }};">{{ liveAnalysis.somaLabel }}</div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Por linha do volante (1-5/6-10/11-15/16-20/21-25)</div>
+            <div style="font-size:15px; font-weight:700; margin-top:2px;">{{ liveAnalysis.linhasStr }}</div>
+          </div>
+          <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Por coluna do volante</div>
+            <div style="font-size:15px; font-weight:700; margin-top:2px;">{{ liveAnalysis.colunasStr }}</div>
+          </div>
+        </div>
+        <div style="margin-top:14px; font-size:11.5px; color:#8B76B0; line-height:1.6;">
+          Estas métricas descrevem o perfil do jogo (distribuição, sequência, soma) — não indicam maior chance de acerto. Todo jogo de 15 dezenas tem a mesma probabilidade matemática de ser sorteado. O botão "Sugerir combinação" apenas monta um jogo que segue os padrões observados no histórico (moldura/miolo, equilíbrio quente/frio, soma comum) — é um exercício estatístico, não uma previsão.
+        </div>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Jogos registrados</div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Atualizar conferencias</button>
+            <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#8B76B0; margin-bottom:10px;">{{ panelStatus }}</div>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dezenas</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Soma</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">P/Í</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Perfil</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Quente/Frio</th><th style="padding:8px 10px; border-bottom:1px solid #E9DFFB;"></th></tr></thead>
+          <tbody>
+            <sc-if value="{{ hasNoGames }}" hint-placeholder-val="{{ false }}">
+              <tr><td colspan="7" style="text-align:center; color:#8B76B0; padding:20px;">Nenhum jogo registrado ainda.</td></tr>
+            </sc-if>
+            <sc-for list="{{ savedGamesView }}" as="g" hint-placeholder-count="0">
+              <tr>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.concurso }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.soma }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.parImpar }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}<div style="margin-top:4px; color:#4C1D95; font-weight:700;">{{ g.conferenciasResumo }}</div></td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span style="{{ g.classificacaoStyle }}">{{ g.classificacao }}</span></td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; text-align:right;"><span onClick="{{ g.onRemove }}" style="cursor:pointer; color:#BE185D; font-size:12px; font-weight:600;">remover</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== CONFERIDOR ===================== -->
+  <sc-if value="{{ isConferidor }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+        <span style="font-size:21px; font-weight:800; color:#5B21B6; font-family:'Sora',sans-serif;">Concurso #3726</span>
+        <span style="font-size:13px; color:#8B76B0;">Sorteado em 03/07/2026</span>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:16px;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🎰 Dezenas sorteadas no concurso #3726</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <sc-for list="{{ sorteadasView }}" as="s" hint-placeholder-count="15">
+            <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:#DBEAFE;border:2px solid #2563EB;color:#1E40AF;">{{ s }}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔍 Conferidor — acertos por método</div>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
+              <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:left;">Método</th>
+              <sc-for list="{{ posCols }}" as="pc" hint-placeholder-count="15"><th style="padding:6px; border-bottom:1px solid #E9DFFB; text-align:center;">{{ pc }}</th></sc-for>
+              <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Acertos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ conferidor }}" as="m" hint-placeholder-count="5">
+              <tr>
+                <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;"><span style="{{ m.badgeStyle }}">{{ m.label }}</span></td>
+                <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td style="{{ c.style }}; text-align:center; padding:6px;">{{ c.num }}</td></sc-for>
+                <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><span style="{{ m.acertosStyle }}">{{ m.acertos }}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== SEQUÊNCIAS ===================== -->
+  <sc-if value="{{ isSequencias }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+      <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
+        Estas tabelas mostram com que frequência trincas de dezenas consecutivas saíram juntas (sequência) ou tiveram uma quebra (salto) no histórico — do concurso 1 ao 3726. Clique nos títulos das colunas para ordenar. São padrões observados, não indicam maior chance de acerto futuro.
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔢 Tabela de sequência das dezenas</div>
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;">
+                <sc-for list="{{ seqCols }}" as="c" hint-placeholder-count="3">
+                  <th onClick="{{ c.onClick }}" style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB; cursor:pointer; user-select:none;">{{ c.label }} {{ c.arrow }}</th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ seqRows }}" as="r" hint-placeholder-count="23">
+                <tr>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ r.dezenas }}</td>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB;">{{ r.qtd }}</td>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB;">{{ r.pctStr }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🧩 Tabela de saltos das dezenas</div>
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;">
+                <sc-for list="{{ saltoCols }}" as="c" hint-placeholder-count="3">
+                  <th onClick="{{ c.onClick }}" style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB; cursor:pointer; user-select:none;">{{ c.label }} {{ c.arrow }}</th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ saltoRows }}" as="r" hint-placeholder-count="23">
+                <tr>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ r.dezenas }}</td>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB;">{{ r.qtd }}</td>
+                  <td style="padding:7px 10px; border-bottom:1px solid #F1ECFB;">{{ r.pctStr }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:16px; font-size:11.5px; color:#8B76B0; line-height:1.6;">
+        <b>Sequência:</b> quantidade de vezes em que as três dezenas saíram juntas no mesmo concurso, e o percentual sobre o período selecionado. <b>Salto:</b> quantidade de vezes em que a sequência foi quebrada (uma das três não saiu), e o percentual correspondente.
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== BACKTEST & HISTÓRICO ===================== -->
+  <sc-if value="{{ isHistorico }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:18px;">
+        <canvas id="backtestChart" style="max-height:320px;"></canvas>
+      </div>
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto; margin-bottom:18px;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">Simulação retroativa — todo o histórico real</div>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Método</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concursos</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Média</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dif. vs. esperança</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">13+</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ backtestRows }}" as="r" hint-placeholder-count="5">
+              <tr>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ r.label }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ r.concursos }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ r.media }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ r.dif }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ r.p13 }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto; margin-bottom:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🎰 Dezenas sorteadas por concurso</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:#8B76B0;">Mostrar últimos:</span>
+            <sc-for list="{{ qtdOptions }}" as="qo" hint-placeholder-count="3">
+              <div onClick="{{ qo.onClick }}" style="{{ qo.style }}">{{ qo.q }}</div>
+            </sc-for>
+          </div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Data</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dezenas sorteadas</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Soma</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">P/I</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Perfil</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">🔥 Quentes da época</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">🧊 Frias da época</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ sorteiosView }}" as="sr" hint-placeholder-count="10">
+              <tr>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-weight:700;">{{ sr.concurso }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; color:#8B76B0;">{{ sr.data }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">
+                  <sc-for list="{{ sr.dezenasView }}" as="d" hint-placeholder-count="15">
+                    <span style="display:inline-block; background:#F3E8FF; color:#5B21B6; border-radius:999px; padding:2px 7px; margin:1px; font-size:11px; font-weight:700;">{{ d }}</span>
+                  </sc-for>
+                </td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-weight:700;">{{ sr.soma }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ sr.parImpar }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span style="{{ sr.classificacaoStyle }}">{{ sr.classificacao }}</span></td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace; font-size:11px; color:#92400E;">{{ sr.quentesEpoca }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace; font-size:11px; color:#1E40AF;">{{ sr.friasEpoca }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <div style="margin-top:10px; font-size:11px; color:#8B76B0; line-height:1.6;">
+          "Da época" é uma aproximação por janela móvel: considera os 10 concursos anteriores a cada sorteio (não a base histórica completa dezena a dezena). Conforme novos concursos entram no topo da lista, o cálculo se atualiza automaticamente.
+        </div>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">📋 Últimas conferências</div>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Método</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Acertos</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ historico }}" as="h" hint-placeholder-count="5">
+              <tr>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ h.concurso }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ h.metodo }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span style="{{ h.style }}">{{ h.acertos }}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1280, &quot;height&quot;: 900}}">
+const OUTER_RING = [1,2,3,4,5,6,10,11,15,16,20,21,22,23,24,25];
+const INNER_CORE = [7,8,9,12,13,14,17,18,19];
+const HOT = [10,11,13,20,25];
+const LATE = [3,9,12,15,23];
+const ROWS = [[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15],[16,17,18,19,20],[21,22,23,24,25]];
+const COLS = [[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[5,10,15,20,25]];
+const pad = n => String(n).padStart(2,'0');
+function distribuicao(dezenas) {
+  const rowCounts = ROWS.map(r => r.filter(n => dezenas.includes(n)).length);
+  const colCounts = COLS.map(c => c.filter(n => dezenas.includes(n)).length);
+  return { rowCounts, colCounts };
+}
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function cellCircleStyle(n, zoneSet, zoneColor, size) {
+  let bg,border,color;
+  if (HOT.includes(n)) { bg='#FFFBEB'; border='#F59E0B'; color='#92400E'; }
+  else if (LATE.includes(n)) { bg='#FDF2F8'; border='#EC4899'; color='#9D174D'; }
+  else if (zoneSet.includes(n)) { bg=zoneColor.bg; border=zoneColor.border; color=zoneColor.color; }
+  else { bg='#FAF7FF'; border='#E9DFFB'; color='#B8A6DB'; }
+  return `width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ${border};background:${bg};color:${color};`;
+}
+
+function tdStyle(n) {
+  let bg,color;
+  if (HOT.includes(n)) { bg='#FFFBEB'; color='#92400E'; }
+  else if (LATE.includes(n)) { bg='#FDF2F8'; color='#9D174D'; }
+  else { bg='transparent'; color='#1F1235'; }
+  return `padding:7px 6px; border-bottom:1px solid #F1ECFB; text-align:center; font-weight:700; background:${bg}; color:${color};`;
+}
+
+const METHOD_DEFS_3727 = [
+  { key:'M1', label:'M1 Aleatório', color:'#1E40AF', bg:'#DBEAFE', dezenas:[2,3,8,10,11,13,15,16,17,18,20,22,23,24,25], soma:227, p:8, i:7 },
+  { key:'M2', label:'M2 Mais Freq.', color:'#166534', bg:'#DCFCE7', dezenas:[1,2,3,4,5,10,11,12,13,14,15,20,22,24,25], soma:181, p:8, i:7 },
+  { key:'M3', label:'M3 Mais Atras.', color:'#92400E', bg:'#FEF3C7', dezenas:[1,3,4,5,8,9,11,12,13,15,16,18,22,23,24], soma:184, p:7, i:8 },
+  { key:'M4', label:'M4 Par/Ímpar', color:'#9D174D', bg:'#FCE7F3', dezenas:[1,2,3,6,8,9,16,17,18,19,20,21,22,24,25], soma:211, p:8, i:7 },
+  { key:'M5', label:'M5 Soma Faixa', color:'#5B21B6', bg:'#F3E8FF', dezenas:[4,5,6,8,9,10,11,12,14,16,17,18,21,23,24], soma:198, p:9, i:6 },
+];
+
+const SORTEADAS_3726 = [2,5,6,7,10,13,14,17,18,19,20,21,22,24,25];
+const METHOD_JOGOS_3726 = [
+  { key:'M1', label:'M1 Aleatório', color:'#1E40AF', bg:'#DBEAFE', dezenas:[1,3,4,5,6,8,10,12,15,16,17,19,20,23,24] },
+  { key:'M2', label:'M2 Mais Freq.', color:'#166534', bg:'#DCFCE7', dezenas:[1,2,3,4,5,6,7,8,9,10,11,13,14,17,18] },
+  { key:'M3', label:'M3 Mais Atras.', color:'#92400E', bg:'#FEF3C7', dezenas:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,17] },
+  { key:'M4', label:'M4 Par/Ímpar', color:'#9D174D', bg:'#FCE7F3', dezenas:[1,3,4,5,6,7,8,9,11,12,13,14,18,19,20] },
+  { key:'M5', label:'M5 Soma Faixa', color:'#5B21B6', bg:'#F3E8FF', dezenas:[1,2,3,4,5,6,7,8,9,10,13,14,17,18,19] },
+];
+
+const BACKTEST_ROWS = [
+  { label:'M1 Aleatório', concursos:3724, media:'9.0003', dif:'+0.0003', p13:'0.188%' },
+  { label:'M2 Mais Freq.', concursos:3724, media:'9.0336', dif:'+0.0336', p13:'0.107%' },
+  { label:'M3 Mais Atras.', concursos:3724, media:'9.0263', dif:'+0.0263', p13:'0.107%' },
+  { label:'M4 Par/Ímpar', concursos:3724, media:'8.9817', dif:'-0.0183', p13:'0.295%' },
+  { label:'M5 Soma Faixa', concursos:3724, media:'8.9936', dif:'-0.0064', p13:'0.081%' },
+];
+
+const FREQ_PCT = [60.65,59.93,60.14,60.47,60.09,58.83,59.1,57.89,59.72,62.32,61.41,60.06,60.84,60.49,59.77,57.09,58.7,59.61,59.58,62.56,59.45,59.77,58.62,60.76,62.16];
+const ATRASO = [1,0,2,1,0,0,0,1,4,0,1,2,0,0,2,1,0,0,0,0,0,0,3,0,0];
+
+const HISTORICO = [
+  { concurso:3726, metodo:'M5 Soma Faixa', acertos:10, style:'background:#DCFCE7;color:#166534;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px;' },
+  { concurso:3726, metodo:'M4 Par/Ímpar', acertos:8, style:'background:#F3E8FF;color:#5B21B6;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px;' },
+  { concurso:3726, metodo:'M3 Mais Atras.', acertos:8, style:'background:#F3E8FF;color:#5B21B6;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px;' },
+  { concurso:3726, metodo:'M2 Mais Freq.', acertos:9, style:'background:#DCFCE7;color:#166534;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px;' },
+  { concurso:3726, metodo:'M1 Aleatório', acertos:7, style:'background:#F3E8FF;color:#5B21B6;border-radius:999px;padding:3px 12px;font-weight:700;font-size:12.5px;' },
+];
+
+// Sorteios reais recentes (dezenas em ordem crescente) — usado na aba Histórico
+const SORTEIOS_RECENTES = [
+  { concurso:3726, data:'03/07/2026', dezenas:[2,5,6,7,10,13,14,17,18,19,20,21,22,24,25] },
+  { concurso:3725, data:'02/07/2026', dezenas:[1,2,4,5,6,8,9,11,13,15,16,18,20,23,25] },
+  { concurso:3724, data:'01/07/2026', dezenas:[1,3,4,5,7,8,10,11,12,14,17,19,21,22,24] },
+  { concurso:3723, data:'30/06/2026', dezenas:[2,3,4,6,7,9,10,12,13,15,16,18,20,22,23] },
+  { concurso:3722, data:'29/06/2026', dezenas:[1,2,5,6,8,9,11,13,14,16,17,19,21,24,25] },
+  { concurso:3721, data:'28/06/2026', dezenas:[3,4,6,7,8,10,12,14,15,17,18,20,22,23,25] },
+  { concurso:3720, data:'27/06/2026', dezenas:[1,2,3,5,7,9,10,12,13,16,18,19,21,23,24] },
+  { concurso:3719, data:'26/06/2026', dezenas:[2,4,5,6,8,11,12,14,15,17,19,20,22,24,25] },
+  { concurso:3718, data:'25/06/2026', dezenas:[1,3,4,6,7,9,11,13,15,16,18,20,21,23,25] },
+  { concurso:3717, data:'24/06/2026', dezenas:[2,3,5,6,8,10,12,13,14,16,17,19,22,24,25] },
+  { concurso:3716, data:'23/06/2026', dezenas:[1,2,4,7,8,9,11,12,15,17,18,20,21,23,24] },
+  { concurso:3715, data:'22/06/2026', dezenas:[3,4,5,6,7,10,11,13,14,16,19,20,22,24,25] },
+  { concurso:3714, data:'21/06/2026', dezenas:[1,2,3,6,8,9,10,12,14,15,17,19,21,22,25] },
+  { concurso:3713, data:'20/06/2026', dezenas:[2,4,5,7,8,11,13,14,16,17,18,20,23,24,25] },
+  { concurso:3712, data:'19/06/2026', dezenas:[1,3,4,6,7,9,10,12,13,15,17,19,20,22,24] },
+  { concurso:3711, data:'18/06/2026', dezenas:[2,3,5,6,8,9,11,14,15,16,18,21,22,23,25] },
+  { concurso:3710, data:'17/06/2026', dezenas:[1,2,4,5,7,10,11,12,13,16,18,19,21,24,25] },
+  { concurso:3709, data:'16/06/2026', dezenas:[3,4,6,7,8,9,12,14,15,17,19,20,22,23,25] },
+  { concurso:3708, data:'15/06/2026', dezenas:[1,2,3,5,6,9,10,11,13,15,17,18,21,23,24] },
+  { concurso:3707, data:'14/06/2026', dezenas:[2,4,5,7,8,10,12,13,14,16,18,20,22,24,25] },
+];
+
+const TABS_DEF = [
+  { key:'jogos', label:'🎯 Jogos & Moldura' },
+  { key:'meusjogos', label:'✏️ Meus Jogos' },
+  { key:'conferidor', label:'✅ Conferidor' },
+  { key:'sequencias', label:'🔢 Sequências' },
+  { key:'historico', label:'📊 Backtest & Histórico' },
+];
+
+// Sequências: trincas de dezenas consecutivas que mais saem juntas no histórico (concurso 1 ao 3726).
+const SEQUENCIA_DATA = [
+  {dezenas:'01,02,03', qtd:741, pct:19.89}, {dezenas:'02,03,04', qtd:751, pct:20.16},
+  {dezenas:'03,04,05', qtd:743, pct:19.94}, {dezenas:'04,05,06', qtd:727, pct:19.51},
+  {dezenas:'05,06,07', qtd:688, pct:18.46}, {dezenas:'06,07,08', qtd:672, pct:18.04},
+  {dezenas:'07,08,09', qtd:688, pct:18.46}, {dezenas:'08,09,10', qtd:752, pct:20.18},
+  {dezenas:'09,10,11', qtd:790, pct:21.20}, {dezenas:'10,11,12', qtd:793, pct:21.28},
+  {dezenas:'11,12,13', qtd:746, pct:20.02}, {dezenas:'12,13,14', qtd:729, pct:19.57},
+  {dezenas:'13,14,15', qtd:737, pct:19.78}, {dezenas:'14,15,16', qtd:713, pct:19.14},
+  {dezenas:'15,16,17', qtd:653, pct:17.53}, {dezenas:'16,17,18', qtd:655, pct:17.58},
+  {dezenas:'17,18,19', qtd:723, pct:19.40}, {dezenas:'18,19,20', qtd:767, pct:20.59},
+  {dezenas:'19,20,21', qtd:770, pct:20.67}, {dezenas:'20,21,22', qtd:734, pct:19.70},
+  {dezenas:'21,22,23', qtd:694, pct:18.63}, {dezenas:'22,23,24', qtd:716, pct:19.22},
+  {dezenas:'23,24,25', qtd:778, pct:20.88},
+];
+
+// Saltos: mesmas trincas, mas contando quantas vezes a sequência foi "quebrada" (uma das três não saiu).
+const SALTO_DATA = [
+  {dezenas:'01,02,03', qtd:185, pct:4.97}, {dezenas:'02,03,04', qtd:201, pct:5.39},
+  {dezenas:'03,04,05', qtd:193, pct:5.18}, {dezenas:'04,05,06', qtd:198, pct:5.31},
+  {dezenas:'05,06,07', qtd:211, pct:5.66}, {dezenas:'06,07,08', qtd:202, pct:5.42},
+  {dezenas:'07,08,09', qtd:211, pct:5.66}, {dezenas:'08,09,10', qtd:210, pct:5.64},
+  {dezenas:'09,10,11', qtd:177, pct:4.75}, {dezenas:'10,11,12', qtd:176, pct:4.72},
+  {dezenas:'11,12,13', qtd:174, pct:4.67}, {dezenas:'12,13,14', qtd:158, pct:4.24},
+  {dezenas:'13,14,15', qtd:207, pct:5.56}, {dezenas:'14,15,16', qtd:217, pct:5.82},
+  {dezenas:'15,16,17', qtd:200, pct:5.37}, {dezenas:'16,17,18', qtd:217, pct:5.82},
+  {dezenas:'17,18,19', qtd:192, pct:5.15}, {dezenas:'18,19,20', qtd:203, pct:5.45},
+  {dezenas:'19,20,21', qtd:196, pct:5.26}, {dezenas:'20,21,22', qtd:194, pct:5.21},
+  {dezenas:'21,22,23', qtd:184, pct:4.94}, {dezenas:'22,23,24', qtd:212, pct:5.69},
+  {dezenas:'23,24,25', qtd:184, pct:4.94},
+];
+
+function sortRows(rows, sort) {
+  const copy = [...rows];
+  copy.sort((a, b) => {
+    let av = a[sort.col], bv = b[sort.col];
+    if (sort.col === 'dezenas') { av = parseInt(a.dezenas, 10); bv = parseInt(b.dezenas, 10); }
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return sort.dir === 'asc' ? cmp : -cmp;
+  });
+  return copy;
+}
+
+function analisarJogo(dezenas) {
+  const moldura = dezenas.filter(n => OUTER_RING.includes(n)).length;
+  const miolo = dezenas.filter(n => INNER_CORE.includes(n)).length;
+  const quentes = dezenas.filter(n => HOT.includes(n)).length;
+  const atrasadas = dezenas.filter(n => LATE.includes(n)).length;
+  const repetidos = dezenas.filter(n => SORTEADAS_3726.includes(n)).length;
+  const sorted = [...dezenas].sort((a,b) => a-b);
+  let maxSeq = dezenas.length ? 1 : 0, cur = 1;
+  for (let i=1; i<sorted.length; i++) { if (sorted[i] === sorted[i-1]+1) { cur++; maxSeq = Math.max(maxSeq, cur); } else cur = 1; }
+  const soma = dezenas.reduce((a,b) => a+b, 0);
+  const somaFaixaComum = soma >= 180 && soma <= 220;
+  const pares = dezenas.filter(n => n % 2 === 0).length;
+  const parImparEquilibrado = pares >= 6 && pares <= 9;
+  let classificacao = 'Neutro';
+  if (quentes > atrasadas) classificacao = 'Quente';
+  else if (atrasadas > quentes) classificacao = 'Frio';
+  const { rowCounts, colCounts } = distribuicao(dezenas);
+  const rowSpread = dezenas.length ? Math.max(...rowCounts) - Math.min(...rowCounts) : 0;
+  const colSpread = dezenas.length ? Math.max(...colCounts) - Math.min(...colCounts) : 0;
+  const distribuicaoBoa = rowSpread <= 2 && colSpread <= 2;
+  return { moldura, miolo, quentes, atrasadas, repetidos, maxSeq, soma, somaFaixaComum, classificacao, rowCounts, colCounts, pares, parImparEquilibrado, distribuicaoBoa };
+}
+
+// Mapa de calor "da época": usa uma janela móvel dos concursos anteriores (aproximação,
+// já que não temos a base histórica completa dezena a dezena) — recalcula automaticamente
+// conforme novos concursos entram no topo do array.
+function mapaDaEpoca(idx, janelaSize) {
+  const janela = SORTEIOS_RECENTES.slice(idx + 1, idx + 1 + janelaSize);
+  if (janela.length === 0) return { quentes: [], frias: [] };
+  const freq = {}, atraso = {};
+  for (let n = 1; n <= 25; n++) {
+    let count = 0, atr = janela.length;
+    for (let i = 0; i < janela.length; i++) {
+      if (janela[i].dezenas.includes(n)) { count++; if (atr === janela.length) atr = i; }
+    }
+    freq[n] = count / janela.length;
+    atraso[n] = atr;
+  }
+  const quentes = Array.from({length:25}, (_,i)=>i+1).sort((a,b) => freq[b]-freq[a]).slice(0,5);
+  const frias = Array.from({length:25}, (_,i)=>i+1).sort((a,b) => atraso[b]-atraso[a]).slice(0,5);
+  return { quentes, frias };
+}
+
+function combinacoes(n, k) {
+  if (k < 0 || k > n) return 0;
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+
+const FECHAMENTO_CUSTO = { 16:56, 17:476, 18:2856, 19:13566, 20:54264 };
+
+function mesmaCombinacao(a, b) {
+  if (a.length !== b.length) return false;
+  const sb = new Set(b);
+  return a.every(n => sb.has(n));
+}
+
+const AUTH_TOKEN_KEY = 'lotofacil_mobile_token';
+
+function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+}
+
+function setAuthToken(token) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+async function painelApi(path, options = {}) {
+  const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
+  const token = getAuthToken();
+  if (token) headers.authorization = `Bearer ${token}`;
+  const response = await fetch(path, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.message || 'Falha na requisicao.');
+  return data;
+}
+
+class Component extends DCLogic {
+  state = {
+    tab: 'jogos',
+    selected: [],
+    locked: [],
+    perfil: 'equilibrado',
+    suggestions: [],
+    concursoAlvo: 3727,
+    savedGames: [],
+    authLoading: true,
+    authUser: null,
+    authStatus: '',
+    panelStatus: '',
+    systemGames: [],
+    keepSaved: false,
+    fechamentoN: 16,
+    fechamentoSelected: [],
+    fechamentoOpcoes: [],
+    qtdHistorico: 10,
+    seqSort: { col: 'dezenas', dir: 'asc' },
+    saltoSort: { col: 'dezenas', dir: 'asc' },
+  };
+
+  localGameFromApi(jogo) {
+    const dezenas = (jogo.dezenas || []).slice().sort((a,b) => a-b);
+    const soma = dezenas.reduce((a,b) => a+b, 0);
+    const pares = dezenas.filter(n => n % 2 === 0).length;
+    return {
+      id: jogo.id,
+      concurso: jogo.concurso,
+      metodo: jogo.metodo || 'Painel Avancado',
+      dezenas,
+      soma,
+      pares,
+      impares: dezenas.length - pares,
+      analise: analisarJogo(dezenas),
+      status: jogo.status,
+      conferencias: jogo.conferencias || [],
+      manter_salvo: Boolean(jogo.manter_salvo),
+      descartar_apos_rodadas: jogo.descartar_apos_rodadas || 2,
+    };
+  }
+
+  async bootstrapAuth() {
+    const token = getAuthToken();
+    if (!token) {
+      this.setState({ authLoading: false, authUser: null, savedGames: [] });
+      return;
+    }
+    try {
+      const data = await painelApi('/api/me');
+      this.setState({ authLoading: false, authUser: data.user, authStatus: '' });
+      await this.loadSystemStatus();
+      await this.loadSavedGames();
+    } catch (err) {
+      clearAuthToken();
+      this.setState({ authLoading: false, authUser: null, authStatus: 'Entre para acessar o painel.', savedGames: [] });
+    }
+  }
+
+  async loginOrRegister(mode) {
+    const nome = (document.getElementById('painelAuthNome')?.value || '').trim();
+    const email = (document.getElementById('painelAuthEmail')?.value || '').trim();
+    const senha = document.getElementById('painelAuthSenha')?.value || '';
+    const path = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const payload = mode === 'register' ? { nome, email, senha } : { email, senha };
+    this.setState({ authStatus: mode === 'register' ? 'Criando conta...' : 'Entrando...' });
+    try {
+      const data = await painelApi(path, { method:'POST', body: JSON.stringify(payload) });
+      setAuthToken(data.token);
+      this.setState({ authUser: data.user, authStatus: '', panelStatus: 'Acesso liberado.' });
+      await this.loadSystemStatus();
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ authStatus: err.message || 'Falha no acesso.' });
+    }
+  }
+
+  async loadSavedGames() {
+    if (!getAuthToken()) return;
+    this.setState({ panelStatus: 'Carregando jogos do banco...' });
+    try {
+      const data = await painelApi('/api/jogos');
+      this.setState({ savedGames: data.jogos.map(j => this.localGameFromApi(j)), panelStatus: 'Jogos carregados do banco.' });
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao carregar jogos.' });
+    }
+  }
+
+  async loadSystemStatus() {
+    try {
+      const data = await painelApi('/api/sistema/status');
+      this.setState({
+        concursoAlvo: data.proximo_concurso || this.state.concursoAlvo,
+        systemGames: data.jogos_gerados || [],
+        panelStatus: `Sistema configurado para o concurso ${data.proximo_concurso}.`
+      });
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao carregar configuracao do sistema.' });
+    }
+  }
+
+  async conferirDuasRodadas() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para conferir jogos.' });
+      return;
+    }
+    this.setState({ panelStatus: 'Atualizando conferencias pendentes...' });
+    try {
+      const data = await painelApi('/api/jogos/conferir-pendentes', { method:'POST', body: '{}' });
+      this.setState({ panelStatus: `Conferencia atualizada: ${data.jogos_conferidos} jogo(s), ${data.conferencias_novas || 0} nova(s). Descartados: ${data.jogos_descartados || 0}.` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao conferir.' });
+    }
+  }
+
+  async logout() {
+    try { await painelApi('/api/auth/logout', { method:'POST', body:'{}' }); } catch(e) {}
+    clearAuthToken();
+    this.setState({ authUser: null, savedGames: [], panelStatus: '', authStatus: 'Sessao encerrada.' });
+  }
+
+  setQtdHistorico(q) { this.setState({ qtdHistorico: q }); }
+
+  setSeqSort(col) {
+    this.setState(s => ({ seqSort: { col, dir: s.seqSort.col === col && s.seqSort.dir === 'asc' ? 'desc' : 'asc' } }));
+  }
+
+  setSaltoSort(col) {
+    this.setState(s => ({ saltoSort: { col, dir: s.saltoSort.col === col && s.saltoSort.dir === 'asc' ? 'desc' : 'asc' } }));
+  }
+
+  setFechamentoN(n) {
+    this.setState(s => ({ fechamentoN: n, fechamentoSelected: s.fechamentoSelected.slice(0, n) }));
+  }
+
+  toggleFechamentoNum(n) {
+    this.setState(s => {
+      const has = s.fechamentoSelected.includes(n);
+      if (has) return { fechamentoSelected: s.fechamentoSelected.filter(x => x !== n), fechamentoOpcoes: [] };
+      if (s.fechamentoSelected.length >= s.fechamentoN) return {};
+      return { fechamentoSelected: [...s.fechamentoSelected, n], fechamentoOpcoes: [] };
+    });
+  }
+
+  autoFechamento() {
+    const targetN = this.state.fechamentoN;
+    // Trava: distribui a escolha pelas 5 faixas do volante (1-5, 6-10, ... 21-25) em vez de só puxar
+    // dezenas "quentes" — evita pools enviesados que geram jogos sem dezenas baixas, algo raríssimo em sorteios reais.
+    const base = Math.floor(targetN / 5);
+    let resto = targetN - base * 5;
+    const quotas = ROWS.map(() => base);
+    // distribui o resto entre faixas aleatórias
+    const ordem = shuffle([0,1,2,3,4]);
+    for (let i = 0; i < resto; i++) quotas[ordem[i]]++;
+    let escolhidas = [];
+    ROWS.forEach((faixa, idx) => {
+      const ranked = faixa
+        .map(n => ({ n, score: (HOT.includes(n)?2:0) + (LATE.includes(n)?1.5:0) + (INNER_CORE.includes(n)?1:0) + Math.random() }))
+        .sort((a,b) => b.score - a.score)
+        .slice(0, quotas[idx])
+        .map(x => x.n);
+      escolhidas.push(...ranked);
+    });
+    escolhidas.sort((a,b) => a-b);
+    this.setState({ fechamentoSelected: escolhidas, fechamentoOpcoes: [] });
+  }
+
+  gerarOpcoesFechamento() {
+    const pool = this.state.fechamentoSelected.slice();
+    if (pool.length < 15) return;
+    const results = [];
+    for (let tries = 0; tries < 500; tries++) {
+      const candidate = shuffle(pool).slice(0, 15).sort((a,b) => a-b);
+      const a = analisarJogo(candidate);
+      let score = 0;
+      if (a.somaFaixaComum) score += 3;
+      if (a.parImparEquilibrado) score += 2;
+      if (a.distribuicaoBoa) score += 3;
+      if (a.maxSeq <= 3) score += 2; else score -= (a.maxSeq - 3) * 2;
+      score -= Math.abs(a.soma - 200) * 0.05;
+      results.push({ dezenas: candidate, a, score });
+    }
+    results.sort((x,y) => y.score - x.score);
+    const chosen = [];
+    for (const r of results) {
+      if (chosen.length >= 5) break;
+      const dup = chosen.some(c => c.dezenas.filter(n => r.dezenas.includes(n)).length >= 13);
+      if (!dup) chosen.push(r);
+    }
+    this.setState({ fechamentoOpcoes: chosen });
+  }
+
+  setTab(t) {
+    this.setState({ tab: t });
+    if (t === 'historico') setTimeout(() => this.initChart(), 50);
+  }
+
+  toggleNum(n) {
+    this.setState(s => {
+      const has = s.selected.includes(n);
+      let sel;
+      if (has) sel = s.selected.filter(x => x !== n);
+      else if (s.selected.length < 15) sel = [...s.selected, n];
+      else sel = s.selected;
+      return { selected: sel };
+    });
+  }
+
+  clearSelected() { this.setState({ selected: [], locked: [], suggestions: [] }); }
+
+  setPerfil(p) { this.setState({ perfil: p }); }
+
+  setKeepSaved(e) {
+    this.setState({ keepSaved: Boolean(e?.target?.checked) });
+  }
+
+  toggleLock(n) {
+    this.setState(s => {
+      const has = s.locked.includes(n);
+      if (!has && !s.selected.includes(n)) return {};
+      return { locked: has ? s.locked.filter(x => x !== n) : [...s.locked, n] };
+    });
+  }
+
+  sugerirJogo() {
+    const s = this.state;
+    const all = Array.from({length:25}, (_,i) => i+1);
+    const locked = s.locked.slice();
+    const targets = {
+      quente: { qMin:3, qMax:5, aMin:0, aMax:2 },
+      frio:    { qMin:0, qMax:2, aMin:3, aMax:5 },
+      equilibrado: { qMin:1, qMax:3, aMin:1, aMax:3 },
+    }[s.perfil] || { qMin:1, qMax:3, aMin:1, aMax:3 };
+
+    const results = [];
+    for (let tries = 0; tries < 700; tries++) {
+      const pick = [...locked];
+      const moldura = shuffle(OUTER_RING.filter(n => !locked.includes(n)));
+      const miolo = shuffle(INNER_CORE.filter(n => !locked.includes(n)));
+      pick.push(...moldura, ...miolo);
+      let candidate = [...new Set(pick)];
+      candidate = shuffle(candidate.filter(n => !locked.includes(n)));
+      candidate = [...locked, ...candidate];
+      if (candidate.length > 15) candidate = candidate.slice(0, 15);
+      while (candidate.length < 15) {
+        const extra = all[Math.floor(Math.random()*all.length)];
+        if (!candidate.includes(extra)) candidate.push(extra);
+      }
+      const sorted = candidate.slice().sort((x,y)=>x-y);
+      const jaSalvo = s.savedGames.some(g => mesmaCombinacao(g.dezenas, sorted));
+      if (jaSalvo) continue;
+      const a = analisarJogo(sorted);
+      let score = 0;
+      if (a.somaFaixaComum) score += 3;
+      if (a.quentes >= targets.qMin && a.quentes <= targets.qMax) score += 2; else score -= Math.abs(a.quentes - (targets.qMin+targets.qMax)/2);
+      if (a.atrasadas >= targets.aMin && a.atrasadas <= targets.aMax) score += 2; else score -= Math.abs(a.atrasadas - (targets.aMin+targets.aMax)/2);
+      if (a.maxSeq <= 3) score += 2; else score -= (a.maxSeq - 3) * 2;
+      if (a.moldura >= 9 && a.moldura <= 11) score += 2;
+      if (a.miolo >= 6 && a.miolo <= 7) score += 2;
+      if (a.parImparEquilibrado) score += 2;
+      score -= Math.abs(a.soma - 200) * 0.05;
+      const rowSpread = Math.max(...a.rowCounts) - Math.min(...a.rowCounts);
+      const colSpread = Math.max(...a.colCounts) - Math.min(...a.colCounts);
+      score -= (rowSpread + colSpread) * 0.3;
+      results.push({ dezenas: sorted, score, a });
+    }
+    results.sort((x,y) => y.score - x.score);
+    // pega top 3 suficientemente diferentes entre si
+    const chosen = [];
+    for (const r of results) {
+      if (chosen.length >= 3) break;
+      const dup = chosen.some(c => c.dezenas.filter(n => r.dezenas.includes(n)).length >= 12);
+      if (!dup) chosen.push(r);
+    }
+    const suggestions = chosen.map(c => ({
+      dezenas: c.dezenas,
+      a: c.a,
+      motivos: [
+        `${c.a.moldura}/16 da moldura e ${c.a.miolo}/9 do miolo — equilíbrio próximo ao recomendado.`,
+        `${c.a.quentes} dezena(s) quente(s) e ${c.a.atrasadas} atrasada(s) — perfil "${s.perfil}".`,
+        `Soma ${c.a.soma}${c.a.somaFaixaComum ? ' dentro da faixa comum (180–220).' : ', fora da faixa comum (180–220).'}`,
+        `${c.a.pares}p / ${15 - c.a.pares}i — ${c.a.parImparEquilibrado ? 'equilíbrio típico dos sorteios.' : 'fora do equilíbrio típico (6 a 9 pares).'}`,
+        `Sequência máxima de ${c.a.maxSeq} dezena(s) seguida(s).`,
+        locked.length ? `Mantém as ${locked.length} dezena(s) travada(s) por você.` : `Distribuição equilibrada entre linhas e colunas do volante.`,
+      ],
+    }));
+    this.setState({ suggestions });
+  }
+
+  usarSugestao(idx) {
+    this.setState(s => ({ selected: s.suggestions[idx].dezenas.slice(), suggestions: [] }));
+  }
+
+  onConcursoChange(e) {
+    const v = parseInt(e.target.value, 10);
+    this.setState({ concursoAlvo: isNaN(v) ? '' : v });
+  }
+
+  async addGame() {
+    const s = this.state;
+    if (s.selected.length !== 15) return;
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
+      return;
+    }
+    const dezenas = [...s.selected].sort((a,b) => a-b);
+    this.setState({ panelStatus: 'Salvando jogo no banco...' });
+    try {
+      await painelApi('/api/jogos', {
+        method:'POST',
+        body: JSON.stringify({
+          concurso: s.concursoAlvo,
+          metodo: `Painel ${s.perfil}`,
+          dezenas,
+          observacao: s.keepSaved ? 'Gerado no painel avancado - manter salvo' : 'Gerado no painel avancado - descartar apos 2 conferencias',
+          manter_salvo: s.keepSaved,
+          descartar_apos_rodadas: 2
+        })
+      });
+      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: 'Jogo salvo no banco. Sera conferido automaticamente quando sair o resultado.' });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao salvar jogo.' });
+    }
+  }
+
+  async removeGame(idx) {
+    const jogo = this.state.savedGames[idx];
+    if (!jogo) return;
+    if (!jogo.id) {
+      this.setState(s => ({ savedGames: s.savedGames.filter((_, i) => i !== idx) }));
+      return;
+    }
+    this.setState({ panelStatus: 'Removendo jogo...' });
+    try {
+      await painelApi(`/api/jogos/${jogo.id}`, { method:'DELETE' });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: err.message || 'Falha ao remover jogo.' });
+    }
+  }
+
+  componentDidMount() {
+    this.initChart();
+    this.bootstrapAuth();
+  }
+
+  initChart() {
+    if (!window.Chart) return;
+    const canvas = document.getElementById('backtestChart');
+    if (!canvas) return;
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+    const muted = '#8B76B0';
+    new Chart(canvas, {
+      data: {
+        labels: BACKTEST_ROWS.map(r => r.label.replace(/^M[0-9] /,'')),
+        datasets: [
+          { type:'bar', label:'Média de acertos (backtest)', data: BACKTEST_ROWS.map(r => parseFloat(r.media)), backgroundColor:'#A855F7', borderRadius:4 },
+          { type:'line', label:'Esperança teórica', data: BACKTEST_ROWS.map(()=>9.0), borderColor:'#16A34A', borderDash:[6,4], pointRadius:0 },
+        ],
+      },
+      options: {
+        plugins: { legend:{ labels:{ color:'#1F1235' } }, title:{ display:true, text:'Backtest em milhares de concursos reais (eixo ampliado)', color:'#1F1235' } },
+        scales: { x:{ ticks:{ color:muted } }, y:{ ticks:{ color:muted }, min:8.5, max:9.5 } },
+      },
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const tab = s.tab;
+
+    const tabs = TABS_DEF.map(t => {
+      const active = t.key === tab;
+      return {
+        ...t,
+        onClick: () => this.setTab(t.key),
+        style: `padding:12px 18px;font-size:13px;font-weight:${active?700:500};color:${active?'#7C3AED':'#8B76B0'};cursor:pointer;border-bottom:3px solid ${active?'#F59E0B':'transparent'};margin-bottom:-2px;white-space:nowrap;`,
+      };
+    });
+
+    const molduraCells = Array.from({length:25}, (_,i) => i+1).map(n => ({
+      num: pad(n),
+      style: cellCircleStyle(n, OUTER_RING, {bg:'#F3E8FF',border:'#7C3AED',color:'#5B21B6'}, 38),
+    }));
+    const mioloCells = Array.from({length:25}, (_,i) => i+1).map(n => ({
+      num: pad(n),
+      style: cellCircleStyle(n, INNER_CORE, {bg:'#DBEAFE',border:'#2563EB',color:'#1E40AF'}, 38),
+    }));
+
+    const posCols = Array.from({length:15}, (_,i) => pad(i+1));
+
+    const fechamentoOptions = [16,17,18,19,20].map(n => ({
+      n, label: String(n),
+      onClick: () => this.setFechamentoN(n),
+      style: `padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid ${s.fechamentoN===n?'#7C3AED':'#E9DFFB'};background:${s.fechamentoN===n?'#7C3AED':'#FAF7FF'};color:${s.fechamentoN===n?'#fff':'#6B5B8A'};`,
+    }));
+    const fechamentoGrid = Array.from({length:25}, (_,i) => i+1).map(n => {
+      const sel = s.fechamentoSelected.includes(n);
+      return {
+        num: pad(n),
+        onClick: () => this.toggleFechamentoNum(n),
+        style: sel
+          ? 'width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;cursor:pointer;border:2px solid #5B21B6;background:#7C3AED;color:#fff;'
+          : 'width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;cursor:pointer;border:2px solid #E9DFFB;background:#FAF7FF;color:#A98DC8;',
+      };
+    });
+    const fN = s.fechamentoN;
+    const fSelCount = s.fechamentoSelected.length;
+    const totalCombos = combinacoes(fN, 15);
+    const fechamentoJogos = (fN === 16 && fSelCount === 16)
+      ? s.fechamentoSelected.map((excluded) => {
+          const jogo = s.fechamentoSelected.filter(x => x !== excluded);
+          return { dezenasStr: jogo.map(pad).join('-') };
+        })
+      : [];
+
+    const fechamentoOpcoesView = (s.fechamentoOpcoes || []).map((op, idx) => ({
+      titulo: `Opção ${idx+1}`,
+      dezenasStr: op.dezenas.map(pad).join('-'),
+      soma: op.a.soma,
+      parImpar: `${op.a.pares}p / ${15 - op.a.pares}i`,
+      molduraMiolo: `${op.a.moldura}/16 · ${op.a.miolo}/9`,
+      classificacao: op.a.classificacao,
+      classificacaoStyle: op.a.classificacao === 'Quente'
+        ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+        : op.a.classificacao === 'Frio'
+          ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+          : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;',
+      seqMax: op.a.maxSeq,
+      linhasStr: op.a.rowCounts.join(' · '),
+      somaOk: op.a.somaFaixaComum,
+      parImparOk: op.a.parImparEquilibrado,
+    }));
+
+    const systemColors = [
+      { bg:'#DBEAFE', color:'#1D4ED8' },
+      { bg:'#DCFCE7', color:'#166534' },
+      { bg:'#FEF3C7', color:'#92400E' },
+      { bg:'#FCE7F3', color:'#BE185D' },
+      { bg:'#F3E8FF', color:'#5B21B6' },
+    ];
+    const sourceMethods = s.systemGames.length
+      ? s.systemGames.map((game, idx) => ({
+          label: game.metodo,
+          dezenas: game.dezenas,
+          soma: game.soma,
+          p: game.pares,
+          i: game.impares,
+          ...systemColors[idx % systemColors.length],
+        }))
+      : METHOD_DEFS_3727;
+    const desdobramento = sourceMethods.map(m => ({
+      label: m.label,
+      badgeStyle: `background:${m.bg};color:${m.color};border:1px solid ${m.color}33;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;`,
+      cells: m.dezenas.map(n => ({ num: pad(n), style: tdStyle(n) })),
+      soma: m.soma, p: m.p, i: m.i,
+    }));
+
+    const conferidor = METHOD_JOGOS_3726.map(m => {
+      const acertos = m.dezenas.filter(n => SORTEADAS_3726.includes(n)).length;
+      const acLevel = acertos >= 10 ? {bg:'#DCFCE7',c:'#166534'} : acertos >= 9 ? {bg:'#FEF3C7',c:'#92400E'} : {bg:'#F3E8FF',c:'#5B21B6'};
+      return {
+        label: m.label,
+        badgeStyle: `background:${m.bg};color:${m.color};border:1px solid ${m.color}33;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;`,
+        cells: m.dezenas.map(n => {
+          const hit = SORTEADAS_3726.includes(n);
+          return { num: pad(n), style: hit ? 'background:#DCFCE7;color:#166534;font-weight:700;' : 'color:#C9B8E8;' };
+        }),
+        acertos,
+        acertosStyle: `background:${acLevel.bg};color:${acLevel.c};border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;`,
+      };
+    });
+
+    const selCount = s.selected.length;
+    const selSoma = selCount ? s.selected.reduce((a,b)=>a+b,0) : '--';
+    const pares = s.selected.filter(n => n%2===0).length;
+    const selParImpar = selCount ? `${pares}p / ${selCount-pares}i` : '--';
+
+    const volante = Array.from({length:25}, (_,i) => i+1).map(n => {
+      const sel = s.selected.includes(n);
+      const lock = s.locked.includes(n);
+      let style;
+      if (lock) style = 'width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #D97706;background:#FEF3C7;color:#92400E;transform:scale(1.06);box-shadow:0 0 10px rgba(217,119,6,.35);';
+      else if (sel) style = 'width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #5B21B6;background:#7C3AED;color:#fff;transform:scale(1.06);box-shadow:0 0 10px rgba(124,58,237,.4);';
+      else style = 'width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;border:2px solid #E9DFFB;background:#FAF7FF;color:#A98DC8;';
+      return {
+        num: pad(n),
+        onClick: () => this.toggleNum(n),
+        onLockClick: (e) => { e.stopPropagation(); this.toggleLock(n); },
+        showLock: sel || lock,
+        lockIcon: lock ? '🔒' : '🔓',
+        style: style + 'position:relative;',
+      };
+    });
+
+    const perfilOptions = [
+      { key:'quente', label:'🔥 Quente' },
+      { key:'equilibrado', label:'⚖️ Equilibrado' },
+      { key:'frio', label:'❄️ Frio' },
+    ].map(p => {
+      const active = p.key === s.perfil;
+      return { ...p, onClick: () => this.setPerfil(p.key), style: `padding:7px 13px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${active?'#7C3AED':'#E9DFFB'};background:${active?'#7C3AED':'#FAF7FF'};color:${active?'#fff':'#6B5B8A'};white-space:nowrap;` };
+    });
+
+    const suggestionsView = s.suggestions.map((sg, idx) => ({
+      dezenasStr: sg.dezenas.map(pad).join('-'),
+      soma: sg.a.soma,
+      classificacao: sg.a.classificacao,
+      classificacaoStyle: sg.a.classificacao === 'Quente'
+        ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+        : sg.a.classificacao === 'Frio'
+          ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+          : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;',
+      motivos: sg.motivos,
+      onUse: () => this.usarSugestao(idx),
+    }));
+
+    const savedGamesView = s.savedGames.map((g, idx) => {
+      const a = g.analise || analisarJogo(g.dezenas);
+      const conferenciasResumo = (g.conferencias || []).length
+        ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos}`).join(' | ')
+        : 'Sem conferencia';
+      const retencaoResumo = g.manter_salvo ? 'Mantido ate excluir' : `Descarta apos ${g.descartar_apos_rodadas || 2} conferencias`;
+      return {
+        concurso: g.concurso,
+        dezenasStr: g.dezenas.map(pad).join('-'),
+        soma: g.soma,
+        parImpar: `${g.pares}p / ${g.impares}i`,
+        conferenciasResumo: `${conferenciasResumo} | ${retencaoResumo}`,
+        analiseResumo: `Moldura ${a.moldura}/16 · Quentes ${a.quentes} · Seq.máx ${a.maxSeq} · ${a.somaFaixaComum ? 'soma comum' : 'soma fora da faixa'}`,
+        classificacao: a.classificacao,
+        classificacaoStyle: a.classificacao === 'Quente'
+          ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;'
+          : a.classificacao === 'Frio'
+            ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;'
+            : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;',
+        onRemove: () => this.removeGame(idx),
+      };
+    });
+
+    const liveA = analisarJogo(s.selected);
+
+    const sortedFreqIdx = FREQ_PCT.map((v,i)=>({v,n:i+1})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
+    const sortedAtrasoIdx = ATRASO.map((v,i)=>({v,n:i+1})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
+
+    const heatmap = Array.from({length:25}, (_,i) => i+1).map(n => {
+      const f = FREQ_PCT[n-1];
+      const a = ATRASO[n-1];
+      let bg,border,color;
+      if (a >= 3) { bg='#FDF2F8'; border='#EC4899'; color='#9D174D'; }
+      else if (f >= 61) { bg='#FFFBEB'; border='#F59E0B'; color='#92400E'; }
+      else { bg='#F3E8FF'; border='#DDD0F0'; color='#5B21B6'; }
+      return { num: pad(n), freq: f.toFixed(1), atraso: a, style: `border-radius:10px;padding:10px 4px;text-align:center;border:1px solid ${border};background:${bg};color:${color};` };
+    });
+
+    return {
+      headerGradient: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 55%,#3B0764 100%)',
+      needsAuth: !s.authLoading && !s.authUser,
+      authStatus: s.authStatus,
+      authUserLabel: s.authUser ? `Usuario: ${s.authUser.nome}` : 'Acesso protegido',
+      panelStatus: s.panelStatus,
+      onLogin: () => this.loginOrRegister('login'),
+      onRegister: () => this.loginOrRegister('register'),
+      onLogout: () => this.logout(),
+      tabs,
+      isJogos: tab === 'jogos',
+      isMeusJogos: tab === 'meusjogos',
+      isConferidor: tab === 'conferidor',
+      isSequencias: tab === 'sequencias',
+      isHistorico: tab === 'historico',
+      seqCols: [
+        { key:'dezenas', label:'Dezenas' }, { key:'qtd', label:'Qtd' }, { key:'pct', label:'%' },
+      ].map(c => ({
+        ...c,
+        onClick: () => this.setSeqSort(c.key),
+        arrow: s.seqSort.col === c.key ? (s.seqSort.dir === 'asc' ? '▲' : '▼') : '',
+      })),
+      saltoCols: [
+        { key:'dezenas', label:'Dezenas' }, { key:'qtd', label:'Qtd' }, { key:'pct', label:'%' },
+      ].map(c => ({
+        ...c,
+        onClick: () => this.setSaltoSort(c.key),
+        arrow: s.saltoSort.col === c.key ? (s.saltoSort.dir === 'asc' ? '▲' : '▼') : '',
+      })),
+      seqRows: sortRows(SEQUENCIA_DATA, s.seqSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
+      saltoRows: sortRows(SALTO_DATA, s.saltoSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
+      molduraCells, mioloCells, posCols, desdobramento, conferidor,
+      fechamentoOptions, fechamentoGrid,
+      fechamentoN: fN,
+      fSelCount, fSelTotal: fN,
+      autoFechamento: () => this.autoFechamento(),
+      totalCombos,
+      custoAproximado: FECHAMENTO_CUSTO[fN] ? `R$ ${FECHAMENTO_CUSTO[fN].toLocaleString('pt-BR')}` : '--',
+      fechamentoJogos,
+      hasFechamentoJogos: fechamentoJogos.length > 0,
+      fechamentoPronto: fSelCount === fN,
+      showGerarOpcoes: fN > 16 && fSelCount === fN,
+      gerarOpcoesFechamento: () => this.gerarOpcoesFechamento(),
+      fechamentoOpcoesView,
+      hasFechamentoOpcoes: fechamentoOpcoesView.length > 0,
+      sorteadasView: SORTEADAS_3726.map(pad),
+      selCount, selSoma, selParImpar,
+      volante,
+      concursoAlvo: s.concursoAlvo,
+      keepSaved: s.keepSaved,
+      onConcursoChange: (e) => this.onConcursoChange(e),
+      onKeepSavedChange: (e) => this.setKeepSaved(e),
+      addGame: () => this.addGame(),
+      clearSelected: () => this.clearSelected(),
+      conferirDuasRodadas: () => this.conferirDuasRodadas(),
+      sugerirJogo: () => this.sugerirJogo(),
+      perfilOptions,
+      suggestionsView,
+      hasSuggestions: s.suggestions.length > 0,
+      addDisabled: selCount !== 15,
+      addBtnStyle: selCount === 15
+        ? 'flex:1;background:#DCFCE7;border:1px solid #16A34A55;color:#166534;border-radius:8px;padding:11px 16px;cursor:pointer;font-size:14px;font-weight:600;'
+        : 'flex:1;background:#F3F0FA;border:1px solid #E9DFFB;color:#B8A6DB;border-radius:8px;padding:11px 16px;cursor:not-allowed;font-size:14px;font-weight:600;',
+      savedGamesView,
+      liveAnalysis: {
+        moldura: liveA.moldura, miolo: liveA.miolo, quentes: liveA.quentes, atrasadas: liveA.atrasadas,
+        maxSeq: liveA.maxSeq, repetidos: liveA.repetidos,
+        linhasStr: liveA.rowCounts.join(' · '),
+        colunasStr: liveA.colCounts.join(' · '),
+        somaLabel: selCount === 0 ? '--' : (liveA.somaFaixaComum ? 'Sim' : 'Não'),
+        somaCorClass: liveA.somaFaixaComum ? '#166534' : '#9D174D',
+        classificacao: selCount === 0 ? '--' : liveA.classificacao,
+        classificacaoStyle: liveA.classificacao === 'Quente'
+          ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:5px 16px;font-weight:700;font-size:14px;'
+          : liveA.classificacao === 'Frio'
+            ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB;border-radius:999px;padding:5px 16px;font-weight:700;font-size:14px;'
+            : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED;border-radius:999px;padding:5px 16px;font-weight:700;font-size:14px;',
+      },
+      analysisPartialLabel: selCount === 15 ? '' : `(${selCount}/15 selecionadas)`,
+      savedCount: `${s.savedGames.length} jogo(s)`,
+      hasNoGames: s.savedGames.length === 0,
+      backtestRows: BACKTEST_ROWS,
+      topFreq: sortedFreqIdx,
+      topAtraso: sortedAtrasoIdx,
+      heatmap,
+      historico: HISTORICO,
+      qtdOptions: [10,20,50].map(q => ({
+        q, onClick: () => this.setQtdHistorico(q),
+        style: `padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ${s.qtdHistorico===q?'#7C3AED':'#E9DFFB'};background:${s.qtdHistorico===q?'#7C3AED':'#FAF7FF'};color:${s.qtdHistorico===q?'#fff':'#6B5B8A'};`,
+      })),
+      sorteiosView: SORTEIOS_RECENTES.slice(0, s.qtdHistorico).map((sr, idx) => {
+        const a = analisarJogo(sr.dezenas);
+        const epoca = mapaDaEpoca(idx, 10);
+        return {
+          concurso: sr.concurso, data: sr.data,
+          dezenasView: sr.dezenas.map(pad),
+          soma: a.soma,
+          parImpar: `${a.pares}p / ${15 - a.pares}i`,
+          classificacao: a.classificacao,
+          classificacaoStyle: a.classificacao === 'Quente'
+            ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:2px 9px;font-weight:700;font-size:11px;'
+            : a.classificacao === 'Frio'
+              ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB;border-radius:999px;padding:2px 9px;font-weight:700;font-size:11px;'
+              : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED;border-radius:999px;padding:2px 9px;font-weight:700;font-size:11px;',
+          quentesEpoca: epoca.quentes.length ? epoca.quentes.map(pad).join(' ') : '—',
+          friasEpoca: epoca.frias.length ? epoca.frias.map(pad).join(' ') : '—',
+        };
+      }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
