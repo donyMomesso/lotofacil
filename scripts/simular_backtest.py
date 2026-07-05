@@ -26,6 +26,7 @@ import lotofacil_lib as lib
 SIMULACAO_CSV = os.path.join(lib.DADOS_DIR, "simulacao_metodos.csv")
 ESTATISTICAS_SIM_CSV = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
 JOGOS_POR_METODO = 5
+TODAS_DEZENAS = list(range(1, 26))
 
 METODOS_BASICOS = [
     "M1_aleatorio_puro",
@@ -68,6 +69,36 @@ def gerar_jogos_basicos(concurso):
     return jogos_por_metodo
 
 
+def normalizar_cinco_jogos(jogos, rng):
+    """
+    Garante exatamente 5 jogos por metodo.
+
+    Se um metodo avancado retornar menos que 5, completa com jogos aleatorios
+    deterministas gerados pelo mesmo RNG. Se retornar mais, corta nos 5
+    primeiros. Tambem remove duplicados preservando a ordem.
+    """
+    normalizados = []
+    vistos = set()
+
+    for jogo in jogos:
+        dezenas = sorted(jogo)
+        chave = tuple(dezenas)
+        if len(dezenas) == 15 and chave not in vistos:
+            normalizados.append(dezenas)
+            vistos.add(chave)
+        if len(normalizados) == JOGOS_POR_METODO:
+            return normalizados
+
+    while len(normalizados) < JOGOS_POR_METODO:
+        dezenas = sorted(rng.sample(TODAS_DEZENAS, 15))
+        chave = tuple(dezenas)
+        if chave not in vistos:
+            normalizados.append(dezenas)
+            vistos.add(chave)
+
+    return normalizados
+
+
 def gerar_jogos_avancados(historico_anterior, concurso):
     """
     Gera 5 jogos para M6, M7 e M8 usando apenas o historico anterior.
@@ -77,7 +108,10 @@ def gerar_jogos_avancados(historico_anterior, concurso):
     jogos_por_metodo = {}
     for offset, (metodo, gerador) in enumerate(METODOS_AVANCADOS.items(), start=6):
         rng = random.Random(concurso * 1000 + offset)
-        jogos_por_metodo[metodo] = gerador(historico_anterior, rng)
+        jogos_por_metodo[metodo] = normalizar_cinco_jogos(
+            gerador(historico_anterior, rng),
+            rng,
+        )
     return jogos_por_metodo
 
 
