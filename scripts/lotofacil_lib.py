@@ -320,7 +320,7 @@ def salvar_frequencia_dezenas():
             })
 
 
-<<<<<<< HEAD
+
 def formatar_para_extensao(matrizes_geradas):
     if not matrizes_geradas:
         return ""
@@ -331,7 +331,7 @@ def formatar_para_extensao(matrizes_geradas):
         linhas_formatadas.append(" ".join(numeros_formatados))
 
     return "\n".join(linhas_formatadas)
-=======
+
 # ---------- desdobramento e filtros combinatorios (estudo, não geração de apostas) ----------
 #
 # Estas funções servem só para ILUSTRAR o espaço de combinações que atendem a
@@ -464,4 +464,4 @@ def backtest_combinacoes_fixas(combinacoes, resultados=None):
             "qtd_15_acertos": dist.get(15, 0),
         })
     return linhas
->>>>>>> c91b4f307cfc8f782f2b6e7977b31b4410e54036
+
