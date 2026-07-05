@@ -35,5 +35,8 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add dados/ reports/ scripts/ painel.html painel_avancado.html painel_jogos.html painel_jogos_v2.html painel_mobile.html index.html diario_estatistico.md
           git commit -m "Atualiza laboratório: novo ciclo diário" || echo "Sem alterações para commitar"
-          git pull --rebase
-          git push
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && break
+            echo "Push rejeitado (tentativa $i/5), outro commit chegou ao main. Tentando de novo em 5s..."
+            sleep 5
+          done
