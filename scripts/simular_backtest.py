@@ -23,10 +23,16 @@ import os
 import statistics
 from collections import Counter
 
+from gerar_jogos_avancados import gerar_jogos_avancados
 import lotofacil_lib as lib
 
 SIMULACAO_CSV = os.path.join(lib.DADOS_DIR, "simulacao_metodos.csv")
 ESTATISTICAS_SIM_CSV = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
+METODOS_AVANCADOS = {
+    "M6_filtros_combinados",
+    "M7_cobertura_pares",
+    "M8_repeticao_controlada",
+}
 
 
 def main():
@@ -53,16 +59,35 @@ def main():
                 else:
                     atraso[d] = idx
 
-            jogos = lib.gerar_todos_metodos(seed=concurso, ate_concurso=concurso - 1)
+            jogos = {
+                metodo: dezenas
+                for metodo, dezenas in lib.gerar_todos_metodos(seed=concurso, ate_concurso=concurso - 1).items()
+                if metodo not in METODOS_AVANCADOS
+            }
             for metodo, dezenas in jogos.items():
                 acertos = len(dezenas & dezenas_reais)
                 acertos_por_metodo[metodo].append(acertos)
                 linhas_sim.append({
                     "concurso": concurso,
                     "metodo": metodo,
+                    "jogo_idx": 1,
                     "dezenas": "-".join(f"{d:02d}" for d in sorted(dezenas)),
                     "acertos": acertos,
                 })
+
+            jogos_avancados = gerar_jogos_avancados(seed=concurso, ate_concurso=concurso - 1)
+            for metodo, lista_jogos in jogos_avancados.items():
+                for indice, dezenas in enumerate(lista_jogos, start=1):
+                    dezenas_set = set(dezenas)
+                    acertos = len(dezenas_set & dezenas_reais)
+                    acertos_por_metodo[metodo].append(acertos)
+                    linhas_sim.append({
+                        "concurso": concurso,
+                        "metodo": metodo,
+                        "jogo_idx": indice,
+                        "dezenas": "-".join(f"{d:02d}" for d in sorted(dezenas)),
+                        "acertos": acertos,
+                    })
 
         for d in dezenas_reais:
             freq[d] += 1
@@ -71,7 +96,7 @@ def main():
         if idx % 500 == 0:
             print(f"[progresso] concurso {concurso} ({idx + 1}/{len(resultados)})")
 
-    fieldnames_sim = ["concurso", "metodo", "dezenas", "acertos"]
+    fieldnames_sim = ["concurso", "metodo", "jogo_idx", "dezenas", "acertos"]
     with open(SIMULACAO_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames_sim)
         writer.writeheader()

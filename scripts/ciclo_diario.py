@@ -26,10 +26,26 @@ import gerar_painel_jogos
 import gerar_painel_mobile
 import otimizar_painel_jogos_mobile
 import conferir_meus_jogos
+from gerar_jogos_avancados import gerar_jogos_avancados
 from diario import montar_bloco_diario, anexar_diario
 from buscar_resultado import buscar_concurso
 
 BRASILIA = timezone(timedelta(hours=-3))
+METODOS_AVANCADOS = {
+    "M6_filtros_combinados",
+    "M7_cobertura_pares",
+    "M8_repeticao_controlada",
+}
+
+
+def jogo_exato_ja_gerado(concurso_alvo, metodo, dezenas):
+    dezenas_str = "-".join(f"{d:02d}" for d in sorted(dezenas))
+    return any(
+        j["concurso_alvo"] == concurso_alvo
+        and j["metodo"] == metodo
+        and j["dezenas"] == dezenas_str
+        for j in lib.carregar_jogos()
+    )
 
 
 def main():
@@ -64,7 +80,12 @@ def main():
 
     ultimo_atual = lib.ultimo_concurso_registrado()
     proximo_concurso = (ultimo_atual + 1) if ultimo_atual else 1
-    jogos_gerados_map = lib.gerar_todos_metodos(ate_concurso=proximo_concurso - 1)
+    jogos_gerados_map = {
+        metodo: dezenas
+        for metodo, dezenas in lib.gerar_todos_metodos(ate_concurso=proximo_concurso - 1).items()
+        if metodo not in METODOS_AVANCADOS
+    }
+    jogos_avancados_map = gerar_jogos_avancados(seed=proximo_concurso, ate_concurso=proximo_concurso - 1)
     data_geracao = datetime.now(BRASILIA).strftime("%d/%m/%Y")
     jogos_do_proximo = []
     for metodo, dezenas in jogos_gerados_map.items():
@@ -72,6 +93,13 @@ def main():
             lib.registrar_jogo(data_geracao, proximo_concurso, metodo, dezenas)
             jogos_do_proximo.append((metodo, dezenas))
             print(f"[ok] {metodo} gerado para concurso {proximo_concurso}")
+
+    for metodo, lista_jogos in jogos_avancados_map.items():
+        for indice, dezenas in enumerate(lista_jogos, start=1):
+            if not jogo_exato_ja_gerado(proximo_concurso, metodo, dezenas):
+                lib.registrar_jogo(data_geracao, proximo_concurso, metodo, dezenas)
+                jogos_do_proximo.append((metodo, set(dezenas)))
+                print(f"[ok] {metodo} jogo {indice} gerado para concurso {proximo_concurso}")
 
     lib.salvar_frequencia_dezenas()
     lib.salvar_estatisticas_metodos()
