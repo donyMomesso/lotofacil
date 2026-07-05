@@ -55,7 +55,7 @@ def gerar_banco():
     stats_metodos = lib.calcular_estatisticas_metodos()
 
     jogos = lib.carregar_jogos()
-    jogos_proximo = [j for j in jogos if j["concurso_alvo"] == proximo_concurso]
+    jogos_proximo = [{k: v for k, v in j.items() if k != "dezenas_set"} for j in jogos if j["concurso_alvo"] == proximo_concurso]
 
     conferencias = lib.carregar_conferencias()
     ultimas_conferencias = conferencias[-20:][::-1]
