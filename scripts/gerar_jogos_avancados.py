@@ -20,6 +20,8 @@ from lotofacil_lib import carregar_resultados
 TODAS_DEZENAS = list(range(1, 26))
 NUM_JOGOS_GERAR = 1500
 TOP_JOGOS_SELECIONAR = 5
+TOTAL_PARES_POSSIVEIS = 300
+PARES_POR_JOGO = 105
 
 SOMA_MIN = 185
 SOMA_MAX = 215
@@ -80,11 +82,15 @@ def calcular_pares_recentes(
     for resultado in resultados[-n_concursos:]:
         for a, b in combinations(dezenas_do_resultado(resultado), 2):
             pares.add((a, b))
+        if len(pares) == TOTAL_PARES_POSSIVEIS:
+            break
     return pares
 
 
 def contar_cobertura_pares(jogo: Sequence[int], pares_recentes: Set[Par]) -> int:
     """Conta quantos pares recentes estão cobertos pelo jogo candidato."""
+    if len(pares_recentes) == TOTAL_PARES_POSSIVEIS:
+        return PARES_POR_JOGO
     return sum(1 for par in combinations(sorted(jogo), 2) if par in pares_recentes)
 
 

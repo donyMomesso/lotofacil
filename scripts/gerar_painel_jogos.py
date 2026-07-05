@@ -1098,7 +1098,7 @@ def main():
                 dist = {str(k): int(row[f"qtd_{k}_acertos"]) for k in range(16)}
                 backtest.append({
                     "metodo": row["metodo"],
-                    "n": int(row["total_concursos_simulados"]),
+                    "n": int(float(row["total_concursos_simulados"])),
                     "media": float(row["media_acertos"]),
                     "desvio": float(row["desvio_padrao_acertos"]),
                     "dif": float(row["diferenca_vs_esperanca"]),

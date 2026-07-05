@@ -294,3 +294,10 @@ Nenhum concurso novo encontrado nesta execução (pode ser dia sem sorteio da Lo
 
 Nenhum concurso novo encontrado nesta execução (pode ser dia sem sorteio da Lotofácil, ou a fonte de dados ainda não publicou o resultado). Nenhuma alteração feita — a tarefa tenta de novo na próxima execução.
 
+## 05/07/2026 - Backtest completo M1-M8
+
+O backtest completo foi executado com 3.726 concursos avaliados e 149.040 jogos simulados, usando 5 jogos por método em cada concurso. A simulação respeitou a regra de usar apenas o histórico disponível até o concurso anterior.
+
+Resultado agregado: todos os métodos continuaram próximos da esperança teórica de 9 acertos por jogo. Entre os percentuais de 11+ acertos, M2 ficou com 11,331%, M6 com 10,902%, M3 com 10,832%, M4 com 10,617%, M7 com 10,601%, M1 com 10,510%, M5 com 10,494% e M8 com 10,134%. Nenhum método registrou 15 acertos no backtest.
+
+Arquivos atualizados: `dados/simulacao_metodos.csv`, `dados/estatisticas_simulacao.csv`, `reports/relatorio_estatistico.md`, `dados/banco_projeto.json` e painéis gerados.

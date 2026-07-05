@@ -1,6 +1,9 @@
-metodo,total_concursos_simulados,media_acertos,desvio_padrao_acertos,esperanca_teorica,diferenca_vs_esperanca,min_acertos,max_acertos,pct_11_ou_mais,pct_13_ou_mais,pct_14_ou_mais,pct_15,qtd_0_acertos,qtd_1_acertos,qtd_2_acertos,qtd_3_acertos,qtd_4_acertos,qtd_5_acertos,qtd_6_acertos,qtd_7_acertos,qtd_8_acertos,qtd_9_acertos,qtd_10_acertos,qtd_11_acertos,qtd_12_acertos,qtd_13_acertos,qtd_14_acertos,qtd_15_acertos
-M1_aleatorio_puro,3724,9.0003,1.2094,9.0,0.0003,5,13,10.15,0.188,0.0,0.0,0,0,0,0,0,2,49,330,878,1227,860,307,64,7,0,0
-M2_mais_frequentes,3724,9.0336,1.2275,9.0,0.0336,5,14,11.439,0.107,0.0269,0.0,0,0,0,0,0,2,61,315,842,1212,866,361,61,3,1,0
-M3_mais_atrasadas,3724,9.0263,1.2334,9.0,0.0263,5,13,11.359,0.107,0.0,0.0,0,0,0,0,0,4,61,322,850,1187,877,359,60,4,0,0
-M4_par_impar_balanceado,3724,8.9817,1.2222,9.0,-0.0183,5,14,10.392,0.295,0.0269,0.0,0,0,0,0,0,3,59,334,894,1206,841,331,45,10,1,0
-M5_soma_faixa_comum,3724,8.9936,1.2157,9.0,-0.0064,5,13,10.365,0.081,0.0,0.0,0,0,0,0,0,3,53,340,877,1198,867,324,59,3,0,0
+metodo,total_jogos_simulados,total_concursos_simulados,jogos_por_concurso,media_acertos,desvio_padrao_acertos,esperanca_teorica,diferenca_vs_esperanca,min_acertos,max_acertos,pct_11_ou_mais,pct_12_ou_mais,pct_13_ou_mais,pct_14_ou_mais,pct_15,qtd_0_acertos,qtd_1_acertos,qtd_2_acertos,qtd_3_acertos,qtd_4_acertos,qtd_5_acertos,qtd_6_acertos,qtd_7_acertos,qtd_8_acertos,qtd_9_acertos,qtd_10_acertos,qtd_11_acertos,qtd_12_acertos,qtd_13_acertos,qtd_14_acertos,qtd_15_acertos
+M1_aleatorio_puro,18630,3726.0,5,8.9966,1.2295,9.0,-0.0034,5,14,10.51,1.895,0.14,0.0054,0.0,0,0,0,0,0,17,296,1691,4348,5993,4327,1605,327,25,1,0
+M2_mais_frequentes,18630,3726.0,5,9.0388,1.2243,9.0,0.0388,5,14,11.331,1.755,0.102,0.0161,0.0,0,0,0,0,0,7,311,1546,4207,6036,4412,1784,308,16,3,0
+M3_mais_atrasadas,18630,3726.0,5,9.0158,1.222,9.0,0.0158,5,14,10.832,1.723,0.097,0.0054,0.0,0,0,0,0,0,15,309,1565,4349,5990,4384,1697,303,17,1,0
+M4_par_impar_balanceado,18630,3726.0,5,9.0005,1.2231,9.0,0.0005,5,13,10.617,1.809,0.107,0.0,0.0,0,0,0,0,0,15,298,1602,4475,5932,4330,1641,317,20,0,0
+M5_soma_faixa_comum,18630,3726.0,5,8.9946,1.2265,9.0,-0.0054,5,14,10.494,1.793,0.252,0.0161,0.0,0,0,0,0,0,14,275,1660,4518,5884,4324,1621,287,44,3,0
+M6_filtros_combinados,18630,3726.0,5,9.001,1.234,9.0,0.001,5,13,10.902,1.82,0.183,0.0,0.0,0,0,0,0,0,21,288,1694,4344,5989,4263,1692,305,34,0,0
+M7_cobertura_pares,18630,3726.0,5,8.9983,1.2186,9.0,-0.0017,5,14,10.601,1.798,0.14,0.0107,0.0,0,0,0,0,0,11,256,1671,4459,5989,4269,1640,309,24,2,0
+M8_repeticao_controlada,18630,3726.0,5,8.9881,1.2221,9.0,-0.0119,5,14,10.134,1.798,0.172,0.0161,0.0,0,0,0,0,0,14,314,1669,4326,6124,4295,1553,303,29,3,0

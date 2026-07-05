@@ -53,19 +53,23 @@ def filtrar_historico_anterior(resultados, concurso):
     return [r for r in resultados if r["concurso"] < concurso]
 
 
-def gerar_jogos_basicos(concurso):
+def gerar_jogos_basicos(concurso, freq, atraso):
     """
     Gera 5 jogos para cada metodo basico.
 
-    Cada variacao usa uma seed propria e a biblioteca recebe ate_concurso como
-    concurso-1, preservando a regra de nao usar o resultado atual.
+    Cada variacao usa uma seed propria. Frequencia e atraso sao mantidos no
+    loop principal somente com concursos anteriores, evitando data leakage e
+    evitando chamar lib.gerar_todos_metodos(), que tambem geraria M6-M8.
     """
     jogos_por_metodo = {metodo: [] for metodo in METODOS_BASICOS}
     for jogo_idx in range(1, JOGOS_POR_METODO + 1):
         seed = concurso * 100 + jogo_idx
-        jogos = lib.gerar_todos_metodos(seed=seed, ate_concurso=concurso - 1)
-        for metodo in METODOS_BASICOS:
-            jogos_por_metodo[metodo].append(sorted(jogos[metodo]))
+        rng = random.Random(seed)
+        jogos_por_metodo["M1_aleatorio_puro"].append(sorted(lib.metodo_aleatorio_puro(rng)))
+        jogos_por_metodo["M2_mais_frequentes"].append(sorted(lib.metodo_mais_frequentes(rng, freq)))
+        jogos_por_metodo["M3_mais_atrasadas"].append(sorted(lib.metodo_mais_atrasadas(rng, atraso)))
+        jogos_por_metodo["M4_par_impar_balanceado"].append(sorted(lib.metodo_par_impar_balanceado(rng)))
+        jogos_por_metodo["M5_soma_faixa_comum"].append(sorted(lib.metodo_soma_faixa_comum(rng)))
     return jogos_por_metodo
 
 
@@ -171,26 +175,34 @@ def main():
     metodos = METODOS_BASICOS + list(METODOS_AVANCADOS.keys())
     acertos_por_metodo = {metodo: [] for metodo in metodos}
     linhas_sim = []
+    freq = {d: 0 for d in lib.TODAS_DEZENAS}
+    ultima_aparicao = {}
 
     for idx, resultado in enumerate(resultados):
         concurso = resultado["concurso"]
         dezenas_reais = resultado["dezenas"]
 
-        if idx == 0:
-            continue
+        if idx >= 1:
+            atraso = {}
+            for d in lib.TODAS_DEZENAS:
+                atraso[d] = (idx - 1) - ultima_aparicao[d] if d in ultima_aparicao else idx
 
-        historico_anterior = filtrar_historico_anterior(resultados, concurso)
-        jogos_basicos = gerar_jogos_basicos(concurso)
-        jogos_avancados = gerar_jogos_avancados(historico_anterior, concurso)
-        jogos_por_metodo = {**jogos_basicos, **jogos_avancados}
+            historico_anterior = filtrar_historico_anterior(resultados, concurso)
+            jogos_basicos = gerar_jogos_basicos(concurso, freq, atraso)
+            jogos_avancados = gerar_jogos_avancados(historico_anterior, concurso)
+            jogos_por_metodo = {**jogos_basicos, **jogos_avancados}
 
-        registrar_simulacoes(
-            linhas_sim,
-            acertos_por_metodo,
-            concurso,
-            dezenas_reais,
-            jogos_por_metodo,
-        )
+            registrar_simulacoes(
+                linhas_sim,
+                acertos_por_metodo,
+                concurso,
+                dezenas_reais,
+                jogos_por_metodo,
+            )
+
+        for d in dezenas_reais:
+            freq[d] += 1
+            ultima_aparicao[d] = idx
 
         if idx % 500 == 0:
             print(f"[progresso] concurso {concurso} ({idx + 1}/{len(resultados)})")
