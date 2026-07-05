@@ -377,7 +377,7 @@
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.soma }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.parImpar }}</td>
-                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}<div style="margin-top:4px; color:#4C1D95; font-weight:700;">{{ g.conferenciasResumo }}</div></td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-size:11.5px; color:#6B5B8A;">{{ g.analiseResumo }}<div style="margin-top:4px; color:#4C1D95; font-weight:700;">Qtd. acertos: {{ g.conferenciasResumo }}</div></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span style="{{ g.classificacaoStyle }}">{{ g.classificacao }}</span></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; text-align:right;"><span onClick="{{ g.onRemove }}" style="cursor:pointer; color:#BE185D; font-size:12px; font-weight:600;">remover</span></td>
               </tr>
@@ -413,7 +413,7 @@
             <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
               <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:left;">Método</th>
               <sc-for list="{{ posCols }}" as="pc" hint-placeholder-count="15"><th style="padding:6px; border-bottom:1px solid #E9DFFB; text-align:center;">{{ pc }}</th></sc-for>
-              <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Acertos</th>
+              <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Qtd. acertos</th>
             </tr>
           </thead>
           <tbody>
@@ -421,7 +421,7 @@
               <tr>
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;"><span style="{{ m.badgeStyle }}">{{ m.label }}</span></td>
                 <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td style="{{ c.style }}; text-align:center; padding:6px;">{{ c.num }}</td></sc-for>
-                <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><span style="{{ m.acertosStyle }}">{{ m.acertos }}</span></td>
+                <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><span style="{{ m.acertosStyle }}">{{ m.acertosLabel }}</span></td>
               </tr>
             </sc-for>
           </tbody>
@@ -1289,6 +1289,7 @@ class Component extends DCLogic {
           return { num: pad(n), style: hit ? 'background:#DCFCE7;color:#166534;font-weight:700;' : 'color:#C9B8E8;' };
         }),
         acertos,
+        acertosLabel: `${acertos} acertos`,
         acertosStyle: `background:${acLevel.bg};color:${acLevel.c};border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;`,
       };
     });
@@ -1340,7 +1341,7 @@ class Component extends DCLogic {
     const savedGamesView = s.savedGames.map((g, idx) => {
       const a = g.analise || analisarJogo(g.dezenas);
       const conferenciasResumo = (g.conferencias || []).length
-        ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos}`).join(' | ')
+        ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos} acertos`).join(' | ')
         : 'Sem conferencia';
       const retencaoResumo = g.manter_salvo ? 'Mantido ate excluir' : `Descarta apos ${g.descartar_apos_rodadas || 2} conferencias`;
       return {
