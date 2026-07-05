@@ -241,6 +241,82 @@ async function latestResult(env) {
   };
 }
 
+async function resultStats(env, limit = 50) {
+  await seedInitialResults(env);
+  const latest = await latestResult(env);
+  const total = await env.DB.prepare("SELECT COUNT(*) AS total FROM resultados").first();
+  const recentes = await env.DB.prepare(`
+    SELECT concurso, data_sorteio, dezenas, dezenas_texto
+    FROM resultados
+    ORDER BY concurso DESC
+    LIMIT ?
+  `).bind(limit).all();
+
+  return {
+    total_concursos: total.total || 0,
+    ultimo_resultado: latest,
+    resultados_recentes: recentes.results.map((row) => ({
+      concurso: row.concurso,
+      data: row.data_sorteio,
+      dezenas: JSON.parse(row.dezenas),
+      dezenas_texto: row.dezenas_texto
+    }))
+  };
+}
+
+async function numberStats(env) {
+  const rows = await env.DB.prepare(`
+    SELECT concurso, dezenas
+    FROM resultados
+    ORDER BY concurso DESC
+  `).all();
+  const freq = new Map(Array.from({ length: 25 }, (_, index) => [index + 1, 0]));
+  const atraso = new Map(Array.from({ length: 25 }, (_, index) => [index + 1, rows.results.length]));
+  const seen = new Set();
+
+  rows.results.forEach((row, idx) => {
+    const dezenas = JSON.parse(row.dezenas);
+    for (const dezena of dezenas) {
+      freq.set(dezena, (freq.get(dezena) || 0) + 1);
+      if (!seen.has(dezena)) {
+        atraso.set(dezena, idx);
+        seen.add(dezena);
+      }
+    }
+  });
+
+  const total = rows.results.length;
+  return Array.from({ length: 25 }, (_, index) => {
+    const dezena = index + 1;
+    return {
+      dezena,
+      dezena_texto: String(dezena).padStart(2, "0"),
+      frequencia: freq.get(dezena) || 0,
+      frequencia_pct: total ? Number(((freq.get(dezena) || 0) * 100 / total).toFixed(2)) : 0,
+      atraso: atraso.get(dezena) || 0
+    };
+  });
+}
+
+async function latestCycle(env) {
+  const row = await env.DB.prepare(`
+    SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
+           jogos_descartados, sessoes_expiradas, proximo_concurso, jogos_gerados, erro
+    FROM execucoes_ciclo
+    ORDER BY datetime(iniciado_em) DESC
+    LIMIT 1
+  `).first();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    novos_concursos: JSON.parse(row.novos_concursos || "[]")
+  };
+}
+
 async function insertResult(env, resultado) {
   const inserted = await env.DB.prepare(`
     INSERT OR IGNORE INTO resultados (concurso, data_sorteio, dezenas, dezenas_texto)
@@ -852,6 +928,12 @@ async function conferirResultadoParaJogos(env, resultado) {
 }
 
 async function runAutoCycle(env) {
+  const started = await env.DB.prepare(
+    "INSERT INTO execucoes_ciclo (status) VALUES ('rodando')"
+  ).run();
+  const cycleId = started.meta.last_row_id;
+
+  try {
   const sessoesExpiradas = await cleanupExpiredSessions(env);
   const latest = await latestResult(env);
   let nextToFetch = latest ? latest.concurso + 1 : 1;
@@ -882,7 +964,7 @@ async function runAutoCycle(env) {
   const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
   const jogosGerados = await generateNextContestGames(env, proximoConcurso);
 
-  return {
+  const payload = {
     ok: true,
     novos_concursos: novos.map((resultado) => resultado.concurso),
     conferencias,
@@ -891,12 +973,48 @@ async function runAutoCycle(env) {
     proximo_concurso: proximoConcurso,
     jogos_gerados: jogosGerados.length
   };
+
+  await env.DB.prepare(`
+    UPDATE execucoes_ciclo
+    SET finalizado_em = CURRENT_TIMESTAMP,
+        status = 'ok',
+        novos_concursos = ?,
+        conferencias = ?,
+        jogos_descartados = ?,
+        sessoes_expiradas = ?,
+        proximo_concurso = ?,
+        jogos_gerados = ?
+    WHERE id = ?
+  `).bind(
+    JSON.stringify(payload.novos_concursos),
+    payload.conferencias,
+    payload.jogos_descartados,
+    payload.sessoes_expiradas,
+    payload.proximo_concurso,
+    payload.jogos_gerados,
+    cycleId
+  ).run();
+
+  return payload;
+  } catch (err) {
+    await env.DB.prepare(`
+      UPDATE execucoes_ciclo
+      SET finalizado_em = CURRENT_TIMESTAMP,
+          status = 'erro',
+          erro = ?
+      WHERE id = ?
+    `).bind(String(err.stack || err.message || err), cycleId).run();
+    throw err;
+  }
 }
 
 async function systemStatus(env) {
   const latest = await latestResult(env);
   const proximoConcurso = latest ? latest.concurso + 1 : 1;
   await generateNextContestGames(env, proximoConcurso);
+  const stats = await resultStats(env, 50);
+  const frequencia = await numberStats(env);
+  const ultimoCiclo = await latestCycle(env);
   const generated = await env.DB.prepare(`
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
     FROM jogos_sistema
@@ -914,8 +1032,12 @@ async function systemStatus(env) {
 
   return json({
     ok: true,
+    total_concursos: stats.total_concursos,
     ultimo_resultado: latest,
     proximo_concurso: proximoConcurso,
+    resultados_recentes: stats.resultados_recentes,
+    frequencia_dezenas: frequencia,
+    ultimo_ciclo: ultimoCiclo,
     jogos_gerados: generated.results.map((jogo) => ({
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
@@ -941,6 +1063,19 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/sistema/status" && method === "GET") {
     return systemStatus(env);
+  }
+
+  if (path === "/api/resultados/status" && method === "GET") {
+    const stats = await resultStats(env, 50);
+    return json({
+      ok: true,
+      ...stats,
+      frequencia_dezenas: await numberStats(env)
+    });
+  }
+
+  if (path === "/api/ciclo/status" && method === "GET") {
+    return json({ ok: true, ultimo_ciclo: await latestCycle(env) });
   }
 
   if (path === "/api/auth/register" && method === "POST") {

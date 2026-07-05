@@ -335,7 +335,7 @@
             <div style="font-size:17px; font-weight:700; margin-top:2px;">{{ liveAnalysis.maxSeq }} seguidas</div>
           </div>
           <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
-            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Repetição vs. concurso 3726</div>
+            <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Repetição vs. concurso {{ concursoReferencia }}</div>
             <div style="font-size:17px; font-weight:700; margin-top:2px;">{{ liveAnalysis.repetidos }}/15</div>
           </div>
           <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:10px 14px;">
@@ -403,7 +403,6 @@
       </div>
 
       <div class="conferidor-sorteadas-card" style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:16px;">
-        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🎰 Dezenas sorteadas no concurso #3726</div>
         <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">Dezenas sorteadas no concurso #{{ concursoConferidor }}</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <sc-for list="{{ sorteadasView }}" as="s" hint-placeholder-count="15">
@@ -440,7 +439,7 @@
   <sc-if value="{{ isSequencias }}" hint-placeholder-val="{{ false }}">
     <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
       <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
-        Estas tabelas mostram com que frequência trincas de dezenas consecutivas saíram juntas (sequência) ou tiveram uma quebra (salto) no histórico — do concurso 1 ao 3726. Clique nos títulos das colunas para ordenar. São padrões observados, não indicam maior chance de acerto futuro.
+        Estas tabelas mostram com que frequência trincas de dezenas consecutivas saíram juntas (sequência) ou tiveram uma quebra (salto) no histórico — do concurso 1 ao {{ totalConcursos }}. Clique nos títulos das colunas para ordenar. São padrões observados, não indicam maior chance de acerto futuro.
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
         <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
@@ -723,12 +722,16 @@ function sortRows(rows, sort) {
   return copy;
 }
 
-function analisarJogo(dezenas) {
+function analisarJogo(dezenas, contexto = {}) {
+  const sorteadasReferencia = contexto.sorteadasReferencia || SORTEADAS_3726;
+  const hotNumbers = contexto.hotNumbers || HOT;
+  const lateNumbers = contexto.lateNumbers || LATE;
   const moldura = dezenas.filter(n => OUTER_RING.includes(n)).length;
   const miolo = dezenas.filter(n => INNER_CORE.includes(n)).length;
-  const quentes = dezenas.filter(n => HOT.includes(n)).length;
-  const atrasadas = dezenas.filter(n => LATE.includes(n)).length;
-  const repetidos = dezenas.filter(n => SORTEADAS_3726.includes(n)).length;
+  const quentes = dezenas.filter(n => hotNumbers.includes(n)).length;
+  const atrasadas = dezenas.filter(n => lateNumbers.includes(n)).length;
+  const frias = atrasadas;
+  const repetidos = dezenas.filter(n => sorteadasReferencia.includes(n)).length;
   const sorted = [...dezenas].sort((a,b) => a-b);
   let maxSeq = dezenas.length ? 1 : 0, cur = 1;
   for (let i=1; i<sorted.length; i++) { if (sorted[i] === sorted[i-1]+1) { cur++; maxSeq = Math.max(maxSeq, cur); } else cur = 1; }
@@ -743,14 +746,14 @@ function analisarJogo(dezenas) {
   const rowSpread = dezenas.length ? Math.max(...rowCounts) - Math.min(...rowCounts) : 0;
   const colSpread = dezenas.length ? Math.max(...colCounts) - Math.min(...colCounts) : 0;
   const distribuicaoBoa = rowSpread <= 2 && colSpread <= 2;
-  return { moldura, miolo, quentes, atrasadas, repetidos, maxSeq, soma, somaFaixaComum, classificacao, rowCounts, colCounts, pares, parImparEquilibrado, distribuicaoBoa };
+  return { moldura, miolo, quentes, frias, atrasadas, repetidos, maxSeq, soma, somaFaixaComum, classificacao, rowCounts, colCounts, pares, parImparEquilibrado, distribuicaoBoa };
 }
 
 // Mapa de calor "da época": usa uma janela móvel dos concursos anteriores (aproximação,
 // já que não temos a base histórica completa dezena a dezena) — recalcula automaticamente
 // conforme novos concursos entram no topo do array.
-function mapaDaEpoca(idx, janelaSize) {
-  const janela = SORTEIOS_RECENTES.slice(idx + 1, idx + 1 + janelaSize);
+function mapaDaEpoca(idx, janelaSize, sorteios = SORTEIOS_RECENTES) {
+  const janela = sorteios.slice(idx + 1, idx + 1 + janelaSize);
   if (janela.length === 0) return { quentes: [], frias: [] };
   const freq = {}, atraso = {};
   for (let n = 1; n <= 25; n++) {
@@ -821,6 +824,10 @@ class Component extends DCLogic {
     systemGames: [],
     conferidorGames: [],
     latestResult: null,
+    totalConcursos: 3726,
+    numberStats: [],
+    recentDraws: [],
+    lastCycle: null,
     keepSaved: false,
     fechamentoN: 16,
     fechamentoSelected: [],
@@ -829,6 +836,18 @@ class Component extends DCLogic {
     seqSort: { col: 'dezenas', dir: 'asc' },
     saltoSort: { col: 'dezenas', dir: 'asc' },
   };
+
+  analysisContext() {
+    const stats = this.state.numberStats || [];
+    const hotNumbers = stats.length
+      ? stats.slice().sort((a,b) => b.frequencia_pct - a.frequencia_pct).slice(0,5).map(x => x.dezena)
+      : HOT;
+    const lateNumbers = stats.length
+      ? stats.slice().sort((a,b) => b.atraso - a.atraso).slice(0,5).map(x => x.dezena)
+      : LATE;
+    const sorteadasReferencia = (this.state.latestResult?.dezenas || SORTEADAS_3726).slice();
+    return { hotNumbers, lateNumbers, sorteadasReferencia };
+  }
 
   localGameFromApi(jogo) {
     const dezenas = (jogo.dezenas || []).slice().sort((a,b) => a-b);
@@ -842,7 +861,7 @@ class Component extends DCLogic {
       soma,
       pares,
       impares: dezenas.length - pares,
-      analise: analisarJogo(dezenas),
+      analise: analisarJogo(dezenas, this.analysisContext()),
       status: jogo.status,
       conferencias: jogo.conferencias || [],
       manter_salvo: Boolean(jogo.manter_salvo),
@@ -904,6 +923,10 @@ class Component extends DCLogic {
         systemGames: data.jogos_gerados || [],
         conferidorGames: data.jogos_conferidor || [],
         latestResult: data.ultimo_resultado || null,
+        totalConcursos: data.total_concursos || this.state.totalConcursos,
+        numberStats: data.frequencia_dezenas || [],
+        recentDraws: data.resultados_recentes || [],
+        lastCycle: data.ultimo_ciclo || null,
         panelStatus: `Sistema configurado para o concurso ${data.proximo_concurso}.`
       });
     } catch (err) {
@@ -984,7 +1007,7 @@ class Component extends DCLogic {
     const results = [];
     for (let tries = 0; tries < 500; tries++) {
       const candidate = shuffle(pool).slice(0, 15).sort((a,b) => a-b);
-      const a = analisarJogo(candidate);
+      const a = analisarJogo(candidate, this.analysisContext());
       let score = 0;
       if (a.somaFaixaComum) score += 3;
       if (a.parImparEquilibrado) score += 2;
@@ -1062,7 +1085,7 @@ class Component extends DCLogic {
       const sorted = candidate.slice().sort((x,y)=>x-y);
       const jaSalvo = s.savedGames.some(g => mesmaCombinacao(g.dezenas, sorted));
       if (jaSalvo) continue;
-      const a = analisarJogo(sorted);
+      const a = analisarJogo(sorted, this.analysisContext());
       let score = 0;
       if (a.somaFaixaComum) score += 3;
       if (a.quentes >= targets.qMin && a.quentes <= targets.qMax) score += 2; else score -= Math.abs(a.quentes - (targets.qMin+targets.qMax)/2);
@@ -1277,6 +1300,21 @@ class Component extends DCLogic {
       dezenas: SORTEADAS_3726
     };
     const sorteadasConferidor = (ultimoResultado.dezenas || SORTEADAS_3726).slice().sort((a,b) => a-b);
+    const statsByNumber = s.numberStats.length
+      ? s.numberStats.slice().sort((a,b) => a.dezena - b.dezena)
+      : Array.from({length:25}, (_,i) => ({ dezena:i+1, frequencia_pct:FREQ_PCT[i], atraso:ATRASO[i] }));
+    const analysisContext = {
+      sorteadasReferencia: sorteadasConferidor,
+      hotNumbers: statsByNumber.slice().sort((a,b) => b.frequencia_pct - a.frequencia_pct).slice(0,5).map(x => x.dezena),
+      lateNumbers: statsByNumber.slice().sort((a,b) => b.atraso - a.atraso).slice(0,5).map(x => x.dezena),
+    };
+    const recentDraws = s.recentDraws.length
+      ? s.recentDraws.map(sr => ({
+          concurso: sr.concurso,
+          data: sr.data || sr.data_sorteio || '',
+          dezenas: (sr.dezenas || []).slice().sort((a,b) => a-b),
+        }))
+      : SORTEIOS_RECENTES;
     const conferidorSource = s.conferidorGames.length
       ? s.conferidorGames.map((game, idx) => ({
           label: game.metodo,
@@ -1345,7 +1383,7 @@ class Component extends DCLogic {
     }));
 
     const savedGamesView = s.savedGames.map((g, idx) => {
-      const a = g.analise || analisarJogo(g.dezenas);
+      const a = analisarJogo(g.dezenas, analysisContext);
       const conferenciasResumo = (g.conferencias || []).length
         ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos} acertos`).join(' | ')
         : 'Sem conferencia';
@@ -1371,14 +1409,15 @@ class Component extends DCLogic {
       };
     });
 
-    const liveA = analisarJogo(s.selected);
+    const liveA = analisarJogo(s.selected, analysisContext);
 
-    const sortedFreqIdx = FREQ_PCT.map((v,i)=>({v,n:i+1})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
-    const sortedAtrasoIdx = ATRASO.map((v,i)=>({v,n:i+1})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
+    const sortedFreqIdx = statsByNumber.map(x=>({v:x.frequencia_pct,n:x.dezena})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
+    const sortedAtrasoIdx = statsByNumber.map(x=>({v:x.atraso,n:x.dezena})).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>pad(x.n));
 
     const heatmap = Array.from({length:25}, (_,i) => i+1).map(n => {
-      const f = FREQ_PCT[n-1];
-      const a = ATRASO[n-1];
+      const stat = statsByNumber[n-1] || { frequencia_pct: FREQ_PCT[n-1], atraso: ATRASO[n-1] };
+      const f = stat.frequencia_pct;
+      const a = stat.atraso;
       let bg,border,color;
       if (a >= 3) { bg='#FDF2F8'; border='#EC4899'; color='#9D174D'; }
       else if (f >= 61) { bg='#FFFBEB'; border='#F59E0B'; color='#92400E'; }
@@ -1419,6 +1458,8 @@ class Component extends DCLogic {
       saltoRows: sortRows(SALTO_DATA, s.saltoSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       molduraCells, mioloCells, posCols, desdobramento, conferidor,
       concursoConferidor: ultimoResultado.concurso,
+      concursoReferencia: ultimoResultado.concurso,
+      totalConcursos: s.totalConcursos || ultimoResultado.concurso,
       dataConferidor: ultimoResultado.data || ultimoResultado.data_sorteio || '',
       fechamentoOptions, fechamentoGrid,
       fechamentoN: fN,
@@ -1478,9 +1519,9 @@ class Component extends DCLogic {
         q, onClick: () => this.setQtdHistorico(q),
         style: `padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ${s.qtdHistorico===q?'#7C3AED':'#E9DFFB'};background:${s.qtdHistorico===q?'#7C3AED':'#FAF7FF'};color:${s.qtdHistorico===q?'#fff':'#6B5B8A'};`,
       })),
-      sorteiosView: SORTEIOS_RECENTES.slice(0, s.qtdHistorico).map((sr, idx) => {
-        const a = analisarJogo(sr.dezenas);
-        const epoca = mapaDaEpoca(idx, 10);
+      sorteiosView: recentDraws.slice(0, s.qtdHistorico).map((sr, idx) => {
+        const a = analisarJogo(sr.dezenas, analysisContext);
+        const epoca = mapaDaEpoca(idx, 10, recentDraws);
         return {
           concurso: sr.concurso, data: sr.data,
           dezenasView: sr.dezenas.map(pad),

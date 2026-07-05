@@ -33,6 +33,6 @@ jobs:
         run: |
           git config user.name "lotofacil-lab-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add dados/ reports/ painel.html painel_jogos.html painel_mobile.html diario_estatistico.md
+          git add dados/ reports/ scripts/ painel.html painel_avancado.html painel_jogos.html painel_jogos_v2.html painel_mobile.html index.html diario_estatistico.md
           git commit -m "Atualiza laboratório: novo ciclo diário" || echo "Sem alterações para commitar"
           git push
