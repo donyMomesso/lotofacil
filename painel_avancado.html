@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lotofacil Lab - Cerebro Estatistico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Inter',sans-serif; background:#FAF7FF; color:#1F1235; }
+  .shell { min-height:100vh; padding:28px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .brand { font-family:'Sora',sans-serif; font-weight:800; color:#5B21B6; font-size:22px; }
+  .nav { display:flex; gap:10px; flex-wrap:wrap; }
+  .nav a { text-decoration:none; color:#5B21B6; background:#F3E8FF; border:1px solid #DDD6FE; padding:8px 12px; border-radius:8px; font-size:13px; font-weight:700; }
+  .hero { background:linear-gradient(135deg,#5B21B6,#7C3AED 55%,#EC4899); color:#fff; border-radius:8px; padding:24px; margin-bottom:18px; box-shadow:0 14px 36px rgba(91,33,182,.22); }
+  .hero h1 { font-family:'Sora',sans-serif; margin:0 0 8px; font-size:clamp(24px,3vw,36px); }
+  .hero p { margin:0; color:rgba(255,255,255,.84); line-height:1.6; max-width:780px; }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; align-items:start; }
+  .panel { background:#fff; border:1px solid #E9DFFB; border-radius:8px; padding:18px; box-shadow:0 3px 14px rgba(43,10,77,.06); }
+  .panel-title { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:#5B21B6; font-weight:800; margin-bottom:14px; }
+  .chart-wrap { position:relative; width:100%; height:min(58vh,520px); min-height:320px; }
+  .trend { border-left:5px solid #F59E0B; background:#FFFBEB; color:#7C2D12; }
+  .trend strong { color:#5B21B6; }
+  .cards { display:grid; gap:12px; }
+  .method { border:1px solid #E9DFFB; border-radius:8px; padding:12px; background:#FAF7FF; }
+  .method-name { font-weight:800; color:#4C1D95; font-size:13px; margin-bottom:6px; }
+  .metric { display:flex; justify-content:space-between; gap:12px; font-size:12px; color:#6B5B8A; padding:3px 0; }
+  .metric b { color:#1F1235; }
+  .note { font-size:12px; color:#6B5B8A; line-height:1.6; margin-top:12px; }
+  .error { background:#FDF2F8; border-color:#FBCFE8; color:#9D174D; }
+  @media (max-width: 900px) {
+    .shell { padding:18px; }
+    .grid { grid-template-columns:1fr; }
+    .chart-wrap { height:420px; }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar">
+    <div class="brand">Lotofacil Lab - Cerebro Estatistico</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="painel_jogos">Painel de Jogos</a>
+      <a href="painel.html">Painel Classico</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Radar de estabilidade dos metodos</h1>
+    <p>Compara M1 a M5 contra a esperanca matematica de 9.0 acertos. O destaque abaixo usa o menor desvio quadratico medio em relacao a 9.0 nos concursos disponiveis da janela.</p>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <div class="panel-title">Ultimos concursos - acertos por metodo</div>
+      <div class="chart-wrap">
+        <canvas id="metodosChart"></canvas>
+      </div>
+      <div class="note">A linha pontilhada marca 9.0, que e a esperanca teorica de acertos para qualquer jogo de 15 dezenas. Este painel mede estabilidade estatistica, nao previsao.</div>
+    </div>
+
+    <aside class="cards">
+      <div class="panel trend" id="trendBox">
+        Carregando analise de tendencia...
+      </div>
+      <div class="panel">
+        <div class="panel-title">Resumo da janela</div>
+        <div id="methodCards" class="cards"></div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script>
+const COLORS = {
+  M1_aleatorio_puro: '#7C3AED',
+  M2_mais_frequentes: '#EC4899',
+  M3_mais_atrasadas: '#F59E0B',
+  M4_par_impar_balanceado: '#16A34A',
+  M5_soma_faixa_comum: '#2563EB'
+};
+
+const LABELS = {
+  M1_aleatorio_puro: 'M1 Aleatorio',
+  M2_mais_frequentes: 'M2 Frequentes',
+  M3_mais_atrasadas: 'M3 Atrasadas',
+  M4_par_impar_balanceado: 'M4 Par/Impar',
+  M5_soma_faixa_comum: 'M5 Soma Faixa'
+};
+
+function fmt(valor, casas = 2) {
+  return Number(valor || 0).toFixed(casas).replace('.', ',');
+}
+
+function estabilidade(series) {
+  return series.slice().sort((a, b) =>
+    a.desvio_vs_esperanca_rms - b.desvio_vs_esperanca_rms ||
+    a.desvio_padrao_periodo - b.desvio_padrao_periodo ||
+    a.metodo.localeCompare(b.metodo)
+  )[0];
+}
+
+function datasetsFrom(data) {
+  const janela = data.ultimos_concursos;
+  const expectativa = janela.esperanca_teorica || 9.0;
+  const datasets = janela.series.map((serie) => ({
+    label: LABELS[serie.metodo] || serie.metodo,
+    data: serie.acertos_por_concurso,
+    borderColor: COLORS[serie.metodo] || '#6B5B8A',
+    backgroundColor: COLORS[serie.metodo] || '#6B5B8A',
+    borderWidth: 2,
+    tension: .28,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    spanGaps: true
+  }));
+
+  datasets.push({
+    label: 'Esperanca teorica 9.0',
+    data: janela.concursos.map(() => expectativa),
+    borderColor: '#111827',
+    backgroundColor: '#111827',
+    borderWidth: 2,
+    borderDash: [8, 6],
+    pointRadius: 0,
+    tension: 0
+  });
+
+  return datasets;
+}
+
+function renderCards(series) {
+  const wrap = document.getElementById('methodCards');
+  wrap.innerHTML = series.map((serie) => `
+    <div class="method">
+      <div class="method-name">${LABELS[serie.metodo] || serie.metodo}</div>
+      <div class="metric"><span>Media periodo</span><b>${fmt(serie.media_periodo)}</b></div>
+      <div class="metric"><span>Desvio padrao</span><b>${fmt(serie.desvio_padrao_periodo)}</b></div>
+      <div class="metric"><span>Desvio vs 9.0</span><b>${fmt(serie.desvio_vs_esperanca_rms)}</b></div>
+      <div class="metric"><span>Concursos</span><b>${serie.total_concursos_periodo}</b></div>
+    </div>
+  `).join('');
+}
+
+async function bootstrap() {
+  const trendBox = document.getElementById('trendBox');
+
+  try {
+    const response = await fetch('dados/estatisticas.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Nao foi possivel carregar dados/estatisticas.json.');
+    const data = await response.json();
+    const janela = data.ultimos_concursos;
+    const maisEstavel = estabilidade(janela.series);
+
+    trendBox.innerHTML = `O metodo com maior estabilidade estatistica no periodo e <strong>${LABELS[maisEstavel.metodo] || maisEstavel.metodo}</strong>.<br><span style="font-size:12px;">Desvio vs 9.0: ${fmt(maisEstavel.desvio_vs_esperanca_rms)} | Media: ${fmt(maisEstavel.media_periodo)} | Janela: ${janela.concursos.length} concurso(s)</span>`;
+    renderCards(janela.series);
+
+    new Chart(document.getElementById('metodosChart'), {
+      type: 'line',
+      data: {
+        labels: janela.concursos.map((concurso) => `C${concurso}`),
+        datasets: datasetsFrom(data)
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} acertos`
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 5,
+            max: 15,
+            ticks: { stepSize: 1 },
+            title: { display: true, text: 'Acertos' },
+            grid: { color: '#F1ECFB' }
+          },
+          x: {
+            title: { display: true, text: 'Concursos' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  } catch (err) {
+    trendBox.classList.add('error');
+    trendBox.textContent = err.message || 'Falha ao carregar estatisticas.';
+  }
+}
+
+bootstrap();
+</script>
+</body>
+</html>

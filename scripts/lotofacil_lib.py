@@ -13,6 +13,7 @@ e frequência relativa dos resultados de acertos (0 a 15).
 """
 import csv
 import itertools
+import json
 import os
 import random
 import statistics
@@ -26,6 +27,7 @@ JOGOS_CSV = os.path.join(DADOS_DIR, "jogos_gerados.csv")
 CONFERENCIA_CSV = os.path.join(DADOS_DIR, "conferencia.csv")
 FREQUENCIA_CSV = os.path.join(DADOS_DIR, "frequencia_dezenas.csv")
 ESTATISTICAS_CSV = os.path.join(DADOS_DIR, "estatisticas_metodos.csv")
+ESTATISTICAS_JSON = os.path.join(DADOS_DIR, "estatisticas.json")
 
 TODAS_DEZENAS = list(range(1, 26))
 
@@ -299,6 +301,60 @@ def calcular_estatisticas_metodos():
             linha[f"qtd_{k}_acertos"] = dist.get(k, 0)
         linhas.append(linha)
     return linhas
+
+
+def calcular_series_metodos(janela=50):
+    conf = carregar_conferencias()
+    concursos = sorted({row["concurso"] for row in conf})[-janela:]
+    por_concurso = {concurso: {m: None for m in METODOS} for concurso in concursos}
+
+    for row in conf:
+        concurso = row["concurso"]
+        metodo = row["metodo"]
+        if concurso in por_concurso and metodo in por_concurso[concurso]:
+            por_concurso[concurso][metodo] = row["acertos"]
+
+    series = []
+    for metodo in METODOS:
+        acertos = [por_concurso[concurso][metodo] for concurso in concursos]
+        validos = [valor for valor in acertos if valor is not None]
+        desvios = [valor - ESPERANCA_TEORICA for valor in validos]
+        rms = (sum(d * d for d in desvios) / len(desvios)) ** 0.5 if desvios else 0.0
+        media = statistics.mean(validos) if validos else 0.0
+        desvio_padrao = statistics.pstdev(validos) if len(validos) > 1 else 0.0
+        series.append({
+            "metodo": metodo,
+            "acertos_por_concurso": acertos,
+            "media_periodo": round(media, 4),
+            "desvio_padrao_periodo": round(desvio_padrao, 4),
+            "desvio_vs_esperanca_rms": round(rms, 4),
+            "total_concursos_periodo": len(validos),
+        })
+
+    metodo_estavel = min(
+        series,
+        key=lambda item: (item["desvio_vs_esperanca_rms"], item["desvio_padrao_periodo"], item["metodo"])
+    )["metodo"] if series else None
+
+    return {
+        "janela": janela,
+        "esperanca_teorica": ESPERANCA_TEORICA,
+        "concursos": concursos,
+        "series": series,
+        "metodo_mais_estavel": metodo_estavel,
+    }
+
+
+def exportar_estatisticas_para_json(janela=50, caminho=None):
+    _ensure_files()
+    payload = {
+        "resumo_historico": calcular_estatisticas_metodos(),
+        "ultimos_concursos": calcular_series_metodos(janela=janela),
+    }
+    destino = caminho or ESTATISTICAS_JSON
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    return destino
 
 
 def salvar_estatisticas_metodos():
