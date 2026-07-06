@@ -104,7 +104,10 @@
       </div>
 
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
-        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">📋 Desdobramento — 5 Métodos × 15 Dezenas</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Desdobramento — 5 Métodos × 15 Dezenas</div>
+          <button onClick="{{ registrarJogosSistema }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:800; white-space:nowrap;">Registrar todos</button>
+        </div>
         <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
           <thead>
             <tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;">
@@ -1215,6 +1218,60 @@ class Component extends DCLogic {
     this.setState({ concursoAlvo: isNaN(v) ? '' : v });
   }
 
+  jogosSistemaAtuais() {
+    const s = this.state;
+    return s.systemGames.length
+      ? s.systemGames.map(game => ({
+          metodo: methodLabel(game.metodo),
+          dezenas: (game.dezenas || []).slice().sort((a,b) => a-b),
+        }))
+      : METHOD_DEFS_3727.map(game => ({
+          metodo: game.label,
+          dezenas: game.dezenas.slice().sort((a,b) => a-b),
+        }));
+  }
+
+  async registrarJogosSistema() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para registrar os jogos do sistema.' });
+      return;
+    }
+    const jogos = this.jogosSistemaAtuais()
+      .filter(jogo => jogo.dezenas.length === 15)
+      .filter(jogo => !this.state.savedGames.some(g => mesmaCombinacao(g.dezenas, jogo.dezenas)));
+    const pulados = this.jogosSistemaAtuais().length - jogos.length;
+    if (!jogos.length) {
+      this.setState({ panelStatus: 'Todos os jogos do sistema ja estao em Jogos registrados.' });
+      return;
+    }
+    this.setState({ panelStatus: `Registrando ${jogos.length} jogo(s) do sistema...` });
+    let salvos = 0;
+    try {
+      for (const jogo of jogos) {
+        await painelApi('/api/jogos', {
+          method:'POST',
+          body: JSON.stringify({
+            concurso: this.state.concursoAlvo,
+            metodo: `Sistema ${jogo.metodo}`,
+            dezenas: jogo.dezenas,
+            observacao: this.state.keepSaved
+              ? `Jogo do desdobramento ${jogo.metodo} - manter salvo`
+              : `Jogo do desdobramento ${jogo.metodo} - descartar apos 2 conferencias`,
+            manter_salvo: this.state.keepSaved,
+            descartar_apos_rodadas: 2
+          })
+        });
+        salvos++;
+      }
+      const extra = pulados ? ` ${pulados} duplicado(s) foram ignorados.` : '';
+      this.setState({ panelStatus: `${salvos} jogo(s) do sistema registrados para conferencia.${extra}` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: `${salvos} jogo(s) registrado(s). Erro no restante: ${err.message || 'falha ao registrar.'}` });
+      await this.loadSavedGames();
+    }
+  }
+
   async jogarDiretoIA() {
     if (!getAuthToken()) {
       this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
@@ -1620,6 +1677,7 @@ class Component extends DCLogic {
       addGame: () => this.addGame(),
       clearSelected: () => this.clearSelected(),
       conferirDuasRodadas: () => this.conferirDuasRodadas(),
+      registrarJogosSistema: () => this.registrarJogosSistema(),
       sugerirJogo: () => this.sugerirJogo(),
       jogarDiretoIA: () => this.jogarDiretoIA(),
       suggestionsView,
