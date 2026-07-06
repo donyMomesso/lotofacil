@@ -171,6 +171,46 @@ function dezenasTexto(dezenas) {
   return dezenas.map((dezena) => String(dezena).padStart(2, "0")).join("-");
 }
 
+const OUTER_RING = new Set([1,2,3,4,5,6,10,11,15,16,20,21,22,23,24,25]);
+
+function origemMetodo(metodo) {
+  const raw = String(metodo || "").trim();
+  if (/^Sistema\s+M[1-8]\b/i.test(raw)) {
+    return raw.match(/^Sistema\s+M[1-8]/i)[0].replace(/\s+/, " ");
+  }
+  if (/^Painel IA Direto/i.test(raw)) return "IA Direto";
+  if (/^Painel Manual/i.test(raw)) return "Manual";
+  if (/^Painel/i.test(raw)) return raw.replace(/^Painel\s*/i, "") || "Painel";
+  return raw || "Painel";
+}
+
+function statsDezenasTexto(texto) {
+  const dezenas = normalizeDezenas(texto).slice(0, 15);
+  const soma = dezenas.reduce((acc, dezena) => acc + dezena, 0);
+  const pares = dezenas.filter((dezena) => dezena % 2 === 0).length;
+  const moldura = dezenas.filter((dezena) => OUTER_RING.has(dezena)).length;
+
+  return {
+    soma,
+    pares,
+    impares: dezenas.length - pares,
+    moldura,
+    miolo: dezenas.length - moldura
+  };
+}
+
+function media(valores) {
+  return valores.length
+    ? valores.reduce((acc, valor) => acc + valor, 0) / valores.length
+    : 0;
+}
+
+function desvioPadraoPopulacional(valores) {
+  if (!valores.length) return 0;
+  const m = media(valores);
+  return Math.sqrt(media(valores.map((valor) => (valor - m) ** 2)));
+}
+
 function parseApiResult(data) {
   const concurso = Number(data?.concurso || data?.numero || data?.numeroConcurso);
   const dataSorteio = String(data?.data || data?.dataApuracao || data?.dataSorteio || "").trim();
@@ -700,7 +740,8 @@ async function listJogos(user, env) {
   return json({
     ok: true,
     jogos,
-    indicadores_rodada: await indicadoresRodada(user.id, env)
+    indicadores_rodada: await indicadoresRodada(user.id, env),
+    aprendizado_origens: await aprendizadoOrigens(user.id, env)
   });
 }
 
@@ -862,6 +903,97 @@ async function indicadoresRodada(userId, env) {
           total_jogos: melhorOrigem.jogos
         }
       : null
+  };
+}
+
+async function aprendizadoOrigens(userId, env) {
+  const result = await env.DB.prepare(`
+    SELECT conferencias.concurso,
+           conferencias.acertos,
+           conferencias.dezenas_jogadas,
+           COALESCE(conferencias.metodo, jogos.metodo, 'Painel') AS metodo
+    FROM conferencias
+    JOIN jogos ON jogos.id = conferencias.jogo_id
+    WHERE jogos.usuario_id = ?
+    ORDER BY conferencias.concurso DESC, conferencias.id DESC
+    LIMIT 300
+  `).bind(userId).all();
+
+  if (!result.results.length) {
+    return null;
+  }
+
+  const grupos = new Map();
+
+  for (const row of result.results) {
+    const origem = origemMetodo(row.metodo);
+    const grupo = grupos.get(origem) || {
+      origem,
+      acertos: [],
+      soma: [],
+      pares: [],
+      impares: [],
+      moldura: [],
+      miolo: []
+    };
+    const acertos = Number(row.acertos || 0);
+    grupo.acertos.push(acertos);
+
+    if (row.dezenas_jogadas) {
+      try {
+        const stats = statsDezenasTexto(row.dezenas_jogadas);
+        grupo.soma.push(stats.soma);
+        grupo.pares.push(stats.pares);
+        grupo.impares.push(stats.impares);
+        grupo.moldura.push(stats.moldura);
+        grupo.miolo.push(stats.miolo);
+      } catch {}
+    }
+
+    grupos.set(origem, grupo);
+  }
+
+  const ranking = [...grupos.values()].map((grupo) => {
+    const jogos = grupo.acertos.length;
+    const mediaAcertos = media(grupo.acertos);
+    const desvio = desvioPadraoPopulacional(grupo.acertos);
+    const freq11 = grupo.acertos.filter((valor) => valor >= 11).length / jogos;
+    const freq12 = grupo.acertos.filter((valor) => valor >= 12).length / jogos;
+    const score = mediaAcertos + (freq11 * 1.6) + (freq12 * 2.4) - (desvio * 0.25);
+
+    return {
+      origem: grupo.origem,
+      jogos,
+      media_acertos: Number(mediaAcertos.toFixed(2)),
+      freq_11_mais: Number((freq11 * 100).toFixed(1)),
+      freq_12_mais: Number((freq12 * 100).toFixed(1)),
+      estabilidade: Number(desvio.toFixed(2)),
+      soma_media: Number(media(grupo.soma).toFixed(1)),
+      pares_media: Number(media(grupo.pares).toFixed(1)),
+      impares_media: Number(media(grupo.impares).toFixed(1)),
+      moldura_media: Number(media(grupo.moldura).toFixed(1)),
+      miolo_media: Number(media(grupo.miolo).toFixed(1)),
+      score: Number(score.toFixed(4))
+    };
+  }).sort((a, b) => b.score - a.score || b.media_acertos - a.media_acertos || a.estabilidade - b.estabilidade);
+
+  const scoresPositivos = ranking.map((item) => Math.max(item.score - 7, 0.25));
+  const totalScores = scoresPositivos.reduce((acc, valor) => acc + valor, 0) || 1;
+  const pesos = Object.fromEntries(ranking.map((item, idx) => [
+    item.origem,
+    Number((scoresPositivos[idx] / totalScores).toFixed(4))
+  ]));
+  const maisEstavel = ranking.slice().sort((a, b) => a.estabilidade - b.estabilidade || b.media_acertos - a.media_acertos)[0];
+  const melhorMedia = ranking.slice().sort((a, b) => b.media_acertos - a.media_acertos || b.freq_11_mais - a.freq_11_mais)[0];
+
+  return {
+    total_conferencias: result.results.length,
+    ranking,
+    pesos,
+    mais_estavel: maisEstavel ? maisEstavel.origem : null,
+    melhor_media: melhorMedia ? melhorMedia.origem : null,
+    sugestao_priorizar: ranking[0]?.origem || null,
+    evitar: ranking.length > 1 ? ranking[ranking.length - 1].origem : null
   };
 }
 
