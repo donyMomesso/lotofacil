@@ -318,3 +318,12 @@ Resumo do percentual de 11+ acertos: M2 11,331%, M6 10,902%, M3 10,832%, M4 10,6
 
 Arquivos atualizados nesta execuÃ§Ã£o: `dados/simulacao_metodos.csv`, `dados/estatisticas_simulacao.csv`, `reports/relatorio_estatistico.md`, `dados/banco_projeto.json`, `painel.html`, `painel_jogos.html`, `painel_mobile.html` e `index.html`.
 
+---
+
+## 06/07/2026 - Backtest completo reexecutado e relatório com seção dedicada aos 8 métodos
+
+O backtest completo (`python scripts/executar_backtest_completo.py`) foi reexecutado para confirmar os dados: 3.726 concursos simulados e 149.040 jogos avaliados (5 jogos por método, 8 métodos). Os resultados são determinísticos e coincidiram exatamente com a execução anterior, já que o histórico de concursos não mudou desde então.
+
+Média de acertos por método (esperança teórica 9.0): M1 8.9966, M2 9.0388, M3 9.0158, M4 9.0005, M5 8.9946, M6 9.001, M7 8.9983, M8 8.9881. Percentual de 11+ acertos: M2 11,331%, M6 10,902%, M3 10,832%, M4 10,617%, M7 10,601%, M1 10,51%, M5 10,494% e M8 10,134%. Nenhum método passou de 14 acertos.
+
+`reports/relatorio_estatistico.md` ganhou uma seção nova, "Backtest completo M1-M8 (retroativo contra todo o histórico)", com a tabela completa de `dados/estatisticas_simulacao.csv` (média, desvio padrão, diferença vs. esperança, % 11+/13+ e máximo observado por método) — antes o relatório só trazia a tabela pequena de jogos fictícios de estudo, que ainda não cobre M6-M8 com jogos reais conferidos.

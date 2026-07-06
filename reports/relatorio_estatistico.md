@@ -1,6 +1,6 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 06/07/2026 14:45 (horário de Brasília)_
+_Atualizado em 06/07/2026 15:23 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
@@ -70,6 +70,24 @@ Valor teórico esperado de acertos por jogo de 15 dezenas: **9.0** (distribuiç�
 | M7_cobertura_pares | 0 | 0.0 | 0.0 | 0.0% | 0.0% |
 | M8_repeticao_controlada | 0 | 0.0 | 0.0 | 0.0% | 0.0% |
 
+## Backtest completo M1-M8 (retroativo contra todo o histórico)
+
+Simulação retroativa cobrindo os 8 métodos oficiais, usando apenas o histórico disponível até o concurso anterior em cada rodada: **3726 concursos** simulados e **149040 jogos** avaliados (5 jogos por método em cada concurso).
+
+| Método | Jogos simulados | Média de acertos | Desvio padrão | Dif. vs. esperança | % com 11+ | % com 13+ | Máx. observado |
+|---|---|---|---|---|---|---|---|
+| M1_aleatorio_puro | 18630 | 8.9966 | 1.2295 | -0.0034 | 10.51% | 0.14% | 14 |
+| M2_mais_frequentes | 18630 | 9.0388 | 1.2243 | +0.0388 | 11.331% | 0.102% | 14 |
+| M3_mais_atrasadas | 18630 | 9.0158 | 1.222 | +0.0158 | 10.832% | 0.097% | 14 |
+| M4_par_impar_balanceado | 18630 | 9.0005 | 1.2231 | +0.0005 | 10.617% | 0.107% | 13 |
+| M5_soma_faixa_comum | 18630 | 8.9946 | 1.2265 | -0.0054 | 10.494% | 0.252% | 14 |
+| M6_filtros_combinados | 18630 | 9.001 | 1.234 | +0.0010 | 10.902% | 0.183% | 13 |
+| M7_cobertura_pares | 18630 | 8.9983 | 1.2186 | -0.0017 | 10.601% | 0.14% | 14 |
+| M8_repeticao_controlada | 18630 | 8.9881 | 1.2221 | -0.0119 | 10.134% | 0.172% | 14 |
+
+Assim como nos jogos fictícios de estudo, todos os métodos — incluindo M6, M7 e M8 — ficam próximos da esperança teórica de 9.0 acertos por jogo no backtest completo. Nenhum método demonstrou vantagem estatística consistente sobre os demais.
+
+
 ## Apostas estendidas (16 a 20 dezenas): mais cobertura custa mais, na mesma proporção
 
 A Lotofácil permite apostar com mais de 15 dezenas por bilhete (até 20). Isso realmente aumenta o número esperado de dezenas certas — mas o preço sobe pela mesma combinatória, porque uma aposta de `n` dezenas equivale a pagar por C(n,15) combinações de 15 ao mesmo tempo. Não há atalho: o retorno esperado por real investido não muda.
@@ -131,7 +149,7 @@ Cada linha abaixo é uma combinação fixa de 15 dezenas, gerada só como exempl
 | 4 | 02-03-04-06-08-11-13-14-15-17-19-20-22-24-25 | 3726 | 9.033 | +0.0330 | 13 | 11.6479% | 0.1879% |
 | 5 | 03-04-05-06-08-09-12-14-15-16-17-21-22-24-25 | 3726 | 8.9538 | -0.0462 | 14 | 10.2254% | 0.1342% |
 
-Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 5 métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.
+Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 8 métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.
 
 
 ## Conclusão educativa

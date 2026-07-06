@@ -108,6 +108,37 @@ def main():
             f"{l['desvio_padrao_acertos']} | {l['pct_11_ou_mais']}% | {l['pct_13_ou_mais']}% |"
         )
 
+    simulacao_stats_path = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
+    if os.path.exists(simulacao_stats_path):
+        with open(simulacao_stats_path, encoding="utf-8") as f:
+            stats_simulacao = list(csv.DictReader(f))
+        total_concursos_sim = int(float(stats_simulacao[0]["total_concursos_simulados"]))
+        total_jogos_sim = sum(int(l["total_jogos_simulados"]) for l in stats_simulacao)
+        linhas_md += [
+            "",
+            "## Backtest completo M1-M8 (retroativo contra todo o histórico)",
+            "",
+            f"Simulação retroativa cobrindo os 8 métodos oficiais, usando apenas o histórico "
+            f"disponível até o concurso anterior em cada rodada: **{total_concursos_sim} concursos** "
+            f"simulados e **{total_jogos_sim} jogos** avaliados (5 jogos por método em cada concurso).",
+            "",
+            "| Método | Jogos simulados | Média de acertos | Desvio padrão | Dif. vs. esperança | % com 11+ | % com 13+ | Máx. observado |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for l in stats_simulacao:
+            linhas_md.append(
+                f"| {l['metodo']} | {l['total_jogos_simulados']} | {l['media_acertos']} | "
+                f"{l['desvio_padrao_acertos']} | {float(l['diferenca_vs_esperanca']):+.4f} | "
+                f"{l['pct_11_ou_mais']}% | {l['pct_13_ou_mais']}% | {l['max_acertos']} |"
+            )
+        linhas_md += [
+            "",
+            "Assim como nos jogos fictícios de estudo, todos os métodos — incluindo M6, M7 e M8 — "
+            "ficam próximos da esperança teórica de 9.0 acertos por jogo no backtest completo. "
+            "Nenhum método demonstrou vantagem estatística consistente sobre os demais.",
+            "",
+        ]
+
     estendidas_path = os.path.join(lib.DADOS_DIR, "apostas_estendidas.csv")
     if os.path.exists(estendidas_path):
         with open(estendidas_path, encoding="utf-8") as f:
@@ -198,7 +229,7 @@ def main():
         linhas_md += [
             "",
             "Nenhum exemplo passou de 14 acertos em nenhum dos milhares de concursos testados, e todas "
-            "as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 5 "
+            "as médias ficam a menos de 0,05 acerto da esperança teórica — a mesma conclusão dos 8 "
             "métodos e do backtest geral, agora demonstrada também para combinações fixas filtradas.",
             "",
         ]
