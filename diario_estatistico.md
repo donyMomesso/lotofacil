@@ -365,3 +365,19 @@ Adicionado o modo `hibrido` (top 3 métodos da janela por peso principal + 2 mé
 ## 06/07/2026 - Fechamento combinatório trocado por matrizes de cobertura reduzidas
 
 O fechamento (16 a 20 dezenas) do painel usava `itertools.combinations`-equivalente em JS para calcular a combinação total (16 a 15.504 jogos, guardando garantia de 15 pontos), o que era inviável de exibir/gerenciar acima de 16 dezenas. Criado `scripts/gerar_matrizes_cobertura.py`, que calcula e verifica por força bruta (contra todos os C(v,15) sorteios hipotéticos possíveis) uma matriz de cobertura reduzida por tamanho de grupo, trocando a garantia de 15 para 14 pontos: v=16 → 1 jogo (vs. 16), v=17 → 8 (vs. 136), v=18 → 24 (vs. 816), v=19 → 144 (vs. 3.876), v=20 → 481 (vs. 15.504) — reduções de 93,8% a 97,1%. Resultado salvo em `dados/matrizes_cobertura.json` e embutido em `painel_jogos_v2.html`, que agora consulta essa matriz fixa (mapeando posições para as dezenas escolhidas pelo usuário) em vez de calcular a combinação total. O custo exibido no painel passou a refletir o fechamento reduzido (jogos × R$3,50), não mais a aposta estendida. O antigo fallback de "5 opções sem garantia" para grupos acima de 16 foi removido, pois agora todos os tamanhos (16 a 20) têm garantia real e verificada.
+
+---
+
+## 06/07/2026 - Fase 3: aprendizado por origem no painel
+
+Implementado o aprendizado por origem a partir do histórico real de conferências salvas no banco D1. O `worker.js` passou a calcular ranking por origem usando janela dos últimos 60 concursos, ponderação temporal para dar mais peso às conferências recentes, penalização de origens com média baixa, pouca frequência de 11+ ou amostra insuficiente, além de tendência, confiança e peso por origem.
+
+O painel ganhou a seção "Aprendizado do sistema", exibindo perfil mais estável, melhor média recente, origem sugerida para priorizar, origem com peso reduzido, tendência, confiança e peso da IA. A geração por IA passou a usar esses pesos do aprendizado como freio e acelerador: perfis com melhor comportamento recente recebem bônus, enquanto perfis penalizados têm menor influência. A leitura continua estatística e educacional, sem tratar o histórico como garantia de acerto futuro.
+
+---
+
+## 06/07/2026 - Fase 4: combinação inteligente de perfis
+
+Criada no `worker.js` a função `calcularCombinacaoRecomendada`, responsável por sugerir uma carteira prática de jogos para o próximo sorteio. A combinação usa até 5 origens, limita concentração em um único método e considera pesos, tendência, estabilidade, confiança e penalizações calculadas pelo aprendizado por origem.
+
+O painel passou a exibir a seção "Combinação recomendada para o próximo sorteio", mostrando quantidade sugerida por origem e justificativa curta de cada escolha. Também foi adicionado o botão "Gerar jogos desta combinação", que monta os jogos conforme a carteira recomendada e salva automaticamente em "Jogos registrados" com origem `Combo Inteligente - ...`, mantendo o fluxo de conferência automática das fases anteriores.

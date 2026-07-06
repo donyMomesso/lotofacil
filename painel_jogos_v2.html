@@ -316,11 +316,12 @@
         <sc-if value="{{ hasFechamentoJogos }}" hint-placeholder-val="{{ false }}">
           <div style="margin-top:16px; border-top:1px solid #F1ECFB; padding-top:14px;">
             <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">{{ totalCombos }} jogo(s) gerado(s) — matriz de cobertura reduzida, garantia de 14 pontos (pode ser dividido entre apostadores)</div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; max-height:220px; overflow:auto;">
+            <div id="fechamentoJogosContainer" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; max-height:220px; overflow:auto;">
               <sc-for list="{{ fechamentoJogos }}" as="fj" hint-placeholder-count="16">
-                <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:6px; padding:6px 10px; font-family:monospace; font-size:11px;">{{ fj.dezenasStr }}</div>
+                <div class="jogo-formatado" style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:6px; padding:6px 10px; font-family:monospace; font-size:11px;">{{ fj.dezenasStr }}</div>
               </sc-for>
             </div>
+            <button onClick="{{ copiarTodosJogos }}" style="background:#7c3aed; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:20px;">📋 Copiar todos os jogos para a Extensão</button>
           </div>
         </sc-if>
       </div>
@@ -899,6 +900,27 @@ function mesmaCombinacao(a, b) {
   if (a.length !== b.length) return false;
   const sb = new Set(b);
   return a.every(n => sb.has(n));
+}
+
+// Cópia em lote dos jogos do fechamento (matriz de cobertura), para colar
+// direto na extensão de preenchimento automático. Le o texto ja renderizado
+// na tela (nao recalcula nada), entao sempre reflete o grupo/garantia atual.
+function copiarTodosJogos() {
+  const elementosJogos = document.querySelectorAll('#fechamentoJogosContainer .jogo-formatado');
+  if (!elementosJogos.length) {
+    alert('Nenhum jogo gerado ainda - selecione um grupo de 16 a 20 dezenas primeiro.');
+    return;
+  }
+  const textoParaCopiar = Array.from(elementosJogos)
+    .map(el => el.innerText.trim())
+    .join('\n');
+
+  navigator.clipboard.writeText(textoParaCopiar).then(() => {
+    alert(`Sucesso! ${elementosJogos.length} jogos copiados.`);
+  }).catch(err => {
+    console.error('Erro ao copiar jogos:', err);
+    alert('Não foi possível copiar automaticamente. Veja o console para detalhes.');
+  });
 }
 
 const AUTH_TOKEN_KEY = 'lotofacil_mobile_token';
@@ -1888,6 +1910,7 @@ class Component extends DCLogic {
       fechamentoN: fN,
       fSelCount, fSelTotal: fN,
       autoFechamento: () => this.autoFechamento(),
+      copiarTodosJogos: () => copiarTodosJogos(),
       totalCombos,
       totalCombosFull: totalCombosFull.toLocaleString('pt-BR'),
       custoAproximado: `R$ ${(totalCombos * 3.5).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,

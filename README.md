@@ -12,11 +12,34 @@ Toda comparação de método usa como referência a **esperança teórica de 9 a
 
 - `painel_mobile.html` — painel otimizado para celular.
 - `painel.html` — painel clássico completo.
-- `painel_jogos.html` / `painel_jogos_v2.html` — painel de jogos e conferências.
+- `painel_jogos.html` / `painel_jogos_v2.html` — painel avançado de jogos, registro, conferência, aprendizado e combinação inteligente.
 - `dados/banco_projeto.json` — banco de leitura do projeto inteiro.
 - `reports/relatorio_estatistico.md` — relatório estatístico em Markdown.
 - `reports/analise_comparativa_metodos.md` — análise comparativa profunda dos 8 métodos (rankings, estabilidade, desempenho por período).
 - `diario_estatistico.md` — diário educativo das execuções.
+
+## Visão geral do sistema
+
+O projeto hoje funciona como um fluxo completo de laboratório estatístico:
+
+1. **Gerar** jogos por métodos estatísticos (M1 a M8), sugestões por IA do painel, jogo manual, IA Direto ou combinação inteligente.
+2. **Registrar** os jogos escolhidos em "Jogos registrados", vinculando concurso, dezenas, origem/método e regra de retenção.
+3. **Conferir** automaticamente os jogos registrados quando um novo resultado entra no sistema.
+4. **Aprender** com o histórico real de conferências, calculando ranking, pesos, tendência, confiança e penalizações por origem.
+5. **Sugerir combinação** para o próximo sorteio, distribuindo a quantidade de jogos entre origens/perfis diferentes, sem concentrar tudo em um único método.
+
+Esse fluxo não muda a natureza aleatória da Lotofácil. Ele organiza o estudo: tudo que o sistema gera, registra e confere vira dado para análise posterior.
+
+## Funcionalidades principais
+
+- **Geração por 8 métodos de estudo (M1 a M8):** métodos básicos e avançados para comparar filtros, frequências, atraso, soma, paridade, repetição controlada e cobertura de pares.
+- **Registro automático dos jogos do sistema:** no painel avançado, o botão "Registrar todos os jogos do sistema" salva os jogos exibidos no desdobramento em "Jogos registrados", com origem clara (`Sistema M1`, `Sistema M2`, etc.).
+- **Jogos manuais, IA Direto e Combo Inteligente:** o usuário pode salvar jogos escolhidos manualmente, pedir geração automática pela IA do painel ou gerar a carteira recomendada pelo aprendizado.
+- **Conferência automática com histórico detalhado:** cada jogo registrado pode ser conferido contra novos concursos, salvando dezenas jogadas, dezenas sorteadas, quantidade de acertos, dezenas acertadas, concurso e origem/método.
+- **Retenção configurável dos jogos:** jogos podem ser mantidos até exclusão manual ou descartados após 2 rodadas conferidas.
+- **Aprendizado por origem:** o sistema calcula ranking por origem/método, pesos, estabilidade, tendência, confiança e penalizações.
+- **Combinação inteligente de perfis:** o painel recomenda uma distribuição prática de jogos entre até 5 origens, limitando concentração e respeitando os pesos do aprendizado.
+- **Backtest completo M1-M8:** simulação retroativa com 5 jogos por método em cada concurso histórico, sem usar dados futuros na geração.
 
 ## Banco do projeto
 
@@ -73,6 +96,24 @@ O workflow comita e envia essas atualizações usando o token padrão do GitHub 
 
 A expectativa estatística é que, com o tempo, **todos convirjam para uma média de acertos parecida, perto de 9**. Se algum destoar por um tempo, isso é dado interessante para estudar variância e tamanho de amostra, não sinal de que funciona. Ver `reports/analise_comparativa_metodos.md` para o detalhamento completo dos 8 métodos (rankings, estabilidade, desempenho por período e conclusões).
 
+## Como o aprendizado funciona
+
+O aprendizado do painel usa a tabela `conferencias`, que guarda o resultado real de cada jogo registrado contra cada concurso conferido. A análise é feita por origem/método, por exemplo `Sistema M2`, `Sistema M7`, `IA Direto`, `Manual` ou `Combo Inteligente`.
+
+O cálculo atual considera:
+
+- **Janela recente:** ranking calculado com base nos últimos 60 concursos conferidos.
+- **Ponderação temporal:** conferências mais recentes têm peso maior que conferências antigas.
+- **Média de acertos e frequência de 11+/12+:** mede desempenho observado no histórico registrado.
+- **Estabilidade:** desvio padrão dos acertos, usado para identificar origens menos oscilantes.
+- **Tendência:** comparação entre desempenho recente e anterior dentro da janela.
+- **Confiança:** amostras maiores são tratadas como mais confiáveis; amostras pequenas recebem menor peso.
+- **Penalizações:** origens com média baixa, pouca frequência de 11+ ou poucos jogos conferidos têm o peso reduzido.
+
+A geração por IA usa esses pesos como orientação: perfis associados a origens melhores recebem bônus, enquanto perfis penalizados têm menor influência. A "Combinação recomendada para o próximo sorteio" usa o mesmo aprendizado para distribuir jogos entre até 5 origens, limitando concentração e mantendo diversidade.
+
+Importante: isso é um mecanismo de organização e estudo do histórico registrado, não uma previsão. Mesmo com ranking e pesos, cada novo sorteio continua independente.
+
 ## Estrutura
 
 ```txt
@@ -113,6 +154,9 @@ lotofacil/
 ├─ painel.html
 ├─ painel_jogos.html / painel_jogos_v2.html
 ├─ painel_mobile.html
+├─ worker.js                    # Cloudflare Worker: API, autenticação, D1 e assets
+├─ migrations/                  # schema do banco D1 usado pelo painel avançado
+├─ wrangler.jsonc               # configuração Cloudflare Workers / D1 / assets
 ├─ diario_estatistico.md
 ├─ requirements.txt
 └─ .github/workflows/
@@ -121,6 +165,35 @@ lotofacil/
 ```
 
 `analises/`, `graficos/`, `backups/` e `docs/` estão listadas em `.assetsignore` — não são servidas pelo site publicado (Cloudflare Workers Assets), da mesma forma que `scripts/` e `reports/` já não eram.
+
+## Estrutura técnica do painel avançado
+
+O painel avançado (`painel_jogos_v2.html`) é servido pelo Cloudflare Workers Assets e conversa com a API implementada em `worker.js`. O banco operacional do painel fica no Cloudflare D1 (`lotofacil-db`), com migrations em `migrations/`.
+
+Tabelas principais:
+
+- `usuarios`: cadastro simples de acesso ao painel.
+- `sessoes`: tokens/sessões de autenticação.
+- `jogos`: jogos registrados pelo usuário ou pelo sistema, com concurso, método/origem, dezenas, observação, status, regra de retenção (`manter_salvo`, `descartar_apos_rodadas`) e datas.
+- `conferencias`: histórico detalhado de conferência por jogo e concurso, com dezenas jogadas, dezenas sorteadas, dezenas acertadas, quantidade de acertos e método/origem.
+- `resultados`: resultados reais registrados no banco do Worker.
+- `jogos_sistema`: jogos gerados automaticamente pelo ciclo do Worker para o próximo concurso.
+- `execucoes_ciclo`: auditoria das execuções automáticas do ciclo diário no Worker.
+
+Rotas principais da API:
+
+- `GET /api/health`: checagem simples do serviço.
+- `GET /api/sistema/status`, `GET /api/resultados/status` e `GET /api/ciclo/status`: estado público do sistema, resultados e última execução.
+- `POST /api/auth/register` e `POST /api/auth/login`: cadastro e login.
+- `POST /api/auth/logout`: encerra a sessão.
+- `GET /api/me`: valida a sessão atual.
+- `GET /api/jogos`: lista jogos registrados, conferências, indicadores da rodada, aprendizado por origem e combinação recomendada.
+- `POST /api/jogos`: registra um novo jogo em "Jogos registrados".
+- `PATCH /api/jogos/:id`: atualiza dados de um jogo registrado.
+- `DELETE /api/jogos/:id`: remove/cancela um jogo do usuário.
+- `POST /api/jogos/conferir-duas-rodadas`: confere jogos registrados contra até duas rodadas disponíveis.
+- `POST /api/jogos/conferir-pendentes`: confere automaticamente jogos pendentes contra resultados ainda não processados.
+- `POST /api/ciclo/rodar`: executa o ciclo do Worker, registrando resultados, conferindo jogos pendentes, descartando jogos expirados e gerando jogos do próximo concurso.
 
 ## Simulação retroativa (backtest completo M1-M8)
 
