@@ -105,8 +105,8 @@
 
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Desdobramento — 5 Métodos × 15 Dezenas</div>
-          <button onClick="{{ registrarJogosSistema }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:800; white-space:nowrap;">Registrar todos</button>
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 {{ desdobramentoTitle }}</div>
+          <button onClick="{{ registrarJogosSistema }}" style="background:linear-gradient(135deg,#16A34A,#22C55E); border:none; color:#fff; border-radius:9px; padding:10px 16px; cursor:pointer; font-size:13px; font-weight:900; box-shadow:0 3px 10px rgba(22,163,74,.25); white-space:nowrap;">Registrar todos os jogos do sistema</button>
         </div>
         <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
           <thead>
@@ -120,7 +120,7 @@
             </tr>
           </thead>
           <tbody>
-            <sc-for list="{{ desdobramento }}" as="m" hint-placeholder-count="5">
+            <sc-for list="{{ desdobramento }}" as="m" hint-placeholder-count="8">
               <tr>
                 <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ m.badgeStyle }}">{{ m.label }}</span></td>
                 <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td data-style-template="{{ c.style }}">{{ c.num }}</td></sc-for>
@@ -413,14 +413,15 @@
         </div>
         <div style="font-size:12px; color:#8B76B0; margin-bottom:10px;">{{ panelStatus }}</div>
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
-          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dezenas</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Soma</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">P/Í</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Perfil</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Quente/Frio</th><th style="padding:8px 10px; border-bottom:1px solid #E9DFFB;"></th></tr></thead>
+          <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Origem</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Dezenas</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Soma</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">P/Í</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Perfil</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Quente/Frio</th><th style="padding:8px 10px; border-bottom:1px solid #E9DFFB;"></th></tr></thead>
           <tbody>
             <sc-if value="{{ hasNoGames }}" hint-placeholder-val="{{ false }}">
-              <tr><td colspan="7" style="text-align:center; color:#8B76B0; padding:20px;">Nenhum jogo registrado ainda.</td></tr>
+              <tr><td colspan="8" style="text-align:center; color:#8B76B0; padding:20px;">Nenhum jogo registrado ainda.</td></tr>
             </sc-if>
             <sc-for list="{{ savedGamesView }}" as="g" hint-placeholder-count="0">
               <tr>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.concurso }}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ g.origemStyle }}">{{ g.origem }}</span></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.soma }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.parImpar }}</td>
@@ -632,6 +633,21 @@ const METHOD_LABELS = {
 
 function methodLabel(metodo) {
   return METHOD_LABELS[metodo] || metodo;
+}
+
+function methodKey(metodo, fallback = '') {
+  const raw = String(metodo || fallback || '');
+  const match = raw.match(/\bM([1-8])\b|M([1-8])_/i);
+  return match ? `M${match[1] || match[2]}` : raw.split(/\s+/)[0] || 'Sistema';
+}
+
+function origemLabel(metodo) {
+  const raw = String(metodo || '').trim();
+  if (/^Sistema\s+M[1-8]\b/i.test(raw)) return raw.match(/^Sistema\s+M[1-8]/i)[0].replace(/\s+/, ' ');
+  if (/^Painel IA Direto/i.test(raw)) return 'IA Direto';
+  if (/^Painel Manual/i.test(raw)) return 'Manual';
+  if (/^Painel/i.test(raw)) return raw.replace(/^Painel\s*/i, '') || 'Painel';
+  return raw || 'Painel';
 }
 
 const METHOD_DEFS_3727 = [
@@ -1221,12 +1237,14 @@ class Component extends DCLogic {
   jogosSistemaAtuais() {
     const s = this.state;
     return s.systemGames.length
-      ? s.systemGames.map(game => ({
-          metodo: methodLabel(game.metodo),
+      ? s.systemGames.map((game, idx) => ({
+          key: methodKey(game.metodo, `M${idx + 1}`),
+          label: methodLabel(game.metodo),
           dezenas: (game.dezenas || []).slice().sort((a,b) => a-b),
         }))
       : METHOD_DEFS_3727.map(game => ({
-          metodo: game.label,
+          key: methodKey(game.key, game.label),
+          label: game.label,
           dezenas: game.dezenas.slice().sort((a,b) => a-b),
         }));
   }
@@ -1236,10 +1254,11 @@ class Component extends DCLogic {
       this.setState({ authStatus: 'Entre para registrar os jogos do sistema.' });
       return;
     }
-    const jogos = this.jogosSistemaAtuais()
+    const todosSistema = this.jogosSistemaAtuais();
+    const jogos = todosSistema
       .filter(jogo => jogo.dezenas.length === 15)
       .filter(jogo => !this.state.savedGames.some(g => mesmaCombinacao(g.dezenas, jogo.dezenas)));
-    const pulados = this.jogosSistemaAtuais().length - jogos.length;
+    const pulados = todosSistema.length - jogos.length;
     if (!jogos.length) {
       this.setState({ panelStatus: 'Todos os jogos do sistema ja estao em Jogos registrados.' });
       return;
@@ -1252,11 +1271,11 @@ class Component extends DCLogic {
           method:'POST',
           body: JSON.stringify({
             concurso: this.state.concursoAlvo,
-            metodo: `Sistema ${jogo.metodo}`,
+            metodo: `Sistema ${jogo.key}`,
             dezenas: jogo.dezenas,
             observacao: this.state.keepSaved
-              ? `Jogo do desdobramento ${jogo.metodo} - manter salvo`
-              : `Jogo do desdobramento ${jogo.metodo} - descartar apos 2 conferencias`,
+              ? `Jogo do desdobramento ${jogo.label} - manter salvo`
+              : `Jogo do desdobramento ${jogo.label} - descartar apos 2 conferencias`,
             manter_salvo: this.state.keepSaved,
             descartar_apos_rodadas: 2
           })
@@ -1505,12 +1524,12 @@ class Component extends DCLogic {
         }))
       : METHOD_JOGOS_3726;
     const jogosRegistradosConferidor = s.savedGames.map((game, idx) => ({
-      label: `Registrado C${game.concurso} #${idx + 1}`,
+      label: `${origemLabel(game.metodo)} C${game.concurso} #${idx + 1}`,
       dezenas: game.dezenas,
       bg:'#ECFDF5',
       color:'#047857',
     }));
-    const conferidorSource = [...sistemaConferidorSource, ...jogosRegistradosConferidor];
+    const conferidorSource = [...jogosRegistradosConferidor, ...sistemaConferidorSource];
     const conferidor = conferidorSource.map(m => {
       const acertos = m.dezenas.filter(n => sorteadasConferidor.includes(n)).length;
       const acLevel = acertos >= 10 ? {bg:'#DCFCE7',c:'#166534'} : acertos >= 9 ? {bg:'#FEF3C7',c:'#92400E'} : {bg:'#F3E8FF',c:'#5B21B6'};
@@ -1583,6 +1602,12 @@ class Component extends DCLogic {
       return {
         concurso: g.concurso,
         dezenasStr: g.dezenas.map(pad).join('-'),
+        origem: origemLabel(g.metodo),
+        origemStyle: origemLabel(g.metodo).startsWith('Sistema')
+          ? 'background:#ECFDF5;color:#047857;border:1px solid #10B98155;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;'
+          : origemLabel(g.metodo) === 'IA Direto'
+            ? 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED55;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;'
+            : 'background:#F8F2FF;color:#6B5B8A;border:1px solid #E9DFFB;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;',
         soma: g.soma,
         parImpar: `${g.pares}p / ${g.impares}i`,
         conferenciasResumo,
@@ -1648,6 +1673,7 @@ class Component extends DCLogic {
       seqRows: sortRows(SEQUENCIA_DATA, s.seqSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       saltoRows: sortRows(SALTO_DATA, s.saltoSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       molduraCells, mioloCells, posCols, desdobramento, conferidor,
+      desdobramentoTitle: `Desdobramento — ${sourceMethods.length} Métodos × 15 Dezenas`,
       concursoConferidor: ultimoResultado.concurso,
       concursoReferencia: ultimoResultado.concurso,
       totalConcursos: s.totalConcursos || ultimoResultado.concurso,
