@@ -337,3 +337,9 @@ Foi criado `reports/analise_comparativa_metodos.md` a partir dos dados reais de 
 Principais achados: M2_mais_frequentes lidera o ranking geral de média (9,0388) e de % 11+ (11,331%), e se mantém em 1º lugar em média nos três recortes recentes. M4_par_impar_balanceado e M6_filtros_combinados têm a menor amplitude (8, sem nenhum jogo de 14+ acertos); M7_cobertura_pares tem o menor desvio padrão isolado (1,2186). M5_soma_faixa_comum se destaca isoladamente em % de 13+ acertos (0,252%, mais que o dobro dos últimos colocados nessa métrica).
 
 A maior diferença do backtest (M2 vs. M8, nos extremos do ranking geral) corresponde a z≈4,0 na média e z≈3,7 no % de 11+ — perceptível dentro deste recorte de 3.726 concursos, mas sem qualquer valor preditivo: a esperança teórica de 9,0 acertos é idêntica para qualquer conjunto de 15 dezenas, já que cada sorteio da Lotofácil é independente dos anteriores. Conclusão do documento: nenhum método deve ser priorizado ou descartado com base nesses dados.
+
+---
+
+## 06/07/2026 - Fase 3: organização de estrutura do projeto
+
+Foram criadas as pastas `analises/`, `graficos/`, `backups/` e `docs/` (adicionadas ao `.assetsignore` para não serem servidas pelo site publicado), e movidos 3 arquivos órfãos sem nenhuma referência em código: `LEIA-ME.md` → `docs/`, `painel_jogos nv.html` → `backups/`, `Melhorias design página loto.zip` → `docs/`. O `README.md` foi atualizado para refletir os 8 métodos e os números reais do backtest completo. `dados/`, `scripts/`, `reports/` e os `painel*.html`/`index.html` na raiz não foram tocados, pois são referenciados diretamente pelo workflow diário e pelo Cloudflare Workers (site publicado).

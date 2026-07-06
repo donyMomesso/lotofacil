@@ -6,6 +6,10 @@ migrations/
 **/.*
 scripts/
 reports/
+analises/
+graficos/
+backups/
+docs/
 **/__pycache__/
 *.py
 *.pyc
