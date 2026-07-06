@@ -403,6 +403,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Jogos registrados</div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button onClick="{{ copiarJogosRegistrados }}" disabled="{{ copySavedDisabled }}" data-style-template="{{ copySavedStyle }}">⧉ Copiar bloco</button>
             <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Atualizar conferencias</button>
             <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
           </div>
@@ -1069,6 +1070,10 @@ class Component extends DCLogic {
 
   async copiarDezenas(dezenas, label = 'jogo') {
     const texto = dezenas.slice().sort((a,b) => a-b).map(pad).join(' ');
+    await this.copiarTexto(texto, `${label} copiado para colar no preenchedor`);
+  }
+
+  async copiarTexto(texto, mensagem = 'Texto copiado') {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(texto);
@@ -1082,10 +1087,22 @@ class Component extends DCLogic {
         document.execCommand('copy');
         document.body.removeChild(input);
       }
-      this.setState({ panelStatus: `${label} copiado para colar no preenchedor: ${texto}` });
+      this.setState({ panelStatus: `${mensagem}: ${texto}` });
     } catch (err) {
-      this.setState({ panelStatus: `Nao foi possivel copiar automaticamente. Dezenas: ${texto}` });
+      this.setState({ panelStatus: `Nao foi possivel copiar automaticamente. Conteudo: ${texto}` });
     }
+  }
+
+  copiarJogosRegistrados() {
+    const jogos = this.state.savedGames || [];
+    if (!jogos.length) {
+      this.setState({ panelStatus: 'Nenhum jogo registrado para copiar.' });
+      return;
+    }
+    const bloco = jogos
+      .map(g => g.dezenas.slice().sort((a,b) => a-b).map(pad).join(' '))
+      .join('\n');
+    this.copiarTexto(bloco, `${jogos.length} jogo(s) registrados copiados em bloco`);
   }
 
   onAiQtdChange(e) {
@@ -1629,6 +1646,11 @@ class Component extends DCLogic {
       analysisPartialLabel: selCount === 15 ? '' : `(${selCount}/15 selecionadas)`,
       savedCount: `${s.savedGames.length} jogo(s)`,
       hasNoGames: s.savedGames.length === 0,
+      copiarJogosRegistrados: () => this.copiarJogosRegistrados(),
+      copySavedDisabled: s.savedGames.length === 0,
+      copySavedStyle: s.savedGames.length
+        ? 'background:#F3E8FF;border:1px solid #7C3AED55;color:#5B21B6;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:800;white-space:nowrap;'
+        : 'background:#F3F0FA;border:1px solid #E9DFFB;color:#B8A6DB;border-radius:8px;padding:7px 12px;cursor:not-allowed;font-size:12px;font-weight:800;white-space:nowrap;',
       backtestRows: BACKTEST_ROWS,
       topFreq: sortedFreqIdx,
       topAtraso: sortedAtrasoIdx,
