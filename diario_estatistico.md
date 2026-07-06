@@ -343,3 +343,14 @@ A maior diferença do backtest (M2 vs. M8, nos extremos do ranking geral) corres
 ## 06/07/2026 - Fase 3: organização de estrutura do projeto
 
 Foram criadas as pastas `analises/`, `graficos/`, `backups/` e `docs/` (adicionadas ao `.assetsignore` para não serem servidas pelo site publicado), e movidos 3 arquivos órfãos sem nenhuma referência em código: `LEIA-ME.md` → `docs/`, `painel_jogos nv.html` → `backups/`, `Melhorias design página loto.zip` → `docs/`. O `README.md` foi atualizado para refletir os 8 métodos e os números reais do backtest completo. `dados/`, `scripts/`, `reports/` e os `painel*.html`/`index.html` na raiz não foram tocados, pois são referenciados diretamente pelo workflow diário e pelo Cloudflare Workers (site publicado).
+---
+
+## 06/07/2026 - Fase 4: gerador de jogos ponderado pelo backtest (meta-método)
+
+Criado `scripts/gerar_jogos_inteligente.py`, um meta-método que decide quais métodos usar e quantos jogos por método a partir dos dados reais do backtest (`dados/estatisticas_simulacao.csv` para a janela geral, ou `dados/simulacao_metodos.csv` recalculado ao vivo para janelas de 100/200/500 concursos — mesma lógica usada em `reports/analise_comparativa_metodos.md`). Não reimplementa a geração de dezenas: reaproveita `lib.gerar_todos_metodos()` e `gerar_jogos_avancados()`, os mesmos usados por `scripts/gerar_jogos.py`.
+
+Três modos: `todos` (1 jogo por método, comportamento atual), `ponderado` (distribui N jogos proporcionalmente ao % de 11+, % de 13+ ou estabilidade de cada método) e `top` (usa só os 3-4 métodos com melhor indicador na janela escolhida). Grava em `dados/jogos_inteligente.csv` (arquivo próprio, não interfere na conferência diária de produção nem nas estatísticas oficiais dos 8 métodos). Testado nos três modos com dados reais.
+
+Como os 8 métodos ficam muito próximos entre si no backtest completo (diferença máxima de ~1,2 ponto percentual em % de 11+), a ponderação por peso no modo `geral` resulta em pesos quase uniformes (~0,12-0,13 cada) — o próprio script imprime um aviso de que isso reflete só o encaixe histórico com o backtest já sorteado, não uma garantia de desempenho futuro, consistente com a conclusão de `analise_comparativa_metodos.md`.
+
+Investigada também a funcionalidade "Meus Jogos" (item 2 da Fase 4): já está implementada de ponta a ponta em `painel_jogos_v2.html` + `/api/jogos` (`worker.js`) + banco D1, já registrando `concurso` e `metodo` por jogo salvo. Nenhuma alteração foi necessária ali por enquanto.
