@@ -58,6 +58,49 @@
     </sc-for>
   </div>
 
+  <div style="padding:18px 28px 0; max-width:1280px; margin:0 auto;">
+    <div style="background:linear-gradient(135deg,#FFFFFF 0%,#F8F2FF 58%,#FFF7EA 100%); border:1px solid #E9DFFB; border-radius:16px; padding:18px; box-shadow:0 8px 28px rgba(43,10,77,.08);">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+        <div>
+          <div style="font-size:11px; font-weight:900; color:#5B21B6; text-transform:uppercase; letter-spacing:.08em;">Radar de Saude</div>
+          <div style="font-size:12px; color:#6B5B8A; margin-top:4px;">Cobertura do grupo, extensao e desempenho recente dos metodos.</div>
+        </div>
+        <span data-style-template="{{ radarSaude.coberturaStyle }}">{{ radarSaude.coberturaLabel }}</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:minmax(210px,.9fr) minmax(220px,.9fr) minmax(360px,1.5fr); gap:14px;">
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:10px; padding:13px;">
+          <div style="font-size:10px; color:#8B76B0; text-transform:uppercase; font-weight:800; margin-bottom:6px;">Cobertura do grupo</div>
+          <div style="font-size:18px; font-weight:900; color:#1F1235;">{{ radarSaude.coberturaResumo }}</div>
+          <div style="font-size:11px; color:#6B5B8A; margin-top:5px;">{{ radarSaude.coberturaDetalhe }}</div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:10px; padding:13px;">
+          <div style="font-size:10px; color:#8B76B0; text-transform:uppercase; font-weight:800; margin-bottom:6px;">Status da extensao</div>
+          <div style="font-size:14px; font-weight:900; color:#5B21B6; line-height:1.4;">{{ radarSaude.extensaoLabel }}</div>
+          <div style="height:7px; background:#F3E8FF; border-radius:999px; overflow:hidden; margin-top:9px;">
+            <div data-style-template="{{ radarSaude.extensaoBarStyle }}"></div>
+          </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:10px; padding:13px; overflow:auto;">
+          <div style="font-size:10px; color:#8B76B0; text-transform:uppercase; font-weight:800; margin-bottom:8px;">Performance dos metodos - ultimos 5 concursos</div>
+          <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+            <tbody>
+              <sc-for list="{{ radarSaude.metodos }}" as="rm" hint-placeholder-count="8">
+                <tr>
+                  <td style="padding:5px 6px; border-bottom:1px solid #F1ECFB; font-weight:800; color:#1F1235;">{{ rm.metodo }}</td>
+                  <td style="padding:5px 6px; border-bottom:1px solid #F1ECFB; color:#6B5B8A;">{{ rm.jogos }}</td>
+                  <td style="padding:5px 6px; border-bottom:1px solid #F1ECFB; text-align:right;"><span data-style-template="{{ rm.style }}">{{ rm.media }}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== JOGOS & MOLDURA ===================== -->
   <sc-if value="{{ isJogos }}" hint-placeholder-val="{{ true }}">
     <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
@@ -916,6 +959,7 @@ function copiarTodosJogos() {
     .join('\n');
 
   navigator.clipboard.writeText(textoParaCopiar).then(() => {
+    salvarStatusExtensao(elementosJogos.length, elementosJogos.length);
     alert(`Sucesso! ${elementosJogos.length} jogos copiados.`);
   }).catch(err => {
     console.error('Erro ao copiar jogos:', err);
@@ -924,6 +968,36 @@ function copiarTodosJogos() {
 }
 
 const AUTH_TOKEN_KEY = 'lotofacil_mobile_token';
+const EXTENSAO_STATUS_KEYS = {
+  total: ['lotofacil_extensao_total', 'lotofacil_extensao_jogos_total', 'lotofacilJogosTotal'],
+  processados: ['lotofacil_extensao_processados', 'lotofacil_extensao_jogos_processados', 'lotofacilJogosProcessados'],
+};
+
+function lerInteiroLocalStorage(chaves, fallback = 0) {
+  for (const chave of chaves) {
+    const valor = parseInt(localStorage.getItem(chave), 10);
+    if (!Number.isNaN(valor)) return valor;
+  }
+  return fallback;
+}
+
+function lerStatusExtensao() {
+  const total = lerInteiroLocalStorage(EXTENSAO_STATUS_KEYS.total, 0);
+  const processados = lerInteiroLocalStorage(EXTENSAO_STATUS_KEYS.processados, 0);
+  const percentual = total > 0 ? Math.min(100, Math.round((processados / total) * 100)) : 0;
+  return { total, processados, percentual, completo: total > 0 && processados >= total };
+}
+
+function salvarStatusExtensao(total, processados = total) {
+  localStorage.setItem(EXTENSAO_STATUS_KEYS.total[0], String(total));
+  localStorage.setItem(EXTENSAO_STATUS_KEYS.processados[0], String(processados));
+  window.dispatchEvent(new CustomEvent('lotofacil-extensao-status'));
+}
+
+function metodoRadarKey(texto) {
+  const match = String(texto || '').match(/M([1-8])/i);
+  return match ? `M${match[1]}` : '';
+}
 
 function getAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY) || '';
@@ -976,6 +1050,7 @@ class Component extends DCLogic {
     qtdHistorico: 10,
     seqSort: { col: 'dezenas', dir: 'asc' },
     saltoSort: { col: 'dezenas', dir: 'asc' },
+    extensaoTick: 0,
   };
 
   analysisContext() {
@@ -1557,6 +1632,18 @@ class Component extends DCLogic {
   componentDidMount() {
     this.initChart();
     this.bootstrapAuth();
+    this.onExtensaoStorageChange = () => {
+      this.setState(s => ({ extensaoTick: s.extensaoTick + 1 }));
+    };
+    window.addEventListener('storage', this.onExtensaoStorageChange);
+    window.addEventListener('lotofacil-extensao-status', this.onExtensaoStorageChange);
+    this.extensaoStatusTimer = window.setInterval(this.onExtensaoStorageChange, 2500);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('storage', this.onExtensaoStorageChange);
+    window.removeEventListener('lotofacil-extensao-status', this.onExtensaoStorageChange);
+    if (this.extensaoStatusTimer) window.clearInterval(this.extensaoStatusTimer);
   }
 
   initChart() {
@@ -1861,6 +1948,68 @@ class Component extends DCLogic {
       ? `${combinacao.total_jogos} jogo(s) em ${combinacaoRows.length} origem(ns), com limite de concentracao e penalizacao ativa.`
       : '--';
 
+    // Radar de Saude: consolida cobertura, status da extensao e media recente M1-M8.
+    s.extensaoTick; // Mantem o bloco reativo quando o localStorage muda.
+    const grupoRadar = fSelCount ? s.fechamentoSelected.slice() : s.selected.slice();
+    const dezenasSorteadasSet = new Set(sorteadasConferidor);
+    const grupoRadarSet = new Set(grupoRadar);
+    const faltantesCobertura = sorteadasConferidor.filter(n => !grupoRadarSet.has(n));
+    const coberturaAtiva = grupoRadar.length >= 15 && faltantesCobertura.length === 0;
+    const extensaoStatus = lerStatusExtensao();
+    const conferenciasPorMetodo = [];
+    s.savedGames.forEach((jogo) => {
+      const metodoKey = metodoRadarKey(jogo.metodo);
+      if (!metodoKey) return;
+      (jogo.conferencias || []).forEach((conf) => {
+        conferenciasPorMetodo.push({
+          metodo: metodoKey,
+          concurso: Number(conf.concurso || 0),
+          acertos: Number(conf.acertos || 0)
+        });
+      });
+    });
+    const ultimosCincoConcursos = [...new Set(conferenciasPorMetodo.map(c => c.concurso).filter(Boolean))]
+      .sort((a,b) => b-a)
+      .slice(0, 5);
+    const melhorMediaRadar = { metodo: '', media: -1 };
+    const radarMetodos = Array.from({length:8}, (_,idx) => {
+      const metodo = `M${idx + 1}`;
+      const amostra = conferenciasPorMetodo.filter(c => c.metodo === metodo && ultimosCincoConcursos.includes(c.concurso));
+      const mediaMetodo = amostra.length ? amostra.reduce((acc, c) => acc + c.acertos, 0) / amostra.length : null;
+      if (mediaMetodo !== null && mediaMetodo > melhorMediaRadar.media) {
+        melhorMediaRadar.metodo = metodo;
+        melhorMediaRadar.media = mediaMetodo;
+      }
+      return { metodo, amostra, mediaMetodo };
+    });
+    const radarSaude = {
+      coberturaLabel: coberturaAtiva ? 'Cobertura Ativa' : 'Cobertura Falhou - Ajustar Grupo',
+      coberturaStyle: coberturaAtiva
+        ? 'background:#DCFCE7;color:#166534;border:1px solid #16A34A55;border-radius:999px;padding:6px 14px;font-weight:900;font-size:12px;white-space:nowrap;'
+        : 'background:#FEE2E2;color:#991B1B;border:1px solid #EF444455;border-radius:999px;padding:6px 14px;font-weight:900;font-size:12px;white-space:nowrap;',
+      coberturaResumo: `${grupoRadar.length}/25 dezenas no grupo`,
+      coberturaDetalhe: coberturaAtiva
+        ? `As 15 dezenas do concurso ${ultimoResultado.concurso} estao dentro do grupo.`
+        : faltantesCobertura.length
+          ? `Faltando: ${faltantesCobertura.map(pad).join('-')}`
+          : 'Selecione um grupo para medir a cobertura.',
+      extensaoLabel: extensaoStatus.total
+        ? `Extensao: ${extensaoStatus.processados}/${extensaoStatus.total} jogos ${extensaoStatus.completo ? 'processados com sucesso' : '(incompleto)'}`
+        : 'Extensao: sem lote copiado ainda',
+      extensaoBarStyle: `height:100%;width:${extensaoStatus.percentual}%;background:${extensaoStatus.completo ? '#16A34A' : '#F59E0B'};border-radius:999px;transition:width .2s ease;`,
+      metodos: radarMetodos.map(row => {
+        const isBest = row.metodo === melhorMediaRadar.metodo;
+        return {
+          metodo: row.metodo,
+          jogos: row.amostra.length ? `${row.amostra.length} conf.` : 'sem dados',
+          media: row.mediaMetodo === null ? '--' : row.mediaMetodo.toFixed(2),
+          style: isBest
+            ? 'background:linear-gradient(135deg,#7C3AED,#EC4899);color:#fff;border-radius:999px;padding:3px 9px;font-weight:900;'
+            : 'background:#F8F2FF;color:#5B21B6;border:1px solid #E9DFFB;border-radius:999px;padding:3px 9px;font-weight:800;',
+        };
+      }),
+    };
+
     return {
       headerGradient: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 55%,#3B0764 100%)',
       needsAuth: !s.authLoading && !s.authUser,
@@ -1880,6 +2029,7 @@ class Component extends DCLogic {
       onRegister: () => this.loginOrRegister('register'),
       onLogout: () => this.logout(),
       tabs,
+      radarSaude,
       isJogos: tab === 'jogos',
       isMeusJogos: tab === 'meusjogos',
       isSequencias: tab === 'sequencias',
