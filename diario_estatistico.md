@@ -327,3 +327,13 @@ O backtest completo (`python scripts/executar_backtest_completo.py`) foi reexecu
 Média de acertos por método (esperança teórica 9.0): M1 8.9966, M2 9.0388, M3 9.0158, M4 9.0005, M5 8.9946, M6 9.001, M7 8.9983, M8 8.9881. Percentual de 11+ acertos: M2 11,331%, M6 10,902%, M3 10,832%, M4 10,617%, M7 10,601%, M1 10,51%, M5 10,494% e M8 10,134%. Nenhum método passou de 14 acertos.
 
 `reports/relatorio_estatistico.md` ganhou uma seção nova, "Backtest completo M1-M8 (retroativo contra todo o histórico)", com a tabela completa de `dados/estatisticas_simulacao.csv` (média, desvio padrão, diferença vs. esperança, % 11+/13+ e máximo observado por método) — antes o relatório só trazia a tabela pequena de jogos fictícios de estudo, que ainda não cobre M6-M8 com jogos reais conferidos.
+
+---
+
+## 06/07/2026 - Análise comparativa completa entre os 8 métodos (M1-M8)
+
+Foi criado `reports/analise_comparativa_metodos.md` a partir dos dados reais de `dados/estatisticas_simulacao.csv` e `dados/simulacao_metodos.csv` (3.726 concursos, 149.040 jogos, 18.630 jogos por método). O documento traz rankings por média de acertos, por % de 11+ e 13+ acertos, análise de estabilidade (desvio padrão e amplitude), tabela comparativa completa e um recorte de desempenho nos últimos 100, 200 e 500 concursos.
+
+Principais achados: M2_mais_frequentes lidera o ranking geral de média (9,0388) e de % 11+ (11,331%), e se mantém em 1º lugar em média nos três recortes recentes. M4_par_impar_balanceado e M6_filtros_combinados têm a menor amplitude (8, sem nenhum jogo de 14+ acertos); M7_cobertura_pares tem o menor desvio padrão isolado (1,2186). M5_soma_faixa_comum se destaca isoladamente em % de 13+ acertos (0,252%, mais que o dobro dos últimos colocados nessa métrica).
+
+A maior diferença do backtest (M2 vs. M8, nos extremos do ranking geral) corresponde a z≈4,0 na média e z≈3,7 no % de 11+ — perceptível dentro deste recorte de 3.726 concursos, mas sem qualquer valor preditivo: a esperança teórica de 9,0 acertos é idêntica para qualquer conjunto de 15 dezenas, já que cada sorteio da Lotofácil é independente dos anteriores. Conclusão do documento: nenhum método deve ser priorizado ou descartado com base nesses dados.
