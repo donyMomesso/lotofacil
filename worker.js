@@ -906,6 +906,84 @@ async function indicadoresRodada(userId, env) {
   };
 }
 
+function calcularCombinacaoRecomendada(ranking, pesos, totalJogos = 10) {
+  const maxOrigens = 5;
+  const maxPorOrigem = Math.ceil(totalJogos * 0.4);
+  const candidatosBase = ranking.filter((item) => !item.penalizado && item.jogos >= 5);
+  const candidatos = (candidatosBase.length ? candidatosBase : ranking)
+    .slice(0, maxOrigens)
+    .map((item) => {
+      const peso = Number(pesos[item.origem] || 0);
+      const bonusTendencia = item.tendencia > 0 ? Math.min(item.tendencia * 0.04, 0.08) : 0;
+      const bonusEstabilidade = item.estabilidade <= 1.2 ? 0.06 : item.estabilidade <= 1.6 ? 0.03 : 0;
+      const penalizacao = item.penalizado ? 0.45 : 1;
+      const prioridade = Math.max(0.03, (peso + bonusTendencia + bonusEstabilidade) * penalizacao);
+
+      return { item, prioridade };
+    });
+
+  if (!candidatos.length) {
+    return null;
+  }
+
+  const totalPrioridade = candidatos.reduce((acc, atual) => acc + atual.prioridade, 0) || 1;
+  let alocados = candidatos.map((atual) => {
+    const bruto = (atual.prioridade / totalPrioridade) * totalJogos;
+    return {
+      item: atual.item,
+      quantidade: Math.max(1, Math.min(maxPorOrigem, Math.floor(bruto))),
+      resto: bruto - Math.floor(bruto)
+    };
+  });
+
+  while (alocados.reduce((acc, atual) => acc + atual.quantidade, 0) > totalJogos) {
+    const alvo = alocados
+      .filter((atual) => atual.quantidade > 1)
+      .sort((a, b) => a.resto - b.resto || a.item.score - b.item.score)[0];
+    if (!alvo) break;
+    alvo.quantidade -= 1;
+  }
+
+  while (alocados.reduce((acc, atual) => acc + atual.quantidade, 0) < totalJogos) {
+    const alvo = alocados
+      .filter((atual) => atual.quantidade < maxPorOrigem)
+      .sort((a, b) => b.resto - a.resto || b.item.score - a.item.score)[0] || alocados[0];
+    alvo.quantidade += 1;
+  }
+
+  alocados = alocados
+    .filter((atual) => atual.quantidade > 0)
+    .sort((a, b) => b.quantidade - a.quantidade || b.item.score - a.item.score);
+
+  const itens = alocados.map(({ item, quantidade }) => {
+    const motivos = [];
+    if (item.media_acertos >= 9.5) motivos.push(`media recente ${item.media_acertos}`);
+    if (item.freq_11_mais >= 10) motivos.push(`${item.freq_11_mais}% com 11+`);
+    if (item.estabilidade <= 1.5) motivos.push(`estabilidade ${item.estabilidade}`);
+    if (item.tendencia > 0.25) motivos.push(`tendencia ${item.tendencia_label}`);
+    if (item.penalizado) motivos.push("peso reduzido por baixa confianca");
+
+    return {
+      origem: item.origem,
+      quantidade,
+      peso: Number((pesos[item.origem] || 0).toFixed(4)),
+      media_acertos: item.media_acertos,
+      estabilidade: item.estabilidade,
+      tendencia: item.tendencia,
+      tendencia_label: item.tendencia_label,
+      confianca: item.confianca,
+      justificativa: motivos.slice(0, 3).join(" · ") || "mantido para diversificar os perfis"
+    };
+  });
+
+  return {
+    total_jogos: itens.reduce((acc, item) => acc + item.quantidade, 0),
+    max_origens: maxOrigens,
+    regra: "Distribuicao com limite de concentracao, pesos recentes e penalizacao de origens fracas.",
+    itens
+  };
+}
+
 async function aprendizadoOrigens(userId, env) {
   const janelaConcursos = 60;
   const meiaVidaConcursos = 18;
@@ -1046,6 +1124,7 @@ async function aprendizadoOrigens(userId, env) {
   const recomendacaoPerfis = [priorizar?.origem, maisEstavel?.origem, melhorMedia?.origem]
     .filter(Boolean)
     .filter((origem, idx, arr) => arr.indexOf(origem) === idx);
+  const combinacaoRecomendada = calcularCombinacaoRecomendada(ranking, pesos, 10);
 
   return {
     janela_concursos: janelaConcursos,
@@ -1059,7 +1138,8 @@ async function aprendizadoOrigens(userId, env) {
     melhor_media: melhorMedia ? melhorMedia.origem : null,
     sugestao_priorizar: priorizar ? priorizar.origem : null,
     evitar: evitar ? evitar.origem : null,
-    recomendacao_perfis: recomendacaoPerfis
+    recomendacao_perfis: recomendacaoPerfis,
+    combinacao_recomendada: combinacaoRecomendada
   };
 }
 

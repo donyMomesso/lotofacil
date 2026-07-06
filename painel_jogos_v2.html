@@ -152,6 +152,28 @@
               <div style="font-size:15px; font-weight:800; color:#0F766E; margin-top:3px;">{{ aprendizadoResumo.combinacao }}</div>
             </div>
           </div>
+          <sc-if value="{{ hasCombinacaoRecomendada }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F8FAFC; border:1px solid #DDE7F3; border-radius:12px; padding:14px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                <div>
+                  <div style="font-size:11px; font-weight:800; color:#0F172A; text-transform:uppercase; letter-spacing:.05em;">Combinacao recomendada para o proximo sorteio</div>
+                  <div style="font-size:11px; color:#64748B; margin-top:3px;">{{ combinacaoResumo }}</div>
+                </div>
+                <button onClick="{{ gerarCombinacaoRecomendada }}" style="background:linear-gradient(135deg,#0F766E,#14B8A6); border:none; color:#fff; border-radius:9px; padding:10px 14px; cursor:pointer; font-size:12.5px; font-weight:900; box-shadow:0 3px 10px rgba(20,184,166,.22);">Gerar jogos desta combinacao</button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px;">
+                <sc-for list="{{ combinacaoRows }}" as="cr" hint-placeholder-count="4">
+                  <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:10px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                      <span style="font-size:12px; font-weight:900; color:#0F172A;">{{ cr.origem }}</span>
+                      <span style="font-size:12px; font-weight:900; color:#0F766E;">{{ cr.quantidade }} jogo(s)</span>
+                    </div>
+                    <div style="font-size:10.5px; color:#64748B; line-height:1.45;">{{ cr.justificativa }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
           <div style="overflow:auto;">
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead><tr style="color:#8B76B0; font-size:10px; text-transform:uppercase;"><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Origem</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Jogos</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Média</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Tendencia</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Peso IA</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Confianca</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">11+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">12+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Estabilidade</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Soma/Pares</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Moldura</th></tr></thead>
@@ -1177,7 +1199,7 @@ class Component extends DCLogic {
     });
   }
 
-  gerarSugestoesIA(qtd = 6, excluirSalvos = true) {
+  gerarSugestoesIA(qtd = 6, excluirSalvos = true, perfilKeysForcados = null) {
     const s = this.state;
     const all = Array.from({length:25}, (_,i) => i+1);
     const locked = s.locked.slice();
@@ -1211,11 +1233,15 @@ class Component extends DCLogic {
       { key:'distribuido', label:'Distribuído', qMin:1, qMax:4, aMin:1, aMax:4, foco:'Força melhor espalhamento por linhas e colunas.' },
       { key:'conservador', label:'Conservador', qMin:1, qMax:3, aMin:1, aMax:3, foco:'Evita extremos de sequência, soma e concentração.' },
     ];
+    const perfisFiltrados = Array.isArray(perfilKeysForcados) && perfilKeysForcados.length
+      ? perfis.filter(perfil => perfilKeysForcados.includes(perfil.key))
+      : perfis;
+    const perfisAtivos = perfisFiltrados.length ? perfisFiltrados : perfis;
 
     const results = [];
     const tentativas = Math.max(1600, qtd * 260);
     for (let tries = 0; tries < tentativas; tries++) {
-      const perfilAlvo = perfis[tries % perfis.length];
+      const perfilAlvo = perfisAtivos[tries % perfisAtivos.length];
       const pick = [...locked];
       const moldura = shuffle(OUTER_RING.filter(n => !locked.includes(n)));
       const miolo = shuffle(INNER_CORE.filter(n => !locked.includes(n)));
@@ -1351,6 +1377,75 @@ class Component extends DCLogic {
       await this.loadSavedGames();
     } catch (err) {
       this.setState({ panelStatus: `${salvos} jogo(s) registrado(s). Erro no restante: ${err.message || 'falha ao registrar.'}` });
+      await this.loadSavedGames();
+    }
+  }
+
+  perfilKeysPorOrigem(origem) {
+    if (/M5/i.test(origem)) return ['soma'];
+    if (/M7/i.test(origem)) return ['distribuido'];
+    if (/M8/i.test(origem)) return ['conservador'];
+    if (/M6/i.test(origem)) return ['conservador', 'distribuido'];
+    if (/M4/i.test(origem)) return ['equilibrado'];
+    if (/M2/i.test(origem)) return ['quente'];
+    if (/M3/i.test(origem)) return ['frio'];
+    if (/IA Direto/i.test(origem)) return ['equilibrado', 'soma', 'distribuido'];
+    return ['equilibrado'];
+  }
+
+  async gerarCombinacaoRecomendada() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
+      return;
+    }
+    const combinacao = this.state.aprendizadoOrigens?.combinacao_recomendada;
+    const itens = combinacao?.itens || [];
+    if (!itens.length) {
+      this.setState({ panelStatus: 'Ainda nao ha dados suficientes para gerar a combinacao recomendada.' });
+      return;
+    }
+
+    const usados = [];
+    for (const item of itens) {
+      const perfis = this.perfilKeysPorOrigem(item.origem);
+      const lote = this.gerarSugestoesIA(item.quantidade * 3, true, perfis);
+      for (const jogo of lote) {
+        if (usados.length >= combinacao.total_jogos) break;
+        if (usados.filter(u => u.origem === item.origem).length >= item.quantidade) break;
+        const repetido = usados.some(u => mesmaCombinacao(u.dezenas, jogo.dezenas))
+          || this.state.savedGames.some(g => mesmaCombinacao(g.dezenas, jogo.dezenas));
+        if (!repetido) usados.push({ ...jogo, origem: item.origem, justificativa: item.justificativa });
+      }
+    }
+
+    if (!usados.length) {
+      this.setState({ panelStatus: 'Nao foi possivel montar jogos novos para a combinacao recomendada.' });
+      return;
+    }
+
+    this.setState({ panelStatus: `Gerando e salvando ${usados.length} jogo(s) pela combinacao recomendada...` });
+    let salvos = 0;
+    try {
+      for (const jogo of usados) {
+        await painelApi('/api/jogos', {
+          method:'POST',
+          body: JSON.stringify({
+            concurso: this.state.concursoAlvo,
+            metodo: `Combo Inteligente - ${jogo.origem}`,
+            dezenas: jogo.dezenas,
+            observacao: this.state.keepSaved
+              ? `Combinacao recomendada (${jogo.origem}) - ${jogo.justificativa} - manter salvo`
+              : `Combinacao recomendada (${jogo.origem}) - ${jogo.justificativa} - descartar apos 2 conferencias`,
+            manter_salvo: this.state.keepSaved,
+            descartar_apos_rodadas: 2
+          })
+        });
+        salvos++;
+      }
+      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: `${salvos} jogo(s) da combinacao recomendada foram salvos em Jogos registrados.` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: `${salvos} jogo(s) salvo(s). Erro no restante: ${err.message || 'falha ao salvar.'}` });
       await this.loadSavedGames();
     }
   }
@@ -1734,6 +1829,15 @@ class Component extends DCLogic {
         ? 'background:#ECFDF5;color:#047857;border:1px solid #10B98155;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;'
         : 'background:#F8F2FF;color:#5B21B6;border:1px solid #E9DFFB;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;',
     }));
+    const combinacao = aprendizado?.combinacao_recomendada || null;
+    const combinacaoRows = (combinacao?.itens || []).map(item => ({
+      origem: item.origem,
+      quantidade: item.quantidade,
+      justificativa: item.justificativa || `Peso IA ${(Number(item.peso || 0) * 100).toFixed(1)}%`
+    }));
+    const combinacaoResumo = combinacao
+      ? `${combinacao.total_jogos} jogo(s) em ${combinacaoRows.length} origem(ns), com limite de concentracao e penalizacao ativa.`
+      : '--';
 
     return {
       headerGradient: 'linear-gradient(135deg,#7C3AED 0%,#5B21B6 55%,#3B0764 100%)',
@@ -1746,6 +1850,10 @@ class Component extends DCLogic {
       hasAprendizado: Boolean(aprendizadoResumo),
       aprendizadoResumo,
       aprendizadoRows,
+      hasCombinacaoRecomendada: Boolean(combinacaoRows.length),
+      combinacaoRows,
+      combinacaoResumo,
+      gerarCombinacaoRecomendada: () => this.gerarCombinacaoRecomendada(),
       onLogin: () => this.loginOrRegister('login'),
       onRegister: () => this.loginOrRegister('register'),
       onLogout: () => this.logout(),
