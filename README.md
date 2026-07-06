@@ -72,7 +72,7 @@ Ver `.github/workflows/analise-diaria.yml` — roda às **22h de Brasília**, de
 2. Registra no histórico (`dados/resultados_lotofacil.csv`).
 3. Importa jogos manuais de `dados/meus_jogos.csv`, se existir.
 4. Confere os jogos fictícios do dia anterior contra o resultado real (`dados/conferencia.csv`).
-5. Gera os jogos fictícios do próximo concurso, um por método (`dados/jogos_gerados.csv`).
+5. Gera os jogos fictícios do próximo concurso para os métodos M1-M8 (`dados/jogos_gerados.csv`).
 6. Recalcula frequência/atraso das dezenas e desempenho comparado dos métodos.
 7. Gera `reports/relatorio_estatistico.md`.
 8. Gera `dados/banco_projeto.json`.
@@ -80,6 +80,8 @@ Ver `.github/workflows/analise-diaria.yml` — roda às **22h de Brasília**, de
 10. Registra um bloco educativo em `diario_estatistico.md`.
 
 O workflow comita e envia essas atualizações usando o token padrão do GitHub Actions — não precisa de senha ou chave configurada.
+
+Além do workflow do repositório, o `worker.js` também possui ciclo operacional no Cloudflare (`POST /api/ciclo/rodar` e agenda configurada no `wrangler.jsonc`) para manter o painel avançado sincronizado: registra resultados no D1, confere jogos pendentes, atualiza o histórico de conferências, descarta jogos expirados e gera jogos do sistema para o próximo concurso.
 
 ## Os 8 métodos (hipóteses de estudo, não estratégias)
 
@@ -231,7 +233,7 @@ Isso só funciona com acesso livre à internet, porque `buscar_resultado.py` usa
 
 ## Fonte dos dados
 
-Histórico completo do concurso 1, em 29/09/2003, até o concurso 3725, em 02/07/2026, com 3725 concursos reais, importado de planilha fornecida pelo usuário em 03/07/2026 (`scripts/importar_historico_excel.py`). A partir do workflow diário, o histórico cresce automaticamente, concurso a concurso, buscando na API pública que espelha os resultados oficiais da Caixa (`loteriascaixa-api`).
+O histórico foi importado inicialmente a partir de planilha fornecida pelo usuário em 03/07/2026 (`scripts/importar_historico_excel.py`), começando no concurso 1, de 29/09/2003. A partir do workflow diário e do ciclo do Worker, o histórico cresce automaticamente, concurso a concurso, buscando na API pública que espelha os resultados oficiais da Caixa (`loteriascaixa-api`).
 
 ## Observação final
 
