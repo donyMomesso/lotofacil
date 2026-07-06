@@ -907,6 +907,21 @@ async function indicadoresRodada(userId, env) {
 }
 
 async function aprendizadoOrigens(userId, env) {
+  const janelaConcursos = 60;
+  const meiaVidaConcursos = 18;
+  const minimoConfiavel = 5;
+  const latest = await env.DB.prepare(`
+    SELECT MAX(conferencias.concurso) AS concurso
+    FROM conferencias
+    JOIN jogos ON jogos.id = conferencias.jogo_id
+    WHERE jogos.usuario_id = ?
+  `).bind(userId).first();
+
+  if (!latest || !latest.concurso) {
+    return null;
+  }
+
+  const concursoMinimo = Math.max(1, Number(latest.concurso) - janelaConcursos + 1);
   const result = await env.DB.prepare(`
     SELECT conferencias.concurso,
            conferencias.acertos,
@@ -914,10 +929,10 @@ async function aprendizadoOrigens(userId, env) {
            COALESCE(conferencias.metodo, jogos.metodo, 'Painel') AS metodo
     FROM conferencias
     JOIN jogos ON jogos.id = conferencias.jogo_id
-    WHERE jogos.usuario_id = ?
+    WHERE jogos.usuario_id = ? AND conferencias.concurso >= ?
     ORDER BY conferencias.concurso DESC, conferencias.id DESC
-    LIMIT 300
-  `).bind(userId).all();
+    LIMIT 500
+  `).bind(userId, concursoMinimo).all();
 
   if (!result.results.length) {
     return null;
@@ -934,32 +949,62 @@ async function aprendizadoOrigens(userId, env) {
       pares: [],
       impares: [],
       moldura: [],
-      miolo: []
+      miolo: [],
+      pesos: [],
+      recentes: [],
+      anteriores: []
     };
     const acertos = Number(row.acertos || 0);
+    const distancia = Math.max(0, Number(latest.concurso) - Number(row.concurso || latest.concurso));
+    const pesoTemporal = Math.pow(0.5, distancia / meiaVidaConcursos);
     grupo.acertos.push(acertos);
+    grupo.pesos.push(pesoTemporal);
+    if (distancia < Math.ceil(janelaConcursos / 2)) grupo.recentes.push(acertos);
+    else grupo.anteriores.push(acertos);
 
     if (row.dezenas_jogadas) {
       try {
         const stats = statsDezenasTexto(row.dezenas_jogadas);
-        grupo.soma.push(stats.soma);
-        grupo.pares.push(stats.pares);
-        grupo.impares.push(stats.impares);
-        grupo.moldura.push(stats.moldura);
-        grupo.miolo.push(stats.miolo);
+        grupo.soma.push({ valor: stats.soma, peso: pesoTemporal });
+        grupo.pares.push({ valor: stats.pares, peso: pesoTemporal });
+        grupo.impares.push({ valor: stats.impares, peso: pesoTemporal });
+        grupo.moldura.push({ valor: stats.moldura, peso: pesoTemporal });
+        grupo.miolo.push({ valor: stats.miolo, peso: pesoTemporal });
       } catch {}
     }
 
     grupos.set(origem, grupo);
   }
 
+  const mediaPonderada = (valores, pesos) => {
+    const totalPeso = pesos.reduce((acc, peso) => acc + peso, 0) || 1;
+    return valores.reduce((acc, valor, idx) => acc + (valor * pesos[idx]), 0) / totalPeso;
+  };
+  const mediaPonderadaObjetos = (itens) => {
+    const totalPeso = itens.reduce((acc, item) => acc + item.peso, 0) || 1;
+    return itens.reduce((acc, item) => acc + (item.valor * item.peso), 0) / totalPeso;
+  };
+  const desvioPonderado = (valores, pesos, m) => {
+    const totalPeso = pesos.reduce((acc, peso) => acc + peso, 0) || 1;
+    return Math.sqrt(valores.reduce((acc, valor, idx) => acc + (((valor - m) ** 2) * pesos[idx]), 0) / totalPeso);
+  };
+
   const ranking = [...grupos.values()].map((grupo) => {
     const jogos = grupo.acertos.length;
-    const mediaAcertos = media(grupo.acertos);
-    const desvio = desvioPadraoPopulacional(grupo.acertos);
-    const freq11 = grupo.acertos.filter((valor) => valor >= 11).length / jogos;
-    const freq12 = grupo.acertos.filter((valor) => valor >= 12).length / jogos;
-    const score = mediaAcertos + (freq11 * 1.6) + (freq12 * 2.4) - (desvio * 0.25);
+    const mediaAcertos = mediaPonderada(grupo.acertos, grupo.pesos);
+    const desvio = desvioPonderado(grupo.acertos, grupo.pesos, mediaAcertos);
+    const pesoTotal = grupo.pesos.reduce((acc, peso) => acc + peso, 0) || 1;
+    const freq11 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 11 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
+    const freq12 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 12 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
+    const mediaRecente = grupo.recentes.length ? media(grupo.recentes) : mediaAcertos;
+    const mediaAnterior = grupo.anteriores.length ? media(grupo.anteriores) : mediaRecente;
+    const tendencia = mediaRecente - mediaAnterior;
+    const penalizacaoMedia = mediaAcertos < 9.5 ? (9.5 - mediaAcertos) * 0.9 : 0;
+    const penalizacao11 = freq11 < 0.1 ? (0.1 - freq11) * 3.0 : 0;
+    const penalizacaoAmostra = jogos < minimoConfiavel ? (minimoConfiavel - jogos) * 0.18 : 0;
+    const scoreBase = mediaAcertos + (freq11 * 1.8) + (freq12 * 2.8) - (desvio * 0.35) + (tendencia * 0.55);
+    const score = scoreBase - penalizacaoMedia - penalizacao11 - penalizacaoAmostra;
+    const tendenciaLabel = tendencia > 0.25 ? "subindo" : tendencia < -0.25 ? "caindo" : "estavel";
 
     return {
       origem: grupo.origem,
@@ -968,32 +1013,53 @@ async function aprendizadoOrigens(userId, env) {
       freq_11_mais: Number((freq11 * 100).toFixed(1)),
       freq_12_mais: Number((freq12 * 100).toFixed(1)),
       estabilidade: Number(desvio.toFixed(2)),
-      soma_media: Number(media(grupo.soma).toFixed(1)),
-      pares_media: Number(media(grupo.pares).toFixed(1)),
-      impares_media: Number(media(grupo.impares).toFixed(1)),
-      moldura_media: Number(media(grupo.moldura).toFixed(1)),
-      miolo_media: Number(media(grupo.miolo).toFixed(1)),
+      soma_media: grupo.soma.length ? Number(mediaPonderadaObjetos(grupo.soma).toFixed(1)) : null,
+      pares_media: grupo.pares.length ? Number(mediaPonderadaObjetos(grupo.pares).toFixed(1)) : null,
+      impares_media: grupo.impares.length ? Number(mediaPonderadaObjetos(grupo.impares).toFixed(1)) : null,
+      moldura_media: grupo.moldura.length ? Number(mediaPonderadaObjetos(grupo.moldura).toFixed(1)) : null,
+      miolo_media: grupo.miolo.length ? Number(mediaPonderadaObjetos(grupo.miolo).toFixed(1)) : null,
+      tendencia: Number(tendencia.toFixed(2)),
+      tendencia_label: tendenciaLabel,
+      confianca: jogos >= 20 ? "alta" : jogos >= minimoConfiavel ? "media" : "baixa",
+      penalizado: mediaAcertos < 9.5 || freq11 < 0.1 || jogos < minimoConfiavel,
       score: Number(score.toFixed(4))
     };
   }).sort((a, b) => b.score - a.score || b.media_acertos - a.media_acertos || a.estabilidade - b.estabilidade);
 
-  const scoresPositivos = ranking.map((item) => Math.max(item.score - 7, 0.25));
+  const scoresPositivos = ranking.map((item) => {
+    const base = Math.max(item.score - 7.5, 0.08);
+    const fatorConfianca = item.confianca === "alta" ? 1 : item.confianca === "media" ? 0.75 : 0.35;
+    const fatorPenalizacao = item.penalizado ? 0.45 : 1;
+    return base * fatorConfianca * fatorPenalizacao;
+  });
   const totalScores = scoresPositivos.reduce((acc, valor) => acc + valor, 0) || 1;
   const pesos = Object.fromEntries(ranking.map((item, idx) => [
     item.origem,
     Number((scoresPositivos[idx] / totalScores).toFixed(4))
   ]));
-  const maisEstavel = ranking.slice().sort((a, b) => a.estabilidade - b.estabilidade || b.media_acertos - a.media_acertos)[0];
-  const melhorMedia = ranking.slice().sort((a, b) => b.media_acertos - a.media_acertos || b.freq_11_mais - a.freq_11_mais)[0];
+  const confiaveis = ranking.filter((item) => item.jogos >= minimoConfiavel);
+  const baseConfiavel = confiaveis.length ? confiaveis : ranking;
+  const maisEstavel = baseConfiavel.slice().sort((a, b) => a.estabilidade - b.estabilidade || b.media_acertos - a.media_acertos)[0];
+  const melhorMedia = baseConfiavel.slice().sort((a, b) => b.media_acertos - a.media_acertos || b.freq_11_mais - a.freq_11_mais)[0];
+  const priorizar = baseConfiavel.slice().sort((a, b) => b.score - a.score || b.tendencia - a.tendencia)[0];
+  const evitar = ranking.slice().reverse().find((item) => item.penalizado) || ranking[ranking.length - 1];
+  const recomendacaoPerfis = [priorizar?.origem, maisEstavel?.origem, melhorMedia?.origem]
+    .filter(Boolean)
+    .filter((origem, idx, arr) => arr.indexOf(origem) === idx);
 
   return {
+    janela_concursos: janelaConcursos,
+    ultimo_concurso: latest.concurso,
+    meia_vida_concursos: meiaVidaConcursos,
+    minimo_confiavel: minimoConfiavel,
     total_conferencias: result.results.length,
     ranking,
     pesos,
     mais_estavel: maisEstavel ? maisEstavel.origem : null,
     melhor_media: melhorMedia ? melhorMedia.origem : null,
-    sugestao_priorizar: ranking[0]?.origem || null,
-    evitar: ranking.length > 1 ? ranking[ranking.length - 1].origem : null
+    sugestao_priorizar: priorizar ? priorizar.origem : null,
+    evitar: evitar ? evitar.origem : null,
+    recomendacao_perfis: recomendacaoPerfis
   };
 }
 
