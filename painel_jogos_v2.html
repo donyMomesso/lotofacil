@@ -217,12 +217,13 @@
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
             <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🎰 Volante — clique para selecionar as dezenas</div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
-            <span style="font-size:11px; color:#8B76B0;">Perfil da sugestão:</span>
-            <sc-for list="{{ perfilOptions }}" as="p" hint-placeholder-count="3">
-              <div onClick="{{ p.onClick }}" data-style-template="{{ p.style }}">{{ p.label }}</div>
-            </sc-for>
-            <button onClick="{{ sugerirJogo }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:12.5px; font-weight:700; box-shadow:0 3px 10px rgba(124,58,237,.35); white-space:nowrap; margin-left:auto;">✨ Sugerir combinação</button>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+            <button onClick="{{ sugerirJogo }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:12.5px; font-weight:700; box-shadow:0 3px 10px rgba(124,58,237,.35); white-space:nowrap;">Sugestão de combinação</button>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:7px 9px;">
+              <span style="font-size:11px; color:#6B5B8A; font-weight:700;">Jogo direto por IA</span>
+              <input type="number" value="{{ aiQtd }}" onChange="{{ onAiQtdChange }}" min="1" max="20" style="width:58px; background:#fff; border:1px solid #E9DFFB; border-radius:7px; padding:6px 8px; color:#1F1235; font-size:12px; font-weight:700;" />
+              <button onClick="{{ jogarDiretoIA }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:7px; padding:7px 11px; cursor:pointer; font-size:12px; font-weight:800;">Play</button>
+            </div>
           </div>
           <div style="font-size:10.5px; color:#8B76B0; margin-bottom:10px;">🔓/🔒 clique no cadeado de uma dezena selecionada para travá-la nas próximas sugestões.</div>
           <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:300px; margin:0 auto 16px;">
@@ -297,14 +298,15 @@
 
       <sc-if value="{{ hasSuggestions }}" hint-placeholder-val="{{ false }}">
         <div style="margin-bottom:20px;">
-          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px;">✨ 3 sugestões baseadas no estudo</div>
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px;">✨ 6 sugestões baseadas no estudo</div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px;">
-            <sc-for list="{{ suggestionsView }}" as="sg" hint-placeholder-count="3">
+            <sc-for list="{{ suggestionsView }}" as="sg" hint-placeholder-count="6">
               <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:16px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-                  <span data-style-template="{{ sg.classificacaoStyle }}">{{ sg.classificacao }}</span>
+                  <span data-style-template="{{ sg.perfilStyle }}">{{ sg.perfilLabel }}</span>
                   <span style="font-size:11px; color:#8B76B0;">Soma {{ sg.soma }}</span>
                 </div>
+                <div style="font-size:11px; color:#8B76B0; line-height:1.45; margin-bottom:8px;">{{ sg.perfilFoco }}</div>
                 <div style="font-family:monospace; font-size:12.5px; color:#1F1235; line-height:1.6; margin-bottom:10px;">{{ sg.dezenasStr }}</div>
                 <sc-for list="{{ sg.motivos }}" as="m" hint-placeholder-count="4">
                   <div style="font-size:11px; color:#6B5B8A; line-height:1.5; margin-bottom:3px;">• {{ m }}</div>
@@ -352,7 +354,7 @@
           </div>
         </div>
         <div style="margin-top:14px; font-size:11.5px; color:#8B76B0; line-height:1.6;">
-          Estas métricas descrevem o perfil do jogo (distribuição, sequência, soma) — não indicam maior chance de acerto. Todo jogo de 15 dezenas tem a mesma probabilidade matemática de ser sorteado. O botão "Sugerir combinação" apenas monta um jogo que segue os padrões observados no histórico (moldura/miolo, equilíbrio quente/frio, soma comum) — é um exercício estatístico, não uma previsão.
+          Estas métricas descrevem o perfil do jogo (distribuição, sequência, soma) e não indicam maior chance de acerto. O botão "Sugestão de combinação" monta 6 opções com perfis diferentes para escolha do jogador; o modo "Jogo direto por IA" gera a quantidade escolhida e salva direto em Jogos registrados.
         </div>
       </div>
 
@@ -831,6 +833,7 @@ class Component extends DCLogic {
     selected: [],
     locked: [],
     perfil: 'equilibrado',
+    aiQtd: 1,
     suggestions: [],
     concursoAlvo: 3727,
     savedGames: [],
@@ -1061,10 +1064,14 @@ class Component extends DCLogic {
 
   clearSelected() { this.setState({ selected: [], locked: [], suggestions: [] }); }
 
-  setPerfil(p) { this.setState({ perfil: p }); }
-
   setKeepSaved(e) {
     this.setState({ keepSaved: Boolean(e?.target?.checked) });
+  }
+
+  onAiQtdChange(e) {
+    const v = parseInt(e.target.value, 10);
+    const qtd = Math.max(1, Math.min(20, isNaN(v) ? 1 : v));
+    this.setState({ aiQtd: qtd });
   }
 
   toggleLock(n) {
@@ -1075,18 +1082,23 @@ class Component extends DCLogic {
     });
   }
 
-  sugerirJogo() {
+  gerarSugestoesIA(qtd = 6, excluirSalvos = true) {
     const s = this.state;
     const all = Array.from({length:25}, (_,i) => i+1);
     const locked = s.locked.slice();
-    const targets = {
-      quente: { qMin:3, qMax:5, aMin:0, aMax:2 },
-      frio:    { qMin:0, qMax:2, aMin:3, aMax:5 },
-      equilibrado: { qMin:1, qMax:3, aMin:1, aMax:3 },
-    }[s.perfil] || { qMin:1, qMax:3, aMin:1, aMax:3 };
+    const perfis = [
+      { key:'equilibrado', label:'Equilibrado', qMin:1, qMax:3, aMin:1, aMax:3, foco:'Mais balanceado entre dezenas quentes e atrasadas.' },
+      { key:'quente', label:'Quente', qMin:3, qMax:5, aMin:0, aMax:2, foco:'Puxa mais dezenas de alta frequência recente.' },
+      { key:'frio', label:'Frio', qMin:0, qMax:2, aMin:3, aMax:5, foco:'Inclui mais dezenas atrasadas para buscar virada.' },
+      { key:'soma', label:'Soma comum', qMin:1, qMax:4, aMin:1, aMax:4, foco:'Prioriza soma perto de 200 e paridade comum.' },
+      { key:'distribuido', label:'Distribuído', qMin:1, qMax:4, aMin:1, aMax:4, foco:'Força melhor espalhamento por linhas e colunas.' },
+      { key:'conservador', label:'Conservador', qMin:1, qMax:3, aMin:1, aMax:3, foco:'Evita extremos de sequência, soma e concentração.' },
+    ];
 
     const results = [];
-    for (let tries = 0; tries < 700; tries++) {
+    const tentativas = Math.max(1600, qtd * 260);
+    for (let tries = 0; tries < tentativas; tries++) {
+      const perfilAlvo = perfis[tries % perfis.length];
       const pick = [...locked];
       const moldura = shuffle(OUTER_RING.filter(n => !locked.includes(n)));
       const miolo = shuffle(INNER_CORE.filter(n => !locked.includes(n)));
@@ -1101,12 +1113,12 @@ class Component extends DCLogic {
       }
       const sorted = candidate.slice().sort((x,y)=>x-y);
       const jaSalvo = s.savedGames.some(g => mesmaCombinacao(g.dezenas, sorted));
-      if (jaSalvo) continue;
+      if (excluirSalvos && jaSalvo) continue;
       const a = analisarJogo(sorted, this.analysisContext());
       let score = 0;
       if (a.somaFaixaComum) score += 3;
-      if (a.quentes >= targets.qMin && a.quentes <= targets.qMax) score += 2; else score -= Math.abs(a.quentes - (targets.qMin+targets.qMax)/2);
-      if (a.atrasadas >= targets.aMin && a.atrasadas <= targets.aMax) score += 2; else score -= Math.abs(a.atrasadas - (targets.aMin+targets.aMax)/2);
+      if (a.quentes >= perfilAlvo.qMin && a.quentes <= perfilAlvo.qMax) score += 2; else score -= Math.abs(a.quentes - (perfilAlvo.qMin+perfilAlvo.qMax)/2);
+      if (a.atrasadas >= perfilAlvo.aMin && a.atrasadas <= perfilAlvo.aMax) score += 2; else score -= Math.abs(a.atrasadas - (perfilAlvo.aMin+perfilAlvo.aMax)/2);
       if (a.maxSeq <= 3) score += 2; else score -= (a.maxSeq - 3) * 2;
       if (a.moldura >= 9 && a.moldura <= 11) score += 2;
       if (a.miolo >= 6 && a.miolo <= 7) score += 2;
@@ -1115,28 +1127,45 @@ class Component extends DCLogic {
       const rowSpread = Math.max(...a.rowCounts) - Math.min(...a.rowCounts);
       const colSpread = Math.max(...a.colCounts) - Math.min(...a.colCounts);
       score -= (rowSpread + colSpread) * 0.3;
-      results.push({ dezenas: sorted, score, a });
+      if (perfilAlvo.key === 'soma') score -= Math.abs(a.soma - 200) * 0.08;
+      if (perfilAlvo.key === 'distribuido') score -= (rowSpread + colSpread) * 0.45;
+      if (perfilAlvo.key === 'conservador') {
+        if (a.maxSeq <= 2) score += 1.5;
+        if (a.soma >= 190 && a.soma <= 210) score += 1.5;
+      }
+      results.push({ dezenas: sorted, score, a, perfil: perfilAlvo });
     }
     results.sort((x,y) => y.score - x.score);
-    // pega top 3 suficientemente diferentes entre si
     const chosen = [];
     for (const r of results) {
-      if (chosen.length >= 3) break;
-      const dup = chosen.some(c => c.dezenas.filter(n => r.dezenas.includes(n)).length >= 12);
+      if (chosen.length >= qtd) break;
+      const dup = chosen.some(c => c.dezenas.filter(n => r.dezenas.includes(n)).length >= 13);
       if (!dup) chosen.push(r);
     }
-    const suggestions = chosen.map(c => ({
+    for (const r of results) {
+      if (chosen.length >= qtd) break;
+      const exists = chosen.some(c => mesmaCombinacao(c.dezenas, r.dezenas));
+      if (!exists) chosen.push(r);
+    }
+    return chosen.slice(0, qtd).map(c => ({
       dezenas: c.dezenas,
       a: c.a,
+      perfilKey: c.perfil.key,
+      perfilLabel: c.perfil.label,
+      perfilFoco: c.perfil.foco,
       motivos: [
         `${c.a.moldura}/16 da moldura e ${c.a.miolo}/9 do miolo — equilíbrio próximo ao recomendado.`,
-        `${c.a.quentes} dezena(s) quente(s) e ${c.a.atrasadas} atrasada(s) — perfil "${s.perfil}".`,
+        `${c.a.quentes} dezena(s) quente(s) e ${c.a.atrasadas} atrasada(s) — perfil ${c.perfil.label}.`,
         `Soma ${c.a.soma}${c.a.somaFaixaComum ? ' dentro da faixa comum (180–220).' : ', fora da faixa comum (180–220).'}`,
         `${c.a.pares}p / ${15 - c.a.pares}i — ${c.a.parImparEquilibrado ? 'equilíbrio típico dos sorteios.' : 'fora do equilíbrio típico (6 a 9 pares).'}`,
         `Sequência máxima de ${c.a.maxSeq} dezena(s) seguida(s).`,
         locked.length ? `Mantém as ${locked.length} dezena(s) travada(s) por você.` : `Distribuição equilibrada entre linhas e colunas do volante.`,
       ],
     }));
+  }
+
+  sugerirJogo() {
+    const suggestions = this.gerarSugestoesIA(6, true);
     this.setState({ suggestions });
   }
 
@@ -1147,6 +1176,44 @@ class Component extends DCLogic {
   onConcursoChange(e) {
     const v = parseInt(e.target.value, 10);
     this.setState({ concursoAlvo: isNaN(v) ? '' : v });
+  }
+
+  async jogarDiretoIA() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
+      return;
+    }
+    const qtd = Math.max(1, Math.min(20, parseInt(this.state.aiQtd, 10) || 1));
+    const jogos = this.gerarSugestoesIA(qtd, true);
+    if (!jogos.length) {
+      this.setState({ panelStatus: 'Nao foi possivel gerar jogos novos com os filtros atuais.' });
+      return;
+    }
+    this.setState({ panelStatus: `IA gerando e salvando ${jogos.length} jogo(s)...` });
+    let salvos = 0;
+    try {
+      for (const jogo of jogos) {
+        await painelApi('/api/jogos', {
+          method:'POST',
+          body: JSON.stringify({
+            concurso: this.state.concursoAlvo,
+            metodo: `Painel IA Direto - ${jogo.perfilLabel}`,
+            dezenas: jogo.dezenas,
+            observacao: this.state.keepSaved
+              ? `Jogo direto por IA (${jogo.perfilLabel}) - manter salvo`
+              : `Jogo direto por IA (${jogo.perfilLabel}) - descartar apos 2 conferencias`,
+            manter_salvo: this.state.keepSaved,
+            descartar_apos_rodadas: 2
+          })
+        });
+        salvos++;
+      }
+      this.setState({ selected: [], locked: [], suggestions: [], panelStatus: `IA salvou ${salvos} jogo(s) em Jogos registrados.` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: `${salvos} jogo(s) salvo(s). Erro no restante: ${err.message || 'falha ao salvar.'}` });
+      await this.loadSavedGames();
+    }
   }
 
   async addGame() {
@@ -1163,7 +1230,7 @@ class Component extends DCLogic {
         method:'POST',
         body: JSON.stringify({
           concurso: s.concursoAlvo,
-          metodo: `Painel ${s.perfil}`,
+          metodo: 'Painel Manual',
           dezenas,
           observacao: s.keepSaved ? 'Gerado no painel avancado - manter salvo' : 'Gerado no painel avancado - descartar apos 2 conferencias',
           manter_salvo: s.keepSaved,
@@ -1380,18 +1447,20 @@ class Component extends DCLogic {
       };
     });
 
-    const perfilOptions = [
-      { key:'quente', label:'🔥 Quente' },
-      { key:'equilibrado', label:'⚖️ Equilibrado' },
-      { key:'frio', label:'❄️ Frio' },
-    ].map(p => {
-      const active = p.key === s.perfil;
-      return { ...p, onClick: () => this.setPerfil(p.key), style: `padding:7px 13px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${active?'#7C3AED':'#E9DFFB'};background:${active?'#7C3AED':'#FAF7FF'};color:${active?'#fff':'#6B5B8A'};white-space:nowrap;` };
-    });
-
     const suggestionsView = s.suggestions.map((sg, idx) => ({
       dezenasStr: sg.dezenas.map(pad).join('-'),
       soma: sg.a.soma,
+      perfilLabel: sg.perfilLabel || sg.a.classificacao,
+      perfilFoco: sg.perfilFoco || 'Sugestão baseada no estudo estatístico do painel.',
+      perfilStyle: sg.perfilKey === 'quente'
+        ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+        : sg.perfilKey === 'frio'
+          ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+          : sg.perfilKey === 'soma'
+            ? 'background:#FEF3C7;color:#92400E;border:1px solid #D97706;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+            : sg.perfilKey === 'distribuido'
+              ? 'background:#DCFCE7;color:#166534;border:1px solid #16A34A;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
+              : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;',
       classificacao: sg.a.classificacao,
       classificacaoStyle: sg.a.classificacao === 'Quente'
         ? 'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px;'
@@ -1498,14 +1567,16 @@ class Component extends DCLogic {
       selCount, selSoma, selParImpar,
       volante,
       concursoAlvo: s.concursoAlvo,
+      aiQtd: s.aiQtd,
       keepSaved: s.keepSaved,
       onConcursoChange: (e) => this.onConcursoChange(e),
+      onAiQtdChange: (e) => this.onAiQtdChange(e),
       onKeepSavedChange: (e) => this.setKeepSaved(e),
       addGame: () => this.addGame(),
       clearSelected: () => this.clearSelected(),
       conferirDuasRodadas: () => this.conferirDuasRodadas(),
       sugerirJogo: () => this.sugerirJogo(),
-      perfilOptions,
+      jogarDiretoIA: () => this.jogarDiretoIA(),
       suggestionsView,
       hasSuggestions: s.suggestions.length > 0,
       addDisabled: selCount !== 15,
