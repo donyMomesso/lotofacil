@@ -659,13 +659,16 @@ async function listJogos(user, env) {
     const confResult = await env.DB.prepare(`
       SELECT conferencias.jogo_id,
              conferencias.concurso,
+             conferencias.dezenas_jogadas,
              conferencias.dezenas_sorteadas,
+             conferencias.dezenas_acertadas,
              conferencias.acertos,
+             conferencias.metodo,
              conferencias.conferido_em
       FROM conferencias
       JOIN jogos ON jogos.id = conferencias.jogo_id
       WHERE jogos.usuario_id = ? AND conferencias.jogo_id IN (${placeholders})
-      ORDER BY conferencias.concurso DESC
+      ORDER BY conferencias.concurso ASC
     `).bind(user.id, ...ids).all();
     const byGame = new Map(jogos.map((jogo) => [jogo.id, jogo]));
 
@@ -673,19 +676,31 @@ async function listJogos(user, env) {
       const jogo = byGame.get(conferencia.jogo_id);
 
       if (jogo) {
+        const rodada = jogo.conferencias.length + 1;
+        const descartadoAposRodada = !jogo.manter_salvo && rodada >= Number(jogo.descartar_apos_rodadas || 2);
         jogo.conferencias.push({
+          rodada,
           concurso: conferencia.concurso,
+          dezenas_jogadas: conferencia.dezenas_jogadas || jogo.dezenas_texto,
           dezenas_sorteadas: conferencia.dezenas_sorteadas,
+          dezenas_acertadas: conferencia.dezenas_acertadas || "",
           acertos: conferencia.acertos,
+          metodo: conferencia.metodo || jogo.metodo,
+          retencao: descartadoAposRodada ? "descartado" : "mantido",
           conferido_em: conferencia.conferido_em
         });
       }
+    }
+
+    for (const jogo of jogos) {
+      jogo.conferencias.sort((a, b) => b.concurso - a.concurso);
     }
   }
 
   return json({
     ok: true,
-    jogos
+    jogos,
+    indicadores_rodada: await indicadoresRodada(user.id, env)
   });
 }
 
@@ -777,6 +792,79 @@ async function deleteJogo(user, env, id) {
   return json({ ok: true });
 }
 
+async function indicadoresRodada(userId, env) {
+  const latest = await env.DB.prepare(`
+    SELECT MAX(conferencias.concurso) AS concurso
+    FROM conferencias
+    JOIN jogos ON jogos.id = conferencias.jogo_id
+    WHERE jogos.usuario_id = ?
+  `).bind(userId).first();
+
+  if (!latest || !latest.concurso) {
+    return null;
+  }
+
+  const rows = await env.DB.prepare(`
+    SELECT conferencias.concurso,
+           conferencias.acertos,
+           conferencias.dezenas_jogadas,
+           conferencias.dezenas_sorteadas,
+           conferencias.dezenas_acertadas,
+           COALESCE(conferencias.metodo, jogos.metodo, 'Painel') AS metodo,
+           jogos.id AS jogo_id,
+           jogos.status
+    FROM conferencias
+    JOIN jogos ON jogos.id = conferencias.jogo_id
+    WHERE jogos.usuario_id = ? AND conferencias.concurso = ?
+    ORDER BY conferencias.acertos DESC, jogos.id ASC
+  `).bind(userId, latest.concurso).all();
+
+  if (!rows.results.length) {
+    return null;
+  }
+
+  const total = rows.results.reduce((acc, row) => acc + Number(row.acertos || 0), 0);
+  const media = total / rows.results.length;
+  const best = rows.results[0];
+  const origemStats = new Map();
+
+  for (const row of rows.results) {
+    const metodo = row.metodo || "Painel";
+    const current = origemStats.get(metodo) || { metodo, total: 0, jogos: 0, max: 0 };
+    current.total += Number(row.acertos || 0);
+    current.jogos += 1;
+    current.max = Math.max(current.max, Number(row.acertos || 0));
+    origemStats.set(metodo, current);
+  }
+
+  const melhorOrigem = [...origemStats.values()]
+    .map((item) => ({ ...item, media: item.total / item.jogos }))
+    .sort((a, b) => b.media - a.media || b.max - a.max || a.metodo.localeCompare(b.metodo))[0];
+
+  return {
+    concurso: latest.concurso,
+    total_jogos: rows.results.length,
+    media_acertos: Number(media.toFixed(2)),
+    melhor_jogo: {
+      jogo_id: best.jogo_id,
+      metodo: best.metodo,
+      acertos: best.acertos,
+      dezenas_jogadas: best.dezenas_jogadas,
+      dezenas_sorteadas: best.dezenas_sorteadas,
+      dezenas_acertadas: best.dezenas_acertadas,
+      status: best.status
+    },
+    melhor_origem: melhorOrigem
+      ? {
+          metodo: melhorOrigem.metodo,
+          media_acertos: Number(melhorOrigem.media.toFixed(2)),
+          melhor_acerto: melhorOrigem.max,
+          total_jogos: melhorOrigem.jogos
+        }
+      : null
+  };
+}
+
 async function cleanupExpiredGames(env, userId = null) {
   const params = [];
   const userFilter = userId ? "AND jogos.usuario_id = ?" : "";
@@ -802,7 +890,11 @@ async function cleanupExpiredGames(env, userId = null) {
   }
 
   const placeholders = ids.map(() => "?").join(",");
-  await env.DB.prepare(`DELETE FROM jogos WHERE id IN (${placeholders})`).bind(...ids).run();
+  await env.DB.prepare(`
+    UPDATE jogos
+    SET status = 'cancelado', atualizado_em = CURRENT_TIMESTAMP
+    WHERE id IN (${placeholders})
+  `).bind(...ids).run();
   return ids.length;
 }
 
@@ -821,7 +913,7 @@ async function conferirDuasRodadas(user, env) {
     dezenas_texto: row.dezenas_texto
   }));
   const result = await env.DB.prepare(`
-    SELECT id, dezenas
+    SELECT id, dezenas, dezenas_texto, metodo
     FROM jogos
     WHERE usuario_id = ? AND status IN ('salvo', 'jogado', 'conferido')
     ORDER BY datetime(criado_em) DESC
@@ -832,31 +924,60 @@ async function conferirDuasRodadas(user, env) {
   const resumo = [];
 
   for (const jogo of result.results) {
-    const dezenas = new Set(JSON.parse(jogo.dezenas));
+      const dezenasJogo = JSON.parse(jogo.dezenas);
+      const dezenas = new Set(dezenasJogo);
 
-    for (const rodada of rodadas) {
-      const acertos = rodada.dezenas.filter((dezena) => dezenas.has(dezena)).length;
+      for (const rodada of rodadas) {
+      const acertadas = rodada.dezenas.filter((dezena) => dezenas.has(dezena)).sort((a, b) => a - b);
+      const acertos = acertadas.length;
       const dezenasSorteadas = rodada.dezenas_texto;
       const insert = await env.DB.prepare(`
-        INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
-        VALUES (?, ?, ?, ?)
-      `).bind(jogo.id, rodada.concurso, dezenasSorteadas, acertos).run();
+        INSERT OR IGNORE INTO conferencias (
+          jogo_id, concurso, dezenas_jogadas, dezenas_sorteadas,
+          dezenas_acertadas, acertos, metodo
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        jogo.id,
+        rodada.concurso,
+        jogo.dezenas_texto || dezenasTexto(dezenasJogo),
+        dezenasSorteadas,
+        dezenasTexto(acertadas),
+        acertos,
+        jogo.metodo
+      ).run();
 
       if (insert.meta.changes) {
         novas += 1;
       } else {
         await env.DB.prepare(`
           UPDATE conferencias
-          SET dezenas_sorteadas = ?, acertos = ?, conferido_em = CURRENT_TIMESTAMP
+          SET dezenas_jogadas = ?,
+              dezenas_sorteadas = ?,
+              dezenas_acertadas = ?,
+              acertos = ?,
+              metodo = ?,
+              conferido_em = CURRENT_TIMESTAMP
           WHERE jogo_id = ? AND concurso = ?
-        `).bind(dezenasSorteadas, acertos, jogo.id, rodada.concurso).run();
+        `).bind(
+          jogo.dezenas_texto || dezenasTexto(dezenasJogo),
+          dezenasSorteadas,
+          dezenasTexto(acertadas),
+          acertos,
+          jogo.metodo,
+          jogo.id,
+          rodada.concurso
+        ).run();
         atualizadas += 1;
       }
 
       resumo.push({
         jogo_id: jogo.id,
         concurso: rodada.concurso,
+        dezenas_jogadas: jogo.dezenas_texto || dezenasTexto(dezenasJogo),
         dezenas_sorteadas: dezenasSorteadas,
+        dezenas_acertadas: dezenasTexto(acertadas),
+        metodo: jogo.metodo,
         acertos
       });
     }
@@ -887,30 +1008,61 @@ async function conferirDuasRodadas(user, env) {
 }
 
 async function salvarConferencia(env, jogo, resultado) {
-  const dezenas = new Set(JSON.parse(jogo.dezenas));
+  const dezenasJogo = JSON.parse(jogo.dezenas);
+  const dezenas = new Set(dezenasJogo);
   const resultadoDezenas = Array.isArray(resultado.dezenas)
     ? resultado.dezenas
     : JSON.parse(resultado.dezenas);
   const dezenasSorteadas = resultado.dezenas_texto || dezenasTexto(resultadoDezenas);
-  const acertos = resultadoDezenas.filter((dezena) => dezenas.has(dezena)).length;
+  const acertadas = resultadoDezenas.filter((dezena) => dezenas.has(dezena)).sort((a, b) => a - b);
+  const acertos = acertadas.length;
+  const dezenasJogadas = jogo.dezenas_texto || dezenasTexto(dezenasJogo);
+  const dezenasAcertadas = dezenasTexto(acertadas);
   const insert = await env.DB.prepare(`
-    INSERT OR IGNORE INTO conferencias (jogo_id, concurso, dezenas_sorteadas, acertos)
-    VALUES (?, ?, ?, ?)
-  `).bind(jogo.id, resultado.concurso, dezenasSorteadas, acertos).run();
+    INSERT OR IGNORE INTO conferencias (
+      jogo_id, concurso, dezenas_jogadas, dezenas_sorteadas,
+      dezenas_acertadas, acertos, metodo
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    jogo.id,
+    resultado.concurso,
+    dezenasJogadas,
+    dezenasSorteadas,
+    dezenasAcertadas,
+    acertos,
+    jogo.metodo
+  ).run();
 
   if (!insert.meta.changes) {
     await env.DB.prepare(`
       UPDATE conferencias
-      SET dezenas_sorteadas = ?, acertos = ?, conferido_em = CURRENT_TIMESTAMP
+      SET dezenas_jogadas = ?,
+          dezenas_sorteadas = ?,
+          dezenas_acertadas = ?,
+          acertos = ?,
+          metodo = ?,
+          conferido_em = CURRENT_TIMESTAMP
       WHERE jogo_id = ? AND concurso = ?
-    `).bind(dezenasSorteadas, acertos, jogo.id, resultado.concurso).run();
+    `).bind(
+      dezenasJogadas,
+      dezenasSorteadas,
+      dezenasAcertadas,
+      acertos,
+      jogo.metodo,
+      jogo.id,
+      resultado.concurso
+    ).run();
   }
 
   return {
     nova: Boolean(insert.meta.changes),
     jogo_id: jogo.id,
     concurso: resultado.concurso,
+    dezenas_jogadas: dezenasJogadas,
     dezenas_sorteadas: dezenasSorteadas,
+    dezenas_acertadas: dezenasAcertadas,
+    metodo: jogo.metodo,
     acertos
   };
 }
@@ -928,7 +1080,7 @@ async function conferirPendencias(env, userId = null) {
   while (true) {
     const params = userId ? [userId, lastId, pageSize] : [lastId, pageSize];
     const jogosResult = await env.DB.prepare(`
-      SELECT id, usuario_id, concurso, dezenas, manter_salvo, descartar_apos_rodadas
+      SELECT id, usuario_id, concurso, metodo, dezenas, dezenas_texto, manter_salvo, descartar_apos_rodadas
       FROM jogos
       WHERE status IN ('salvo', 'jogado', 'conferido')
         ${userFilter}
@@ -1010,7 +1162,7 @@ async function conferirPendencias(env, userId = null) {
 
 async function conferirResultadoParaJogos(env, resultado) {
   const jogos = await env.DB.prepare(`
-    SELECT jogos.id, jogos.dezenas
+    SELECT jogos.id, jogos.metodo, jogos.dezenas, jogos.dezenas_texto
     FROM jogos
     LEFT JOIN conferencias
       ON conferencias.jogo_id = jogos.id AND conferencias.concurso = ?
