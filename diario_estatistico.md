@@ -354,3 +354,9 @@ Três modos: `todos` (1 jogo por método, comportamento atual), `ponderado` (dis
 Como os 8 métodos ficam muito próximos entre si no backtest completo (diferença máxima de ~1,2 ponto percentual em % de 11+), a ponderação por peso no modo `geral` resulta em pesos quase uniformes (~0,12-0,13 cada) — o próprio script imprime um aviso de que isso reflete só o encaixe histórico com o backtest já sorteado, não uma garantia de desempenho futuro, consistente com a conclusão de `analise_comparativa_metodos.md`.
 
 Investigada também a funcionalidade "Meus Jogos" (item 2 da Fase 4): já está implementada de ponta a ponta em `painel_jogos_v2.html` + `/api/jogos` (`worker.js`) + banco D1, já registrando `concurso` e `metodo` por jogo salvo. Nenhuma alteração foi necessária ali por enquanto.
+
+---
+
+## 06/07/2026 - Evolução do meta-método (gerar_jogos_inteligente.py)
+
+Adicionado o modo `hibrido` (top 3 métodos da janela por peso principal + 2 métodos sorteados por diversidade, com seed reprodutível por concurso) e o atalho `--janela=recent` (últimos 100 concursos, automático). A saída ficou mais clara: ranking numerado dos métodos considerados com `score` (valor bruto do critério) e peso, aviso de qual janela foi usada e por quê, e um resumo final com melhor/pior método e a distribuição de jogos usada. O CSV `dados/jogos_inteligente.csv` ganhou a coluna `score`. Adicionada validação: no modo `top`, `--total` acima de `n × 5` é avisado e limitado automaticamente (evita pedir mais jogos do que os métodos conseguem variar, especialmente os determinísticos M2/M3). Compatibilidade mantida com os modos `todos`, `ponderado` e `top` já existentes — todos testados de novo com dados reais.

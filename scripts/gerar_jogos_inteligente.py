@@ -26,10 +26,20 @@ Modos disponiveis:
                  ao indicador escolhido (--criterio) na janela escolhida (--janela)
     top        - seleciona os --n metodos com melhor indicador e distribui
                  --total jogos so entre eles
+    hibrido    - combina os 3 melhores metodos da janela (peso principal,
+                 baseado no --criterio) com 2 metodos sorteados entre os
+                 restantes (peso menor, so para manter diversidade) - ver
+                 montar_hibrido() para os percentuais exatos
+
+Janelas disponiveis (--janela):
+    geral   - todo o historico do backtest (dados/estatisticas_simulacao.csv)
+    recent  - atalho para os ultimos 100 concursos (dados/simulacao_metodos.csv)
+    <numero>- ultimos N concursos, ex.: 100, 200, 500
 
 Uso:
     python gerar_jogos_inteligente.py [concurso_alvo] --modo=ponderado --total=8 --janela=geral
     python gerar_jogos_inteligente.py [concurso_alvo] --modo=top --n=3 --criterio=pct_11 --total=6 --janela=200
+    python gerar_jogos_inteligente.py [concurso_alvo] --modo=hibrido --total=10 --janela=recent
     python gerar_jogos_inteligente.py [concurso_alvo] --modo=todos
 
 Grava em dados/jogos_inteligente.csv (arquivo proprio, separado de
@@ -39,6 +49,7 @@ producao nem nas estatisticas oficiais dos 8 metodos).
 import argparse
 import csv
 import os
+import random
 import statistics
 import sys
 from datetime import datetime, timezone, timedelta
@@ -58,12 +69,27 @@ SIMULACAO_CSV = os.path.join(lib.DADOS_DIR, "simulacao_metodos.csv")
 ESTATISTICAS_SIM_CSV = os.path.join(lib.DADOS_DIR, "estatisticas_simulacao.csv")
 SAIDA_CSV = os.path.join(lib.DADOS_DIR, "jogos_inteligente.csv")
 
-CRITERIOS = {
+# Valor bruto de cada indicador, para exibir como "score" (sempre no sentido
+# natural da metrica - ex.: desvio padrao aparece como desvio, nao invertido).
+VALOR_BRUTO = {
     "pct_11": lambda s: float(s["pct_11_ou_mais"]),
     "pct_13": lambda s: float(s["pct_13_ou_mais"]),
-    # menor desvio padrao = mais estavel = "melhor" para fins de ranking
-    "estabilidade": lambda s: -float(s["desvio_padrao_acertos"]),
+    "estabilidade": lambda s: float(s["desvio_padrao_acertos"]),
 }
+
+# Para pct_11/pct_13, maior e melhor. Para estabilidade, menor desvio padrao
+# e melhor - por isso essa e a unica metrica "invertida" nos rankings.
+CRITERIO_MENOR_E_MELHOR = {"estabilidade"}
+
+
+def _valor_ranking(criterio, stats_metodo):
+    """Valor usado para ordenar metodos do melhor para o pior, independente
+    da metrica escolhida (inverte o sinal so para estabilidade)."""
+    valor = VALOR_BRUTO[criterio](stats_metodo)
+    return -valor if criterio in CRITERIO_MENOR_E_MELHOR else valor
+
+
+CRITERIOS = list(VALOR_BRUTO)
 
 
 def carregar_stats_geral():
@@ -113,27 +139,70 @@ def carregar_stats_janela(n_concursos):
     return por_metodo
 
 
+JANELA_RECENT_CONCURSOS = 100
+
+
 def obter_stats(janela):
-    """janela = 'geral' ou string/numero de concursos ('100', '200', '500')."""
+    """janela = 'geral', 'recent' (atalho para os ultimos 100 concursos) ou
+    numero de concursos (ex.: '100', '200', '500').
+    Retorna (stats_por_metodo, descricao_para_exibir)."""
     if janela == "geral":
-        return carregar_stats_geral()
-    return carregar_stats_janela(int(janela))
+        return carregar_stats_geral(), "geral - todo o historico do backtest (estatisticas_simulacao.csv)"
+    if janela == "recent":
+        stats = carregar_stats_janela(JANELA_RECENT_CONCURSOS)
+        return stats, f"recent -> ultimos {JANELA_RECENT_CONCURSOS} concursos (atalho automatico)"
+    n = int(janela)
+    return carregar_stats_janela(n), f"ultimos {n} concursos (simulacao_metodos.csv)"
 
 
 def calcular_pesos(stats, criterio):
     """Normaliza o indicador escolhido em pesos que somam 1.0.
     Usa um piso minimo (0.0001) para que nenhum metodo fique com peso zero
     mesmo se o indicador dele for 0 na janela escolhida."""
-    valor = CRITERIOS[criterio]
-    scores = {m: max(valor(s), 0.0001) for m, s in stats.items()}
+    scores = {m: max(_valor_ranking(criterio, s), 0.0001) for m, s in stats.items()}
     total = sum(scores.values())
     return {m: v / total for m, v in scores.items()}
 
 
 def selecionar_top(stats, n, criterio):
-    valor = CRITERIOS[criterio]
-    ranking = sorted(stats.keys(), key=lambda m: valor(stats[m]), reverse=True)
+    """Retorna os n metodos com melhor _valor_ranking (do melhor para o pior)."""
+    ranking = sorted(stats.keys(), key=lambda m: _valor_ranking(criterio, stats[m]), reverse=True)
     return ranking[:n]
+
+
+def melhor_e_pior(metodos, stats, criterio):
+    """Retorna (melhor_metodo, score_melhor, pior_metodo, score_pior) usando
+    o valor bruto (nao invertido) do indicador, para exibicao no resumo final."""
+    valores = {m: VALOR_BRUTO[criterio](stats[m]) for m in metodos}
+    ordenados = sorted(metodos, key=lambda m: _valor_ranking(criterio, stats[m]), reverse=True)
+    melhor, pior = ordenados[0], ordenados[-1]
+    return melhor, valores[melhor], pior, valores[pior]
+
+
+def montar_hibrido(stats, criterio, concurso_alvo, n_top=3, n_diversidade=2, peso_diversidade=0.3):
+    """Modo hibrido: combina os n_top melhores metodos da janela (peso
+    principal, 1 - peso_diversidade) com n_diversidade metodos sorteados
+    entre os restantes (peso menor, dividido igualmente), para nao
+    concentrar 100% dos jogos so nos "melhores" do backtest - o proprio
+    laboratorio ja concluiu que a diferenca entre eles e pequena demais
+    para justificar isso (ver reports/analise_comparativa_metodos.md).
+
+    O sorteio dos metodos de diversidade usa uma seed derivada do concurso
+    alvo, entao e reproduzivel (mesma janela + mesmo concurso = mesmo
+    resultado), mas muda de concurso para concurso.
+    """
+    top = selecionar_top(stats, n_top, criterio)
+    restantes = [m for m in stats if m not in top]
+    rng_diversidade = random.Random(f"hibrido-{concurso_alvo}")
+    diversidade = rng_diversidade.sample(restantes, min(n_diversidade, len(restantes)))
+
+    pesos_top = calcular_pesos({m: stats[m] for m in top}, criterio)
+    pesos = {m: v * (1 - peso_diversidade) for m, v in pesos_top.items()}
+    if diversidade:
+        fatia = peso_diversidade / len(diversidade)
+        for m in diversidade:
+            pesos[m] = fatia
+    return pesos, top, diversidade
 
 
 def distribuir_jogos(pesos, total):
@@ -170,14 +239,16 @@ def gerar_k_jogos_para_metodo(metodo, k, ate_concurso, seed_base):
     return jogos
 
 
+SAIDA_CSV_FIELDNAMES = [
+    "data_geracao", "concurso_alvo", "metodo", "dezenas",
+    "soma", "pares", "impares", "modo", "janela", "criterio", "peso", "score",
+]
+
+
 def _ensure_saida_csv():
     if not os.path.exists(SAIDA_CSV):
         with open(SAIDA_CSV, "w", newline="", encoding="utf-8") as f:
-            fieldnames = [
-                "data_geracao", "concurso_alvo", "metodo", "dezenas",
-                "soma", "pares", "impares", "modo", "janela", "criterio", "peso",
-            ]
-            csv.DictWriter(f, fieldnames=fieldnames).writeheader()
+            csv.DictWriter(f, fieldnames=SAIDA_CSV_FIELDNAMES).writeheader()
 
 
 def _jogo_ja_gravado(concurso_alvo, metodo, dezenas_str):
@@ -192,7 +263,7 @@ def _jogo_ja_gravado(concurso_alvo, metodo, dezenas_str):
         )
 
 
-def gravar_jogo(data_geracao, concurso_alvo, metodo, dezenas, modo, janela, criterio, peso):
+def gravar_jogo(data_geracao, concurso_alvo, metodo, dezenas, modo, janela, criterio, peso, score):
     _ensure_saida_csv()
     dezenas_sorted = sorted(dezenas)
     dezenas_str = "-".join(f"{d:02d}" for d in dezenas_sorted)
@@ -200,10 +271,7 @@ def gravar_jogo(data_geracao, concurso_alvo, metodo, dezenas, modo, janela, crit
         return False
     pares = sum(1 for d in dezenas_sorted if d % 2 == 0)
     with open(SAIDA_CSV, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            "data_geracao", "concurso_alvo", "metodo", "dezenas",
-            "soma", "pares", "impares", "modo", "janela", "criterio", "peso",
-        ])
+        writer = csv.DictWriter(f, fieldnames=SAIDA_CSV_FIELDNAMES)
         writer.writerow({
             "data_geracao": data_geracao,
             "concurso_alvo": concurso_alvo,
@@ -216,17 +284,21 @@ def gravar_jogo(data_geracao, concurso_alvo, metodo, dezenas, modo, janela, crit
             "janela": janela,
             "criterio": criterio,
             "peso": round(peso, 4),
+            "score": round(score, 4),
         })
     return True
+
+
+LIMITE_JOGOS_POR_METODO_TOP = 5  # mesmo teto usado pelos metodos avancados (TOP_JOGOS_SELECIONAR)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("concurso_alvo", nargs="?", type=int, default=None)
-    parser.add_argument("--modo", choices=["todos", "ponderado", "top"], default="ponderado")
-    parser.add_argument("--janela", default="geral", help="'geral' ou numero de concursos (ex.: 100, 200, 500)")
-    parser.add_argument("--criterio", choices=list(CRITERIOS), default="pct_11")
-    parser.add_argument("--total", type=int, default=8, help="total de jogos a gerar (modos ponderado/top)")
+    parser.add_argument("--modo", choices=["todos", "ponderado", "top", "hibrido"], default="ponderado")
+    parser.add_argument("--janela", default="geral", help="'geral', 'recent' (ultimos 100) ou numero de concursos (ex.: 100, 200, 500)")
+    parser.add_argument("--criterio", choices=CRITERIOS, default="pct_11")
+    parser.add_argument("--total", type=int, default=8, help="total de jogos a gerar (modos ponderado/top/hibrido)")
     parser.add_argument("--n", type=int, default=3, help="quantidade de metodos a priorizar no modo top")
     args = parser.parse_args()
 
@@ -235,26 +307,53 @@ def main():
         ultimo = lib.ultimo_concurso_registrado()
         concurso_alvo = (ultimo + 1) if ultimo else 1
 
-    stats = obter_stats(args.janela)
+    # Validacao: no modo "top", pedir muitos jogos para poucos metodos so gera
+    # candidatos repetidos (metodos deterministicos como M2/M3 nem produzem
+    # jogos diferentes entre si). Avisa e limita automaticamente.
+    if args.modo == "top":
+        limite_total = args.n * LIMITE_JOGOS_POR_METODO_TOP
+        if args.total > limite_total:
+            print(
+                f"[aviso] --total={args.total} e alto demais para --n={args.n} metodo(s) no modo 'top' "
+                f"(acima de {LIMITE_JOGOS_POR_METODO_TOP} jogos por metodo tende a repetir candidatos, "
+                f"e metodos deterministicos como M2/M3 nem chegam a variar). "
+                f"Limitando --total para {limite_total}."
+            )
+            args.total = limite_total
+
+    stats, descricao_janela = obter_stats(args.janela)
 
     if args.modo == "todos":
         alocacao = {m: 1 for m in lib.METODOS}
         pesos_exibicao = {m: 1 / len(lib.METODOS) for m in lib.METODOS}
+        considerados = lib.METODOS
     elif args.modo == "top":
-        selecionados = selecionar_top(stats, args.n, args.criterio)
-        pesos_exibicao = calcular_pesos({m: stats[m] for m in selecionados}, args.criterio)
+        considerados = selecionar_top(stats, args.n, args.criterio)
+        pesos_exibicao = calcular_pesos({m: stats[m] for m in considerados}, args.criterio)
+        alocacao = distribuir_jogos(pesos_exibicao, args.total)
+    elif args.modo == "hibrido":
+        pesos_exibicao, top_metodos, diversidade_metodos = montar_hibrido(stats, args.criterio, concurso_alvo)
+        considerados = top_metodos + diversidade_metodos
         alocacao = distribuir_jogos(pesos_exibicao, args.total)
     else:  # ponderado
+        considerados = list(stats)
         pesos_exibicao = calcular_pesos(stats, args.criterio)
         alocacao = distribuir_jogos(pesos_exibicao, args.total)
 
     print(f"Concurso alvo: {concurso_alvo}")
-    print(f"Modo: {args.modo} | Janela: {args.janela} | Criterio: {args.criterio}")
-    print("\nPesos calculados a partir do backtest real (dados/estatisticas_simulacao.csv"
-          " ou dados/simulacao_metodos.csv):")
-    for metodo in sorted(alocacao, key=lambda m: alocacao[m], reverse=True):
+    print(f"Modo: {args.modo} | Criterio: {args.criterio}")
+    print(f"Janela usada: {descricao_janela}")
+    if args.modo == "hibrido":
+        print(f"  -> top (peso principal): {', '.join(top_metodos)}")
+        print(f"  -> diversidade (peso menor, sorteado): {', '.join(diversidade_metodos)}")
+
+    print("\nRanking dos metodos considerados (melhor -> pior, segundo o criterio escolhido):")
+    ranking_ordenado = sorted(considerados, key=lambda m: _valor_ranking(args.criterio, stats[m]), reverse=True)
+    for posicao, metodo in enumerate(ranking_ordenado, start=1):
+        score = VALOR_BRUTO[args.criterio](stats[metodo])
         peso = pesos_exibicao.get(metodo, 0.0)
-        print(f"  {metodo:28s} peso={peso:.3f}  jogos={alocacao[metodo]}")
+        jogos_alocados = alocacao.get(metodo, 0)
+        print(f"  {posicao}. {metodo:28s} score={score:.3f}  peso={peso:.3f}  jogos={jogos_alocados}")
 
     print(
         "\nAVISO: esta ponderacao reflete apenas o encaixe historico de cada metodo com"
@@ -272,10 +371,11 @@ def main():
             continue
         jogos = gerar_k_jogos_para_metodo(metodo, k, ate_concurso=concurso_alvo - 1, seed_base=seed_base)
         peso = pesos_exibicao.get(metodo, 0.0)
+        score = VALOR_BRUTO[args.criterio](stats[metodo])
         for dezenas in jogos:
             novo = gravar_jogo(
                 data_geracao, concurso_alvo, metodo, dezenas,
-                modo=args.modo, janela=args.janela, criterio=args.criterio, peso=peso,
+                modo=args.modo, janela=args.janela, criterio=args.criterio, peso=peso, score=score,
             )
             dezenas_str = "-".join(f"{d:02d}" for d in sorted(dezenas))
             status = "ok" if novo else "skip (ja gravado)"
@@ -283,7 +383,15 @@ def main():
             if novo:
                 gerados.append((metodo, dezenas))
 
-    print(f"\n{len(gerados)} jogo(s) novo(s) gravado(s) em {SAIDA_CSV} para o concurso {concurso_alvo}.")
+    melhor, score_melhor, pior, score_pior = melhor_e_pior(considerados, stats, args.criterio)
+    print("\n" + "=" * 60)
+    print("RESUMO")
+    print("=" * 60)
+    print(f"Concurso alvo: {concurso_alvo} | Modo: {args.modo} | Janela: {args.janela} | Criterio: {args.criterio}")
+    print(f"Melhor metodo nesta janela/criterio: {melhor} (score={score_melhor:.3f})")
+    print(f"Pior metodo nesta janela/criterio:   {pior} (score={score_pior:.3f})")
+    print(f"Distribuicao usada (metodo -> jogos): {dict(alocacao)}")
+    print(f"{len(gerados)} jogo(s) novo(s) gravado(s) em {SAIDA_CSV}.")
 
 
 if __name__ == "__main__":
