@@ -70,6 +70,7 @@
         <span style="font-size:13px; color:#8B76B0;">Geracao automatica do sistema</span>
         <span style="background:#F3E8FF; color:#7C3AED; border-radius:6px; padding:3px 10px; font-size:11.5px; font-weight:600;">Próximo sorteio</span>
       </div>
+      <div style="font-size:12px; color:#8B76B0; margin:-6px 0 14px;">{{ panelStatus }}</div>
 
       <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; align-items:center; font-size:12px; color:#8B76B0;">
         <div style="display:flex; align-items:center; gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#FFFBEB;border:2px solid #F59E0B;display:inline-block;"></span> Mais frequente (top 5)</div>
@@ -112,6 +113,7 @@
               <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Soma</th>
               <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">P</th>
               <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Í</th>
+              <th style="padding:8px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Copiar</th>
             </tr>
           </thead>
           <tbody>
@@ -122,6 +124,7 @@
                 <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center; font-weight:700;">{{ m.soma }}</td>
                 <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center;">{{ m.p }}</td>
                 <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center;">{{ m.i }}</td>
+                <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><button onClick="{{ m.onCopy }}" title="Copiar dezenas para o preenchedor" style="background:#F3E8FF; border:1px solid #7C3AED55; color:#5B21B6; border-radius:8px; padding:5px 9px; cursor:pointer; font-size:11.5px; font-weight:800; white-space:nowrap;">⧉ Ctrl+C</button></td>
               </tr>
             </sc-for>
           </tbody>
@@ -150,6 +153,7 @@
               <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:left;">Método</th>
               <sc-for list="{{ posCols }}" as="pc" hint-placeholder-count="15"><th style="padding:6px; border-bottom:1px solid #E9DFFB; text-align:center;">{{ pc }}</th></sc-for>
               <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Qtd. acertos</th>
+              <th style="padding:7px 8px; border-bottom:1px solid #E9DFFB; text-align:center;">Copiar</th>
             </tr>
           </thead>
           <tbody>
@@ -158,6 +162,7 @@
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ m.badgeStyle }}">{{ m.label }}</span></td>
                 <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td data-style-template="{{ c.style }}; text-align:center; padding:6px;">{{ c.num }}</td></sc-for>
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><span data-style-template="{{ m.acertosStyle }}">{{ m.acertosLabel }}</span></td>
+                <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><button onClick="{{ m.onCopy }}" title="Copiar dezenas para o preenchedor" style="background:#F3E8FF; border:1px solid #7C3AED55; color:#5B21B6; border-radius:8px; padding:5px 9px; cursor:pointer; font-size:11.5px; font-weight:800; white-space:nowrap;">⧉ Ctrl+C</button></td>
               </tr>
             </sc-for>
           </tbody>
@@ -1062,6 +1067,27 @@ class Component extends DCLogic {
     this.setState({ keepSaved: Boolean(e?.target?.checked) });
   }
 
+  async copiarDezenas(dezenas, label = 'jogo') {
+    const texto = dezenas.slice().sort((a,b) => a-b).map(pad).join(' ');
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(texto);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = texto;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      this.setState({ panelStatus: `${label} copiado para colar no preenchedor: ${texto}` });
+    } catch (err) {
+      this.setState({ panelStatus: `Nao foi possivel copiar automaticamente. Dezenas: ${texto}` });
+    }
+  }
+
   onAiQtdChange(e) {
     const v = parseInt(e.target.value, 10);
     const qtd = Math.max(1, Math.min(20, isNaN(v) ? 1 : v));
@@ -1373,6 +1399,7 @@ class Component extends DCLogic {
       badgeStyle: `background:${m.bg};color:${m.color};border:1px solid ${m.color}33;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;`,
       cells: m.dezenas.map(n => ({ num: pad(n), style: tdStyle(n) })),
       soma: m.soma, p: m.p, i: m.i,
+      onCopy: () => this.copiarDezenas(m.dezenas, m.label),
     }));
 
     const ultimoResultado = s.latestResult || {
@@ -1396,13 +1423,20 @@ class Component extends DCLogic {
           dezenas: (sr.dezenas || []).slice().sort((a,b) => a-b),
         }))
       : SORTEIOS_RECENTES;
-    const conferidorSource = s.conferidorGames.length
+    const sistemaConferidorSource = s.conferidorGames.length
       ? s.conferidorGames.map((game, idx) => ({
           label: methodLabel(game.metodo),
           dezenas: game.dezenas,
           ...systemColors[idx % systemColors.length],
         }))
       : METHOD_JOGOS_3726;
+    const jogosRegistradosConferidor = s.savedGames.map((game, idx) => ({
+      label: `Registrado C${game.concurso} #${idx + 1}`,
+      dezenas: game.dezenas,
+      bg:'#ECFDF5',
+      color:'#047857',
+    }));
+    const conferidorSource = [...sistemaConferidorSource, ...jogosRegistradosConferidor];
     const conferidor = conferidorSource.map(m => {
       const acertos = m.dezenas.filter(n => sorteadasConferidor.includes(n)).length;
       const acLevel = acertos >= 10 ? {bg:'#DCFCE7',c:'#166534'} : acertos >= 9 ? {bg:'#FEF3C7',c:'#92400E'} : {bg:'#F3E8FF',c:'#5B21B6'};
@@ -1416,6 +1450,7 @@ class Component extends DCLogic {
         acertos,
         acertosLabel: `${acertos} acertos`,
         acertosStyle: `background:${acLevel.bg};color:${acLevel.c};border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;`,
+        onCopy: () => this.copiarDezenas(m.dezenas, m.label),
       };
     });
 
