@@ -105,7 +105,7 @@
   <sc-if value="{{ isJogos }}" hint-placeholder-val="{{ true }}">
     <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
       <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.6;">
-        <b style="color:#7C2D12;">Lembrete educativo:</b> os jogos são gerados por 5 métodos estatísticos para fins de estudo comparativo. Nenhum método tem vantagem preditiva — todos convergem para a média teórica de <b>9 acertos</b> no longo prazo. Dezenas em <b style="color:#B45309;">âmbar</b> = top 5 mais frequentes · em <b style="color:#BE185D;">rosa</b> = top 5 maior atraso.
+        <b style="color:#7C2D12;">Lembrete educativo:</b> os jogos são gerados por métodos estatísticos para fins de estudo comparativo. A média teórica de 9 acertos é apenas referência matemática; para decisão prática o sistema usa <b>11+</b> como mínimo útil e destaca <b>13-14</b> como faixa ideal para tentar 15. Dezenas em <b style="color:#B45309;">âmbar</b> = top 5 mais frequentes · em <b style="color:#BE185D;">rosa</b> = top 5 maior atraso.
       </div>
 
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
@@ -219,7 +219,7 @@
           </sc-if>
           <div style="overflow:auto;">
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
-              <thead><tr style="color:#8B76B0; font-size:10px; text-transform:uppercase;"><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Origem</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Jogos</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Média</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Tendencia</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Peso IA</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Confianca</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">11+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">12+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Estabilidade</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Soma/Pares</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Moldura</th></tr></thead>
+              <thead><tr style="color:#8B76B0; font-size:10px; text-transform:uppercase;"><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Origem</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Jogos</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Média</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Tendencia</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Peso IA</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Confianca</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">11+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">12+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">13+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">14+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Estabilidade</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Soma/Pares</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E9DFFB;">Moldura</th></tr></thead>
               <tbody>
                 <sc-for list="{{ aprendizadoRows }}" as="ar" hint-placeholder-count="4">
                   <tr>
@@ -231,6 +231,8 @@
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.confianca }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.freq11 }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.freq12 }}</td>
+                    <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; font-weight:800; color:#166534;">{{ ar.freq13 }}</td>
+                    <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; font-weight:800; color:#92400E;">{{ ar.freq14 }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.estabilidade }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.somaPares }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;">{{ ar.moldura }}</td>
@@ -1920,7 +1922,7 @@ class Component extends DCLogic {
       priorizar: aprendizado.sugestao_priorizar || '--',
       evitar: aprendizado.evitar || '--',
       combinacao: (aprendizado.recomendacao_perfis || []).join(' + ') || '--',
-      janela: `Janela: ultimos ${aprendizado.janela_concursos || '--'} concursos · meia-vida ${aprendizado.meia_vida_concursos || '--'} · minimo confiavel ${aprendizado.minimo_confiavel || '--'} jogos`
+      janela: `Janela: ultimos ${aprendizado.janela_concursos || '--'} concursos · alvo minimo ${aprendizado.alvo_minimo || '11+'} · ideal ${aprendizado.faixa_ideal || '13-14'} · minimo confiavel ${aprendizado.minimo_confiavel || '--'} jogos`
     } : null;
     const aprendizadoRows = (aprendizado?.ranking || []).slice(0, 8).map((row, idx) => ({
       origem: row.origem,
@@ -1931,6 +1933,8 @@ class Component extends DCLogic {
       confianca: row.penalizado ? `${row.confianca || 'baixa'} / penalizado` : (row.confianca || '--'),
       freq11: `${row.freq_11_mais}%`,
       freq12: `${row.freq_12_mais}%`,
+      freq13: `${row.freq_13_mais || 0}%`,
+      freq14: `${row.freq_14_mais || 0}%`,
       estabilidade: row.estabilidade,
       somaPares: `${row.soma_media || '--'} / ${row.pares_media || '--'}p`,
       moldura: `${row.moldura_media || '--'} / ${row.miolo_media || '--'}`,

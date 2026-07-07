@@ -1,10 +1,8 @@
 """
-Gera index.html: pagina inicial (hub) do site, com o novo design
-(gradiente roxo/rosa, cards brancos) baseado no mockup do manus.ai,
-mas com o numero de concursos real, nao fixo.
+Gera index.html: pagina inicial do site com o painel operacional unificado.
 
 Uso:
-    python3 gerar_index.py
+    python scripts/gerar_index.py
 """
 import os
 
@@ -12,80 +10,65 @@ import lotofacil_lib as lib
 
 INDEX_PATH = os.path.join(lib.BASE_DIR, "index.html")
 
+CARDS = [
+    ("painel", "Painel Unificado", "Entrada unica para jogos, IA, volante, aprendizado, conferencia automatica, historico e visao mobile.", "#EC4899"),
+    ("painel-educativo.html", "Painel Educativo", "Explicacao didatica sobre probabilidade, aleatoriedade e risco.", "#16A34A"),
+    ("painel-exportacao.html", "Painel Exportacao", "Ferramenta para preparar listas de jogos e resultados para exportacao.", "#0284C7"),
+    ("usuario.html", "Area do Usuario", "Acesso aos recursos de conta, jogos salvos e acompanhamento individual.", "#6D28D9"),
+]
+
+
+def card_html(href, title, description, color):
+    return f"""
+    <a class="card" href="{href}" style="background:#fff; border-radius:18px; padding:26px; display:flex; flex-direction:column; gap:10px; box-shadow:0 12px 30px rgba(43,10,77,.18);">
+      <div style="width:48px; height:48px; border-radius:13px; background:#F8F2FF; display:flex; align-items:center; justify-content:center;">
+        <div style="width:24px; height:24px; border:3px solid {color}; border-radius:8px;"></div>
+      </div>
+      <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#1F1235;">{title}</div>
+      <div style="font-size:13.5px; color:#6B5B8A; line-height:1.55;">{description}</div>
+      <div style="margin-top:6px; font-size:12.5px; font-weight:700; color:{color};">Abrir painel -></div>
+    </a>"""
+
+
 TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lotofácil Lab — Laboratório Estatístico</title>
+<title>Lotofacil Lab - Laboratorio Estatistico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', sans-serif; }
   .card { text-decoration: none; transition: transform .18s, box-shadow .18s; }
-  .card:hover { transform: translateY(-4px); }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 18px 44px rgba(43,10,77,.28) !important; }
 </style>
 </head>
 <body>
-
-<div style="min-height:100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,255,255,.18), transparent 60%), radial-gradient(ellipse 700px 500px at 90% 10%, rgba(245,158,11,.25), transparent 55%), linear-gradient(160deg, #5B21B6 0%, #7C3AED 45%, #C026D3 100%); color: #1F1235; display: flex; flex-direction: column; align-items: center; padding: 64px 24px 48px;">
-
-  <div style="display:flex; align-items:center; gap:12px; margin-bottom:28px;">
-    <div style="width:44px; height:44px; border-radius:12px; background: linear-gradient(135deg, #F59E0B, #EC4899); display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:20px; color:#fff; box-shadow: 0 6px 18px rgba(0,0,0,.25);">L</div>
-    <div style="font-family:'Sora',sans-serif; font-weight:800; font-size:22px; color:#fff; letter-spacing:-0.3px;">Lotofácil <span style="color:#FDE68A;">Lab</span></div>
+<div style="min-height:100vh; background:radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,255,255,.18), transparent 60%), radial-gradient(ellipse 700px 500px at 90% 10%, rgba(245,158,11,.25), transparent 55%), linear-gradient(160deg, #5B21B6 0%, #7C3AED 45%, #C026D3 100%); color:#1F1235; display:flex; flex-direction:column; align-items:center; padding:56px 24px 44px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#F59E0B,#EC4899); display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:20px; color:#fff; box-shadow:0 6px 18px rgba(0,0,0,.25);">L</div>
+    <div style="font-family:'Sora',sans-serif; font-weight:800; font-size:22px; color:#fff;">Lotofacil <span style="color:#FDE68A;">Lab</span></div>
   </div>
 
-  <h1 style="font-family:'Sora',sans-serif; font-weight:800; font-size:clamp(30px,4.5vw,48px); line-height:1.08; color:#fff; text-align:center; max-width:760px; margin:0 0 14px;">
-    Laboratório estatístico educativo da Lotofácil
+  <h1 style="font-family:'Sora',sans-serif; font-weight:800; font-size:clamp(30px,4.5vw,48px); line-height:1.08; color:#fff; text-align:center; max-width:820px; margin:0 0 14px;">
+    Laboratorio estatistico da Lotofacil
   </h1>
-  <p style="font-size:16px; color:rgba(255,255,255,.82); text-align:center; max-width:560px; line-height:1.6; margin:0 0 40px;">
-    Análise de __TOTAL_CONCURSOS__ concursos reais — frequência, atraso, backtest e 5 métodos comparados sempre contra a esperança matemática.
+  <p style="font-size:16px; color:rgba(255,255,255,.84); text-align:center; max-width:680px; line-height:1.6; margin:0 0 38px;">
+    Analise de __TOTAL_CONCURSOS__ concursos reais em uma entrada unica. As rotas antigas continuam funcionando, mas todas apontam para o mesmo painel operacional.
   </p>
 
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:20px; width:100%; max-width:920px;">
-
-    <a class="card" href="painel_jogos.html" style="background:#fff; border-radius:18px; padding:28px 26px; display:flex; flex-direction:column; gap:10px; box-shadow: 0 16px 40px rgba(43,10,77,.28);">
-      <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#EDE4FF,#F3E8FF); display:flex; align-items:center; justify-content:center;">
-        <div style="width:26px; height:26px; border-radius:50%; border:3px solid #7C3AED;"></div>
-      </div>
-      <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#5B21B6;">Painel Avançado</div>
-      <div style="font-size:13.5px; color:#6B5B8A; line-height:1.55;">Jogos por 5 métodos, moldura e miolo, volante interativo, conferidor visual, backtest e mapa de calor.</div>
-      <div style="margin-top:6px; font-size:12.5px; font-weight:700; color:#EC4899;">Abrir painel →</div>
-    </a>
-
-    <a class="card" href="painel.html" style="background:#fff; border-radius:18px; padding:28px 26px; display:flex; flex-direction:column; gap:10px; box-shadow: 0 10px 28px rgba(43,10,77,.16);">
-      <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#FEF3C7,#FDE68A); display:flex; align-items:center; justify-content:center;">
-        <div style="display:flex; gap:3px; align-items:flex-end;">
-          <div style="width:5px; height:10px; background:#D97706; border-radius:2px;"></div>
-          <div style="width:5px; height:18px; background:#D97706; border-radius:2px;"></div>
-          <div style="width:5px; height:14px; background:#D97706; border-radius:2px;"></div>
-        </div>
-      </div>
-      <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#1F1235;">Painel Clássico</div>
-      <div style="font-size:13.5px; color:#6B5B8A; line-height:1.55;">Visão geral com gráficos de frequência, atraso, desempenho por método e simulação retroativa.</div>
-      <div style="margin-top:6px; font-size:12.5px; font-weight:700; color:#D97706;">Abrir painel →</div>
-    </a>
-
-    <a class="card" href="painel-educativo.html" style="background:#fff; border-radius:18px; padding:28px 26px; display:flex; flex-direction:column; gap:10px; box-shadow: 0 10px 28px rgba(43,10,77,.16);">
-      <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#DCFCE7,#BBF7D0); display:flex; align-items:center; justify-content:center;">
-        <div style="width:22px; height:26px; border:2.5px solid #16A34A; border-radius:3px; position:relative;"></div>
-      </div>
-      <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#1F1235;">Painel Educativo</div>
-      <div style="font-size:13.5px; color:#6B5B8A; line-height:1.55;">Explicação didática sobre probabilidade, esperança matemática e por que nenhum método tem vantagem preditiva.</div>
-      <div style="margin-top:6px; font-size:12.5px; font-weight:700; color:#16A34A;">Abrir painel →</div>
-    </a>
-
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px; width:100%; max-width:1120px;">
+__CARDS__
   </div>
 
-  <div style="margin-top:40px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:12px; padding:14px 22px; font-size:12.5px; color:rgba(255,255,255,.85); text-align:center; max-width:640px; line-height:1.6;">
-    <b style="color:#FDE68A;">Aviso importante:</b> este laboratório é exclusivamente educativo. Os jogos gerados servem para estudo comparativo de métodos estatísticos — nenhuma análise elimina o caráter aleatório dos sorteios.
+  <div style="margin-top:34px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:12px; padding:14px 22px; font-size:12.5px; color:rgba(255,255,255,.88); text-align:center; max-width:760px; line-height:1.6;">
+    <b style="color:#FDE68A;">Aviso importante:</b> este laboratorio e exclusivamente educativo. Nenhuma analise elimina o carater aleatorio dos sorteios.
   </div>
 
-  <div style="margin-top:24px; font-size:11.5px; color:rgba(255,255,255,.55);">Atualizado automaticamente após cada sorteio · github.com/donyMomesso/lotofacil</div>
-
+  <div style="margin-top:22px; font-size:11.5px; color:rgba(255,255,255,.58);">Atualizado automaticamente apos cada sorteio · github.com/donyMomesso/lotofacil</div>
 </div>
-
 </body>
 </html>
 """
@@ -93,8 +76,9 @@ TEMPLATE = """<!DOCTYPE html>
 
 def main():
     resultados = lib.carregar_resultados()
-    total = len(resultados)
-    html = TEMPLATE.replace("__TOTAL_CONCURSOS__", f"{total:,}".replace(",", "."))
+    total = f"{len(resultados):,}".replace(",", ".")
+    cards = "\n".join(card_html(*card) for card in CARDS)
+    html = TEMPLATE.replace("__TOTAL_CONCURSOS__", total).replace("__CARDS__", cards)
     with open(INDEX_PATH, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"index.html gerado em: {INDEX_PATH}")

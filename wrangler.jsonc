@@ -16,8 +16,21 @@
     "binding": "ASSETS",
     "run_worker_first": [
       "/api/*",
+      "/",
+      "/index",
+      "/painel",
+      "/painel.html",
+      "/painel_avancado",
+      "/painel_avancado.html",
       "/painel_jogos",
-      "/painel_jogos.html"
+      "/painel_jogos.html",
+      "/painel_jogos_v2",
+      "/painel_jogos_v2.html",
+      "/painel_mobile",
+      "/painel_mobile.html",
+      "/painel-educativo",
+      "/painel-exportacao",
+      "/usuario"
     ]
   },
   "compatibility_flags": [

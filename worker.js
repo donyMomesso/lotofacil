@@ -957,17 +957,20 @@ function calcularCombinacaoRecomendada(ranking, pesos, totalJogos = 10) {
 
   const itens = alocados.map(({ item, quantidade }) => {
     const motivos = [];
-    if (item.media_acertos >= 9.5) motivos.push(`media recente ${item.media_acertos}`);
+    if (item.freq_13_mais >= 1) motivos.push(`${item.freq_13_mais}% com 13+`);
+    if (item.freq_12_mais >= 18) motivos.push(`${item.freq_12_mais}% com 12+`);
     if (item.freq_11_mais >= 10) motivos.push(`${item.freq_11_mais}% com 11+`);
     if (item.estabilidade <= 1.5) motivos.push(`estabilidade ${item.estabilidade}`);
     if (item.tendencia > 0.25) motivos.push(`tendencia ${item.tendencia_label}`);
-    if (item.penalizado) motivos.push("peso reduzido por baixa confianca");
+    if (item.penalizado) motivos.push("abaixo do minimo util de 11+");
 
     return {
       origem: item.origem,
       quantidade,
       peso: Number((pesos[item.origem] || 0).toFixed(4)),
       media_acertos: item.media_acertos,
+      alvo_minimo: "11+",
+      faixa_ideal: "13-14",
       estabilidade: item.estabilidade,
       tendencia: item.tendencia,
       tendencia_label: item.tendencia_label,
@@ -979,7 +982,7 @@ function calcularCombinacaoRecomendada(ranking, pesos, totalJogos = 10) {
   return {
     total_jogos: itens.reduce((acc, item) => acc + item.quantidade, 0),
     max_origens: maxOrigens,
-    regra: "Distribuicao com limite de concentracao, pesos recentes e penalizacao de origens fracas.",
+    regra: "Distribuicao com limite de concentracao, minimo util 11+ e prioridade para perfis com sinais de 13+.",
     itens
   };
 }
@@ -1074,14 +1077,16 @@ async function aprendizadoOrigens(userId, env) {
     const pesoTotal = grupo.pesos.reduce((acc, peso) => acc + peso, 0) || 1;
     const freq11 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 11 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
     const freq12 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 12 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
+    const freq13 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 13 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
+    const freq14 = grupo.acertos.reduce((acc, valor, idx) => acc + (valor >= 14 ? grupo.pesos[idx] : 0), 0) / pesoTotal;
     const mediaRecente = grupo.recentes.length ? media(grupo.recentes) : mediaAcertos;
     const mediaAnterior = grupo.anteriores.length ? media(grupo.anteriores) : mediaRecente;
     const tendencia = mediaRecente - mediaAnterior;
-    const penalizacaoMedia = mediaAcertos < 9.5 ? (9.5 - mediaAcertos) * 0.9 : 0;
-    const penalizacao11 = freq11 < 0.1 ? (0.1 - freq11) * 3.0 : 0;
+    const penalizacao11 = freq11 < 0.18 ? (0.18 - freq11) * 5.0 : 0;
+    const bonusIdeal = (freq13 * 6.0) + (freq14 * 10.0);
     const penalizacaoAmostra = jogos < minimoConfiavel ? (minimoConfiavel - jogos) * 0.18 : 0;
-    const scoreBase = mediaAcertos + (freq11 * 1.8) + (freq12 * 2.8) - (desvio * 0.35) + (tendencia * 0.55);
-    const score = scoreBase - penalizacaoMedia - penalizacao11 - penalizacaoAmostra;
+    const scoreBase = (freq11 * 4.0) + (freq12 * 5.5) + bonusIdeal - (desvio * 0.25) + (tendencia * 0.55);
+    const score = scoreBase - penalizacao11 - penalizacaoAmostra;
     const tendenciaLabel = tendencia > 0.25 ? "subindo" : tendencia < -0.25 ? "caindo" : "estavel";
 
     return {
@@ -1090,6 +1095,10 @@ async function aprendizadoOrigens(userId, env) {
       media_acertos: Number(mediaAcertos.toFixed(2)),
       freq_11_mais: Number((freq11 * 100).toFixed(1)),
       freq_12_mais: Number((freq12 * 100).toFixed(1)),
+      freq_13_mais: Number((freq13 * 100).toFixed(1)),
+      freq_14_mais: Number((freq14 * 100).toFixed(1)),
+      alvo_minimo: "11+",
+      faixa_ideal: "13-14",
       estabilidade: Number(desvio.toFixed(2)),
       soma_media: grupo.soma.length ? Number(mediaPonderadaObjetos(grupo.soma).toFixed(1)) : null,
       pares_media: grupo.pares.length ? Number(mediaPonderadaObjetos(grupo.pares).toFixed(1)) : null,
@@ -1099,13 +1108,13 @@ async function aprendizadoOrigens(userId, env) {
       tendencia: Number(tendencia.toFixed(2)),
       tendencia_label: tendenciaLabel,
       confianca: jogos >= 20 ? "alta" : jogos >= minimoConfiavel ? "media" : "baixa",
-      penalizado: mediaAcertos < 9.5 || freq11 < 0.1 || jogos < minimoConfiavel,
+      penalizado: freq11 < 0.18 || jogos < minimoConfiavel,
       score: Number(score.toFixed(4))
     };
   }).sort((a, b) => b.score - a.score || b.media_acertos - a.media_acertos || a.estabilidade - b.estabilidade);
 
   const scoresPositivos = ranking.map((item) => {
-    const base = Math.max(item.score - 7.5, 0.08);
+    const base = Math.max(item.score, 0.08);
     const fatorConfianca = item.confianca === "alta" ? 1 : item.confianca === "media" ? 0.75 : 0.35;
     const fatorPenalizacao = item.penalizado ? 0.45 : 1;
     return base * fatorConfianca * fatorPenalizacao;
@@ -1118,7 +1127,7 @@ async function aprendizadoOrigens(userId, env) {
   const confiaveis = ranking.filter((item) => item.jogos >= minimoConfiavel);
   const baseConfiavel = confiaveis.length ? confiaveis : ranking;
   const maisEstavel = baseConfiavel.slice().sort((a, b) => a.estabilidade - b.estabilidade || b.media_acertos - a.media_acertos)[0];
-  const melhorMedia = baseConfiavel.slice().sort((a, b) => b.media_acertos - a.media_acertos || b.freq_11_mais - a.freq_11_mais)[0];
+  const melhorMedia = baseConfiavel.slice().sort((a, b) => b.freq_13_mais - a.freq_13_mais || b.freq_12_mais - a.freq_12_mais || b.freq_11_mais - a.freq_11_mais)[0];
   const priorizar = baseConfiavel.slice().sort((a, b) => b.score - a.score || b.tendencia - a.tendencia)[0];
   const evitar = ranking.slice().reverse().find((item) => item.penalizado) || ranking[ranking.length - 1];
   const recomendacaoPerfis = [priorizar?.origem, maisEstavel?.origem, melhorMedia?.origem]
@@ -1131,6 +1140,8 @@ async function aprendizadoOrigens(userId, env) {
     ultimo_concurso: latest.concurso,
     meia_vida_concursos: meiaVidaConcursos,
     minimo_confiavel: minimoConfiavel,
+    alvo_minimo: "11+",
+    faixa_ideal: "13-14",
     total_conferencias: result.results.length,
     ranking,
     pesos,
@@ -1685,6 +1696,24 @@ function assetRequest(request, url, pathname) {
   });
 }
 
+const PANEL_ROUTES = {
+  "/": "/index.html",
+  "/index": "/index.html",
+  "/painel": "/painel_jogos_v2.html",
+  "/painel.html": "/painel_jogos_v2.html",
+  "/painel_avancado": "/painel_jogos_v2.html",
+  "/painel_avancado.html": "/painel_jogos_v2.html",
+  "/painel_jogos": "/painel_jogos_v2.html",
+  "/painel_jogos.html": "/painel_jogos_v2.html",
+  "/painel_jogos_v2": "/painel_jogos_v2.html",
+  "/painel_jogos_v2.html": "/painel_jogos_v2.html",
+  "/painel_mobile": "/painel_jogos_v2.html",
+  "/painel_mobile.html": "/painel_jogos_v2.html",
+  "/painel-educativo": "/painel-educativo.html",
+  "/painel-exportacao": "/painel-exportacao.html",
+  "/usuario": "/usuario.html"
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1694,8 +1723,8 @@ export default {
         return await handleApi(request, env, url);
       }
 
-      if (url.pathname === "/painel_jogos" || url.pathname === "/painel_jogos.html") {
-        return env.ASSETS.fetch(assetRequest(request, url, "/painel_jogos_v2.html"));
+      if (PANEL_ROUTES[url.pathname]) {
+        return env.ASSETS.fetch(assetRequest(request, url, PANEL_ROUTES[url.pathname]));
       }
 
       return env.ASSETS.fetch(request);
