@@ -608,6 +608,7 @@
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <button onClick="{{ copiarJogosRegistrados }}" disabled="{{ copySavedDisabled }}" data-style-template="{{ copySavedStyle }}">⧉ Copiar bloco</button>
             <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Atualizar conferencias</button>
+            <button onClick="{{ apagarTodosJogos }}" disabled="{{ hasNoGames }}" data-style-template="{{ apagarTodosStyle }}">🗑 Apagar tudo</button>
             <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
           </div>
         </div>
@@ -1313,6 +1314,36 @@ class Component extends DCLogic {
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao conferir.' });
     }
+  }
+
+  async apagarTodosJogosRegistrados() {
+    const s = this.state;
+    const ativos = s.savedGames.filter(g => this.isJogoAtivoDoDia(g, s.concursoAlvo));
+    if (!ativos.length) {
+      this.setState({ panelStatus: 'Nenhum jogo ativo para apagar.' });
+      return;
+    }
+    const confirmado = window.confirm(`Apagar todos os ${ativos.length} jogo(s) ativos em Jogos registrados? Esta acao nao pode ser desfeita.`);
+    if (!confirmado) return;
+
+    this.setState({ panelStatus: `Apagando ${ativos.length} jogo(s)...` });
+    let apagados = 0;
+    let falhas = 0;
+    for (const g of ativos) {
+      if (!g.id) continue;
+      try {
+        await painelApi(`/api/jogos/${g.id}`, { method: 'DELETE' });
+        apagados++;
+      } catch (err) {
+        falhas++;
+      }
+    }
+    await this.loadSavedGames();
+    this.setState({
+      panelStatus: falhas
+        ? `${apagados} jogo(s) apagado(s), ${falhas} falha(s) ao apagar.`
+        : `${apagados} jogo(s) apagado(s) de Jogos registrados.`
+    });
   }
 
   async logout() {
@@ -2397,6 +2428,10 @@ class Component extends DCLogic {
       copySavedStyle: savedGamesView.length
         ? 'background:#F3E8FF;border:1px solid #7C3AED55;color:#5B21B6;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:800;white-space:nowrap;'
         : 'background:#F3F0FA;border:1px solid #E9DFFB;color:#B8A6DB;border-radius:8px;padding:7px 12px;cursor:not-allowed;font-size:12px;font-weight:800;white-space:nowrap;',
+      apagarTodosJogos: () => this.apagarTodosJogosRegistrados(),
+      apagarTodosStyle: savedGamesView.length
+        ? 'background:#FEE2E2;border:1px solid #DC262655;color:#991B1B;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;'
+        : 'background:#F3F0FA;border:1px solid #E9DFFB;color:#B8A6DB;border-radius:8px;padding:7px 12px;cursor:not-allowed;font-size:12px;font-weight:700;white-space:nowrap;',
       backtestRows: BACKTEST_ROWS,
       topFreq: sortedFreqIdx,
       topAtraso: sortedAtrasoIdx,
