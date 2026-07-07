@@ -1,6 +1,6 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 06/07/2026 15:23 (horário de Brasília)_
+_Atualizado em 07/07/2026 12:38 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
