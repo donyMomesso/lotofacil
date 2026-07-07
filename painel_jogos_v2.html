@@ -366,6 +366,9 @@
             </tr>
           </thead>
           <tbody>
+            <sc-if value="{{ hasNoConferidor }}" hint-placeholder-val="{{ false }}">
+              <tr><td colspan="18" style="text-align:center; color:#8B76B0; padding:18px;">Conferidor limpo. Nenhum jogo registrado ativo para conferir nesta rodada.</td></tr>
+            </sc-if>
             <sc-for list="{{ conferidor }}" as="m" hint-placeholder-count="5">
               <tr>
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ m.badgeStyle }}">{{ m.label }}</span></td>
@@ -1946,20 +1949,13 @@ class Component extends DCLogic {
           dezenas: (sr.dezenas || []).slice().sort((a,b) => a-b),
         }))
       : SORTEIOS_RECENTES;
-    const sistemaConferidorSource = s.conferidorGames.length
-      ? s.conferidorGames.map((game, idx) => ({
-          label: methodLabel(game.metodo),
-          dezenas: game.dezenas,
-          ...systemColors[idx % systemColors.length],
-        }))
-      : METHOD_JOGOS_3726;
-    const jogosRegistradosConferidor = s.savedGames.map((game, idx) => ({
+    const jogosRegistradosConferidor = s.savedGames.filter(g => this.isJogoAtivoDoDia(g)).map((game, idx) => ({
       label: `${origemLabel(game.metodo)} C${game.concurso} #${idx + 1}`,
       dezenas: game.dezenas,
       bg:'#ECFDF5',
       color:'#047857',
     }));
-    const conferidorSource = [...jogosRegistradosConferidor, ...sistemaConferidorSource];
+    const conferidorSource = jogosRegistradosConferidor;
     const conferidor = conferidorSource.map(m => {
       const acertos = m.dezenas.filter(n => sorteadasConferidor.includes(n)).length;
       const acLevel = acertos >= 10 ? {bg:'#DCFCE7',c:'#166534'} : acertos >= 9 ? {bg:'#FEF3C7',c:'#92400E'} : {bg:'#F3E8FF',c:'#5B21B6'};
@@ -2336,6 +2332,7 @@ class Component extends DCLogic {
       seqRows: sortRows(SEQUENCIA_DATA, s.seqSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       saltoRows: sortRows(SALTO_DATA, s.saltoSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       molduraCells, mioloCells, posCols, desdobramento, conferidor,
+      hasNoConferidor: conferidor.length === 0,
       desdobramentoTitle: `Desdobramento — ${sourceMethods.length} Métodos × 15 Dezenas`,
       concursoConferidor: ultimoResultado.concurso,
       concursoReferencia: ultimoResultado.concurso,

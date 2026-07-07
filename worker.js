@@ -635,7 +635,35 @@ function generatedGamesFromResults(results, concurso) {
     ...byLate.slice(0, 5),
     ...shuffled
   ];
-  const unique15 = (list, salt = 0) => aplicarRegraInicio(Array.from(new Set(list)).slice(0, 15), salt);
+  const qualityPenalty = (dezenas) => {
+    const stats = scoreSet(dezenas);
+    let penalty = Math.abs(stats.soma - 200);
+    if (stats.soma < 180) penalty += (180 - stats.soma) * 4;
+    if (stats.soma > 220) penalty += (stats.soma - 220) * 4;
+    if (stats.pares < 6) penalty += (6 - stats.pares) * 8;
+    if (stats.pares > 9) penalty += (stats.pares - 9) * 8;
+    if (!inicioProvavel(dezenas)) penalty += 100;
+    return penalty;
+  };
+  const unique15 = (list, salt = 0) => {
+    const source = Array.from(new Set([...list, ...byFreq, ...byLate, ...shuffled, ...all]));
+    let best = aplicarRegraInicio(source.slice(0, 15), salt);
+    let bestPenalty = qualityPenalty(best);
+
+    for (let offset = 0; offset < source.length; offset += 1) {
+      const candidate = aplicarRegraInicio([...source.slice(offset), ...source.slice(0, offset)].slice(0, 15), salt + offset);
+      const penalty = qualityPenalty(candidate);
+      if (penalty < bestPenalty) {
+        best = candidate;
+        bestPenalty = penalty;
+      }
+      if (bestPenalty === 0) {
+        break;
+      }
+    }
+
+    return best;
+  };
   const makeSumRange = () => {
     let best = unique15(balanced, 5);
     let bestDiff = Math.abs(scoreSet(best).soma - 200);
@@ -652,7 +680,19 @@ function generatedGamesFromResults(results, concurso) {
     return best;
   };
 
-  return [
+  const alternativeGame = (salt, seen) => {
+    for (let attempt = 0; attempt < 300; attempt += 1) {
+      const randomFn = seededRandom(concurso * 65537 + salt * 4099 + attempt * 131);
+      const candidate = sampleNumbersComInicio(randomFn);
+      const key = candidate.join("-");
+      if (!seen.has(key) && qualityPenalty(candidate) <= 25) {
+        return candidate;
+      }
+    }
+    return bestAdvancedGame(results, concurso, salt);
+  };
+
+  const games = [
     { metodo: "M1_aleatorio_deterministico", dezenas: unique15(shuffled, 1) },
     { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq, 2) },
     { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate, 3) },
@@ -672,6 +712,18 @@ function generatedGamesFromResults(results, concurso) {
       dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11)
     }
   ];
+
+  const seen = new Set();
+  return games.map((game, idx) => {
+    let dezenas = game.dezenas;
+    let key = dezenas.join("-");
+    if (seen.has(key)) {
+      dezenas = alternativeGame((idx + 1) * 17, seen);
+      key = dezenas.join("-");
+    }
+    seen.add(key);
+    return { ...game, dezenas };
+  });
 }
 
 const LAB_QTD_PADRAO = 20000;
@@ -2020,15 +2072,6 @@ async function systemStatus(env) {
     WHERE concurso = ?
     ORDER BY metodo
   `).bind(proximoConcurso).all();
-  const conferidor = latest
-    ? await env.DB.prepare(`
-        SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
-        FROM jogos_sistema
-        WHERE concurso = ?
-        ORDER BY metodo
-      `).bind(latest.concurso).all()
-    : { results: [] };
-
   return json({
     ok: true,
     total_concursos: stats.total_concursos,
@@ -2044,10 +2087,7 @@ async function systemStatus(env) {
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
     })),
-    jogos_conferidor: conferidor.results.map((jogo) => ({
-      ...jogo,
-      dezenas: JSON.parse(jogo.dezenas)
-    }))
+    jogos_conferidor: []
   });
 }
 
