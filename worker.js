@@ -338,6 +338,83 @@ async function numberStats(env) {
   });
 }
 
+async function inicioStats(env) {
+  const rows = await env.DB.prepare(`
+    SELECT dezenas
+    FROM resultados
+    ORDER BY concurso ASC
+  `).all();
+  const total = rows.results.length;
+  const counts = new Map();
+
+  for (const row of rows.results) {
+    const dezenas = JSON.parse(row.dezenas).slice().sort((a, b) => a - b);
+    const inicio = dezenas[0];
+    counts.set(inicio, (counts.get(inicio) || 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([inicio, quantidade]) => ({
+      inicio,
+      inicio_texto: String(inicio).padStart(2, "0"),
+      quantidade,
+      percentual: total ? Number(((quantidade * 100) / total).toFixed(4)) : 0
+    }));
+}
+
+async function ensureLaboratorioTables(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS laboratorio_execucoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      concurso INTEGER NOT NULL UNIQUE,
+      quantidade INTEGER NOT NULL,
+      seed INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'aguardando_resultado',
+      criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      conferido_em TEXT,
+      resumo_json TEXT,
+      estrategias_json TEXT,
+      melhor_json TEXT
+    )
+  `).run();
+}
+
+function parseJsonField(value, fallback) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function parseLaboratorioRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    concurso: row.concurso,
+    quantidade: row.quantidade,
+    seed: row.seed,
+    status: row.status,
+    criado_em: row.criado_em,
+    conferido_em: row.conferido_em,
+    resumo: parseJsonField(row.resumo_json, null),
+    estrategias: parseJsonField(row.estrategias_json, []),
+    melhor: parseJsonField(row.melhor_json, null)
+  };
+}
+
+async function latestLaboratorio(env) {
+  await ensureLaboratorioTables(env);
+  const row = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    ORDER BY concurso DESC, id DESC
+    LIMIT 1
+  `).first();
+  return parseLaboratorioRow(row);
+}
+
 async function latestCycle(env) {
   const row = await env.DB.prepare(`
     SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
@@ -394,6 +471,34 @@ function sampleNumbers(randomFn, size = 15) {
     [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
   }
   return numbers.slice(0, size).sort((a, b) => a - b);
+}
+
+const PRIMEIRA_DEZENA_MAX = 4;
+
+function inicioProvavel(dezenas) {
+  return dezenas.length > 0 && Math.min(...dezenas) <= PRIMEIRA_DEZENA_MAX;
+}
+
+function aplicarRegraInicio(dezenas, salt = 0) {
+  const sorted = Array.from(new Set(dezenas)).sort((a, b) => a - b).slice(0, 15);
+  if (inicioProvavel(sorted)) {
+    return sorted;
+  }
+
+  const baixas = [1, 2, 3, 4].filter((dezena) => !sorted.includes(dezena));
+  const escolhida = baixas[salt % baixas.length] || 1;
+  return [...sorted.slice(0, 14), escolhida].sort((a, b) => a - b);
+}
+
+function sampleNumbersComInicio(randomFn, size = 15) {
+  for (let tentativa = 0; tentativa < 100; tentativa += 1) {
+    const dezenas = sampleNumbers(randomFn, size);
+    if (inicioProvavel(dezenas)) {
+      return dezenas;
+    }
+  }
+
+  return aplicarRegraInicio(sampleNumbers(randomFn, size));
 }
 
 function pairKey(a, b) {
@@ -459,6 +564,9 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null) {
 
   for (let i = 0; i < 1500; i += 1) {
     const candidate = sampleNumbers(randomFn);
+    if (!inicioProvavel(candidate)) {
+      continue;
+    }
     const repeticoes = repeatedCount(candidate, previousResult);
     const stats = scoreSet(candidate);
 
@@ -473,7 +581,7 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null) {
     }
   }
 
-  return best || sampleNumbers(randomFn);
+  return best || sampleNumbersComInicio(randomFn);
 }
 
 async function recentResultsForGeneration(env) {
@@ -515,13 +623,13 @@ function generatedGamesFromResults(results, concurso) {
     ...byLate.slice(0, 5),
     ...shuffled
   ];
-  const unique15 = (list) => Array.from(new Set(list)).slice(0, 15).sort((a, b) => a - b);
+  const unique15 = (list, salt = 0) => aplicarRegraInicio(Array.from(new Set(list)).slice(0, 15), salt);
   const makeSumRange = () => {
-    let best = unique15(balanced);
+    let best = unique15(balanced, 5);
     let bestDiff = Math.abs(scoreSet(best).soma - 200);
 
     for (let offset = 0; offset < 25; offset += 1) {
-      const candidate = unique15([...balanced.slice(offset), ...balanced.slice(0, offset), ...byFreq, ...byLate]);
+      const candidate = unique15([...balanced.slice(offset), ...balanced.slice(0, offset), ...byFreq, ...byLate], offset);
       const diff = Math.abs(scoreSet(candidate).soma - 200);
       if (diff < bestDiff) {
         best = candidate;
@@ -533,10 +641,10 @@ function generatedGamesFromResults(results, concurso) {
   };
 
   return [
-    { metodo: "M1_aleatorio_deterministico", dezenas: unique15(shuffled) },
-    { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq) },
-    { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate) },
-    { metodo: "M4_balanceado", dezenas: unique15([...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled]) },
+    { metodo: "M1_aleatorio_deterministico", dezenas: unique15(shuffled, 1) },
+    { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq, 2) },
+    { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate, 3) },
+    { metodo: "M4_balanceado", dezenas: unique15([...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled], 4) },
     { metodo: "M5_soma_faixa_comum", dezenas: makeSumRange() },
     {
       metodo: "M6_filtros_combinados",
@@ -552,6 +660,305 @@ function generatedGamesFromResults(results, concurso) {
       dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11)
     }
   ];
+}
+
+const LAB_QTD_PADRAO = 20000;
+const LAB_QTD_MAX = 20000;
+const LAB_ESTRATEGIAS = [
+  { key: "aleatorio_filtrado", label: "Aleatorio filtrado" },
+  { key: "inicio_01_02", label: "Inicio 01/02" },
+  { key: "inicio_03_04", label: "Inicio 03/04" },
+  { key: "quentes_balanceadas", label: "Quentes balanceadas" },
+  { key: "atrasadas_controladas", label: "Atrasadas controladas" },
+  { key: "soma_190_210", label: "Soma 190-210" },
+  { key: "repeticao_8_11", label: "Repeticao 8-11" },
+  { key: "miolo_moldura", label: "Miolo/Moldura" }
+];
+
+function shuffledNumbers(randomFn, numbers = Array.from({ length: 25 }, (_, index) => index + 1)) {
+  const copy = numbers.slice();
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(randomFn() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function fillCandidate(base, randomFn, salt = 0) {
+  const all = shuffledNumbers(randomFn);
+  const dezenas = [];
+  for (const dezena of [...base, ...all]) {
+    if (!dezenas.includes(dezena)) {
+      dezenas.push(dezena);
+    }
+    if (dezenas.length === 15) {
+      break;
+    }
+  }
+  return aplicarRegraInicio(dezenas, salt);
+}
+
+function passesLaboratorioBasico(dezenas, perfil = "comum") {
+  const { soma, pares } = scoreSet(dezenas);
+  const inicio = Math.min(...dezenas);
+  if (inicio > 4) return false;
+  if (pares < 6 || pares > 9) return false;
+  if (perfil === "soma") return soma >= 190 && soma <= 210;
+  return soma >= 180 && soma <= 220;
+}
+
+function laboratorioContext(results) {
+  const all = Array.from({ length: 25 }, (_, index) => index + 1);
+  const freq = new Map(all.map((number) => [number, 0]));
+  const lastSeen = new Map(all.map((number) => [number, 9999]));
+
+  results.forEach((result, idx) => {
+    const set = new Set(result.dezenas);
+    for (const number of all) {
+      if (set.has(number)) {
+        freq.set(number, freq.get(number) + 1);
+        lastSeen.set(number, Math.min(lastSeen.get(number), idx));
+      }
+    }
+  });
+
+  return {
+    all,
+    previous: results[0]?.dezenas || [],
+    byFreq: all.slice().sort((a, b) => freq.get(b) - freq.get(a) || a - b),
+    byLate: all.slice().sort((a, b) => lastSeen.get(b) - lastSeen.get(a) || a - b),
+    pairs: recentPairs(results)
+  };
+}
+
+function laboratorioCandidate(context, concurso, index, seed) {
+  const estrategia = LAB_ESTRATEGIAS[index % LAB_ESTRATEGIAS.length];
+  const randomFn = seededRandom(seed + concurso * 1000003 + index * 7919);
+  const moldura = [1,2,3,4,5,6,10,11,15,16,20,21,22,23,24,25];
+  const miolo = [7,8,9,12,13,14,17,18,19];
+  const outras = context.all.filter((number) => !context.previous.includes(number));
+
+  for (let tentativa = 0; tentativa < 60; tentativa += 1) {
+    let dezenas;
+
+    if (estrategia.key === "inicio_01_02") {
+      dezenas = fillCandidate([randomFn() < 0.65 ? 1 : 2], randomFn, index + tentativa);
+    } else if (estrategia.key === "inicio_03_04") {
+      dezenas = fillCandidate([randomFn() < 0.7 ? 3 : 4, ...context.byFreq.slice(0, 4)], randomFn, index + tentativa);
+    } else if (estrategia.key === "quentes_balanceadas") {
+      dezenas = fillCandidate([...context.byFreq.slice(0, 8), ...context.byLate.slice(0, 3)], randomFn, index + tentativa);
+    } else if (estrategia.key === "atrasadas_controladas") {
+      dezenas = fillCandidate([...context.byLate.slice(0, 7), ...context.byFreq.slice(0, 5)], randomFn, index + tentativa);
+    } else if (estrategia.key === "soma_190_210") {
+      dezenas = fillCandidate([...context.byFreq.slice(0, 5), ...shuffledNumbers(randomFn).slice(0, 10)], randomFn, index + tentativa);
+    } else if (estrategia.key === "repeticao_8_11") {
+      const repetidas = shuffledNumbers(randomFn, context.previous).slice(0, 9 + Math.floor(randomFn() * 3));
+      dezenas = fillCandidate([...repetidas, ...shuffledNumbers(randomFn, outras)], randomFn, index + tentativa);
+    } else if (estrategia.key === "miolo_moldura") {
+      dezenas = fillCandidate([
+        ...shuffledNumbers(randomFn, miolo).slice(0, 6 + Math.floor(randomFn() * 2)),
+        ...shuffledNumbers(randomFn, moldura).slice(0, 9)
+      ], randomFn, index + tentativa);
+    } else {
+      dezenas = sampleNumbersComInicio(randomFn);
+    }
+
+    if (passesLaboratorioBasico(dezenas, estrategia.key === "soma_190_210" ? "soma" : "comum")) {
+      return { estrategia, dezenas };
+    }
+  }
+
+  return { estrategia, dezenas: sampleNumbersComInicio(randomFn) };
+}
+
+async function resultsBeforeContest(env, concurso) {
+  await seedInitialResults(env);
+  const rows = await env.DB.prepare(`
+    SELECT concurso, dezenas
+    FROM resultados
+    WHERE concurso < ?
+    ORDER BY concurso DESC
+    LIMIT 120
+  `).bind(concurso).all();
+
+  return rows.results.map((row) => ({
+    concurso: row.concurso,
+    dezenas: JSON.parse(row.dezenas)
+  }));
+}
+
+function emptyLabSummary(concurso, quantidade) {
+  return {
+    concurso,
+    quantidade,
+    acertos_11: 0,
+    acertos_12: 0,
+    acertos_13: 0,
+    acertos_14: 0,
+    acertos_15: 0,
+    acertos_11_mais: 0,
+    melhor_acerto: 0,
+    media_acertos: 0
+  };
+}
+
+async function conferirLaboratorioExecucao(env, execucao) {
+  const resultado = await env.DB.prepare(`
+    SELECT concurso, dezenas, dezenas_texto
+    FROM resultados
+    WHERE concurso = ?
+  `).bind(execucao.concurso).first();
+
+  if (!resultado) {
+    return parseLaboratorioRow(execucao);
+  }
+
+  const history = await resultsBeforeContest(env, execucao.concurso);
+  const context = laboratorioContext(history);
+  const sorteadas = JSON.parse(resultado.dezenas);
+  const sorteadasSet = new Set(sorteadas);
+  const resumo = emptyLabSummary(execucao.concurso, execucao.quantidade);
+  const porEstrategia = new Map(LAB_ESTRATEGIAS.map((item) => [item.key, {
+    key: item.key,
+    label: item.label,
+    jogos: 0,
+    soma_acertos: 0,
+    acertos_11: 0,
+    acertos_12: 0,
+    acertos_13: 0,
+    acertos_14: 0,
+    acertos_15: 0,
+    melhor_acerto: 0,
+    melhor_dezenas: []
+  }]));
+  let melhor = { acertos: 0, estrategia: "", dezenas: [], dezenas_acertadas: [] };
+
+  for (let index = 0; index < execucao.quantidade; index += 1) {
+    const candidate = laboratorioCandidate(context, execucao.concurso, index, execucao.seed);
+    const acertadas = candidate.dezenas.filter((dezena) => sorteadasSet.has(dezena));
+    const acertos = acertadas.length;
+    const stat = porEstrategia.get(candidate.estrategia.key);
+
+    stat.jogos += 1;
+    stat.soma_acertos += acertos;
+    if (acertos >= 11) {
+      resumo.acertos_11_mais += 1;
+    }
+    if (acertos >= 11 && acertos <= 15) {
+      resumo[`acertos_${acertos}`] += 1;
+      stat[`acertos_${acertos}`] += 1;
+    }
+    if (acertos > stat.melhor_acerto) {
+      stat.melhor_acerto = acertos;
+      stat.melhor_dezenas = candidate.dezenas;
+    }
+    if (acertos > melhor.acertos) {
+      melhor = {
+        acertos,
+        estrategia: candidate.estrategia.label,
+        dezenas: candidate.dezenas,
+        dezenas_acertadas: acertadas
+      };
+    }
+  }
+
+  resumo.melhor_acerto = melhor.acertos;
+  resumo.media_acertos = Number((Array.from(porEstrategia.values()).reduce((acc, item) => acc + item.soma_acertos, 0) / execucao.quantidade).toFixed(4));
+
+  const estrategias = Array.from(porEstrategia.values())
+    .map((item) => ({
+      ...item,
+      media_acertos: item.jogos ? Number((item.soma_acertos / item.jogos).toFixed(4)) : 0,
+      taxa_11_mais: item.jogos ? Number((((item.acertos_11 + item.acertos_12 + item.acertos_13 + item.acertos_14 + item.acertos_15) * 100) / item.jogos).toFixed(4)) : 0,
+      score: (item.acertos_15 * 100000) + (item.acertos_14 * 7000) + (item.acertos_13 * 600) + (item.acertos_12 * 55) + (item.acertos_11 * 5) + item.soma_acertos
+    }))
+    .sort((a, b) => b.score - a.score || b.media_acertos - a.media_acertos);
+
+  const melhorJson = {
+    ...melhor,
+    dezenas_texto: dezenasTexto(melhor.dezenas),
+    dezenas_acertadas_texto: dezenasTexto(melhor.dezenas_acertadas)
+  };
+
+  await env.DB.prepare(`
+    UPDATE laboratorio_execucoes
+    SET status = 'conferido',
+        conferido_em = CURRENT_TIMESTAMP,
+        resumo_json = ?,
+        estrategias_json = ?,
+        melhor_json = ?
+    WHERE id = ?
+  `).bind(
+    JSON.stringify(resumo),
+    JSON.stringify(estrategias),
+    JSON.stringify(melhorJson),
+    execucao.id
+  ).run();
+
+  return {
+    ...execucao,
+    status: "conferido",
+    conferido_em: new Date().toISOString(),
+    resumo,
+    estrategias,
+    melhor: melhorJson
+  };
+}
+
+async function conferirLaboratoriosPendentes(env) {
+  await ensureLaboratorioTables(env);
+  const rows = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    WHERE status = 'aguardando_resultado'
+    ORDER BY concurso ASC
+    LIMIT 3
+  `).all();
+  const conferidos = [];
+
+  for (const row of rows.results) {
+    const result = await conferirLaboratorioExecucao(env, row);
+    if (result?.status === "conferido") {
+      conferidos.push(result.concurso);
+    }
+  }
+
+  return conferidos;
+}
+
+async function rodarLaboratorio(request, env) {
+  await ensureLaboratorioTables(env);
+  await conferirLaboratoriosPendentes(env);
+
+  const body = await readJson(request);
+  const latest = await latestResult(env);
+  const concurso = Number(body.concurso || (latest ? latest.concurso + 1 : 1));
+  const quantidade = Math.min(Math.max(Number(body.quantidade || LAB_QTD_PADRAO), 1000), LAB_QTD_MAX);
+  const seed = Number(body.seed || (concurso * 104729 + quantidade * 17));
+
+  const existing = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    WHERE concurso = ?
+  `).bind(concurso).first();
+
+  let execucao = existing;
+  if (!execucao) {
+    const insert = await env.DB.prepare(`
+      INSERT INTO laboratorio_execucoes (concurso, quantidade, seed, status)
+      VALUES (?, ?, ?, 'aguardando_resultado')
+    `).bind(concurso, quantidade, seed).run();
+    execucao = {
+      id: insert.meta.last_row_id,
+      concurso,
+      quantidade,
+      seed,
+      status: "aguardando_resultado"
+    };
+  }
+
+  const conferida = await conferirLaboratorioExecucao(env, execucao);
+  return json({ ok: true, laboratorio: conferida });
 }
 
 async function generateNextContestGames(env, concurso) {
@@ -753,6 +1160,10 @@ async function createJogo(request, user, env) {
     dezenas = normalizeDezenas(body.dezenas || body.dezenas_texto);
   } catch (err) {
     return error(err.message);
+  }
+
+  if (!inicioProvavel(dezenas)) {
+    return error("Jogo eliminado pela regra de inicio: a menor dezena precisa ser 01, 02, 03 ou 04.");
   }
 
   const concurso = body.concurso ? Number(body.concurso) : null;
@@ -1511,6 +1922,7 @@ async function runAutoCycle(env) {
 
   const pendentes = await conferirPendencias(env);
   conferencias += pendentes.conferencias_novas + pendentes.conferencias_atualizadas;
+  const laboratoriosConferidos = await conferirLaboratoriosPendentes(env);
 
   const currentLatest = await latestResult(env);
   const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
@@ -1523,7 +1935,8 @@ async function runAutoCycle(env) {
     jogos_descartados: pendentes.jogos_descartados,
     sessoes_expiradas: sessoesExpiradas,
     proximo_concurso: proximoConcurso,
-    jogos_gerados: jogosGerados.length
+    jogos_gerados: jogosGerados.length,
+    laboratorios_conferidos: laboratoriosConferidos
   };
 
   await env.DB.prepare(`
@@ -1566,7 +1979,9 @@ async function systemStatus(env) {
   await generateNextContestGames(env, proximoConcurso);
   const stats = await resultStats(env, 50);
   const frequencia = await numberStats(env);
+  const inicio = await inicioStats(env);
   const ultimoCiclo = await latestCycle(env);
+  const laboratorio = await latestLaboratorio(env);
   const generated = await env.DB.prepare(`
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
     FROM jogos_sistema
@@ -1589,7 +2004,9 @@ async function systemStatus(env) {
     proximo_concurso: proximoConcurso,
     resultados_recentes: stats.resultados_recentes,
     frequencia_dezenas: frequencia,
+    inicio_dezena: inicio,
     ultimo_ciclo: ultimoCiclo,
+    laboratorio,
     jogos_gerados: generated.results.map((jogo) => ({
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
@@ -1622,12 +2039,17 @@ async function handleApi(request, env, url) {
     return json({
       ok: true,
       ...stats,
-      frequencia_dezenas: await numberStats(env)
+      frequencia_dezenas: await numberStats(env),
+      inicio_dezena: await inicioStats(env)
     });
   }
 
   if (path === "/api/ciclo/status" && method === "GET") {
     return json({ ok: true, ultimo_ciclo: await latestCycle(env) });
+  }
+
+  if (path === "/api/laboratorio/status" && method === "GET") {
+    return json({ ok: true, laboratorio: await latestLaboratorio(env) });
   }
 
   if (path === "/api/auth/register" && method === "POST") {
@@ -1654,6 +2076,10 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/ciclo/rodar" && method === "POST") {
     return json(await runAutoCycle(env));
+  }
+
+  if (path === "/api/laboratorio/rodar" && method === "POST") {
+    return rodarLaboratorio(request, env);
   }
 
   if (path === "/api/jogos" && method === "GET") {
