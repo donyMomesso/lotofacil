@@ -415,6 +415,18 @@ async function latestLaboratorio(env) {
   return parseLaboratorioRow(row);
 }
 
+async function latestLaboratorioConferido(env) {
+  await ensureLaboratorioTables(env);
+  const row = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    WHERE status = 'conferido'
+    ORDER BY concurso DESC, id DESC
+    LIMIT 1
+  `).first();
+  return parseLaboratorioRow(row);
+}
+
 async function latestCycle(env) {
   const row = await env.DB.prepare(`
     SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
@@ -926,6 +938,39 @@ async function conferirLaboratoriosPendentes(env) {
   return conferidos;
 }
 
+async function prepararLaboratorioAutomatico(env, concurso, quantidade = LAB_QTD_PADRAO) {
+  await ensureLaboratorioTables(env);
+  const safeQuantidade = Math.min(Math.max(Number(quantidade || LAB_QTD_PADRAO), 1000), LAB_QTD_MAX);
+  const existing = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    WHERE concurso = ?
+  `).bind(concurso).first();
+
+  if (existing) {
+    return parseLaboratorioRow(existing);
+  }
+
+  const seed = concurso * 104729 + safeQuantidade * 17;
+  const insert = await env.DB.prepare(`
+    INSERT INTO laboratorio_execucoes (concurso, quantidade, seed, status)
+    VALUES (?, ?, ?, 'aguardando_resultado')
+  `).bind(concurso, safeQuantidade, seed).run();
+
+  return {
+    id: insert.meta.last_row_id,
+    concurso,
+    quantidade: safeQuantidade,
+    seed,
+    status: "aguardando_resultado",
+    criado_em: new Date().toISOString(),
+    conferido_em: null,
+    resumo: null,
+    estrategias: [],
+    melhor: null
+  };
+}
+
 async function rodarLaboratorio(request, env) {
   await ensureLaboratorioTables(env);
   await conferirLaboratoriosPendentes(env);
@@ -934,28 +979,7 @@ async function rodarLaboratorio(request, env) {
   const latest = await latestResult(env);
   const concurso = Number(body.concurso || (latest ? latest.concurso + 1 : 1));
   const quantidade = Math.min(Math.max(Number(body.quantidade || LAB_QTD_PADRAO), 1000), LAB_QTD_MAX);
-  const seed = Number(body.seed || (concurso * 104729 + quantidade * 17));
-
-  const existing = await env.DB.prepare(`
-    SELECT *
-    FROM laboratorio_execucoes
-    WHERE concurso = ?
-  `).bind(concurso).first();
-
-  let execucao = existing;
-  if (!execucao) {
-    const insert = await env.DB.prepare(`
-      INSERT INTO laboratorio_execucoes (concurso, quantidade, seed, status)
-      VALUES (?, ?, ?, 'aguardando_resultado')
-    `).bind(concurso, quantidade, seed).run();
-    execucao = {
-      id: insert.meta.last_row_id,
-      concurso,
-      quantidade,
-      seed,
-      status: "aguardando_resultado"
-    };
-  }
+  const execucao = await prepararLaboratorioAutomatico(env, concurso, quantidade);
 
   const conferida = await conferirLaboratorioExecucao(env, execucao);
   return json({ ok: true, laboratorio: conferida });
@@ -1927,6 +1951,7 @@ async function runAutoCycle(env) {
   const currentLatest = await latestResult(env);
   const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
   const jogosGerados = await generateNextContestGames(env, proximoConcurso);
+  const laboratorioProximo = await prepararLaboratorioAutomatico(env, proximoConcurso);
 
   const payload = {
     ok: true,
@@ -1936,7 +1961,12 @@ async function runAutoCycle(env) {
     sessoes_expiradas: sessoesExpiradas,
     proximo_concurso: proximoConcurso,
     jogos_gerados: jogosGerados.length,
-    laboratorios_conferidos: laboratoriosConferidos
+    laboratorios_conferidos: laboratoriosConferidos,
+    laboratorio_proximo: {
+      concurso: laboratorioProximo.concurso,
+      quantidade: laboratorioProximo.quantidade,
+      status: laboratorioProximo.status
+    }
   };
 
   await env.DB.prepare(`
@@ -1976,12 +2006,14 @@ async function runAutoCycle(env) {
 async function systemStatus(env) {
   const latest = await latestResult(env);
   const proximoConcurso = latest ? latest.concurso + 1 : 1;
+  await conferirLaboratoriosPendentes(env);
   await generateNextContestGames(env, proximoConcurso);
+  const laboratorio = await prepararLaboratorioAutomatico(env, proximoConcurso);
   const stats = await resultStats(env, 50);
   const frequencia = await numberStats(env);
   const inicio = await inicioStats(env);
   const ultimoCiclo = await latestCycle(env);
-  const laboratorio = await latestLaboratorio(env);
+  const laboratorioConferido = await latestLaboratorioConferido(env);
   const generated = await env.DB.prepare(`
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
     FROM jogos_sistema
@@ -2007,6 +2039,7 @@ async function systemStatus(env) {
     inicio_dezena: inicio,
     ultimo_ciclo: ultimoCiclo,
     laboratorio,
+    laboratorio_ultimo_conferido: laboratorioConferido,
     jogos_gerados: generated.results.map((jogo) => ({
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
@@ -2049,7 +2082,11 @@ async function handleApi(request, env, url) {
   }
 
   if (path === "/api/laboratorio/status" && method === "GET") {
-    return json({ ok: true, laboratorio: await latestLaboratorio(env) });
+    return json({
+      ok: true,
+      laboratorio: await latestLaboratorio(env),
+      laboratorio_ultimo_conferido: await latestLaboratorioConferido(env)
+    });
   }
 
   if (path === "/api/auth/register" && method === "POST") {

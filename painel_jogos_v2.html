@@ -275,7 +275,7 @@
             <div style="font-size:11px; font-weight:800; color:#0F172A; text-transform:uppercase; letter-spacing:.06em;">Cerebro laboratorio</div>
             <div style="font-size:11px; color:#64748B; margin-top:3px;">{{ laboratorioStatus }}</div>
           </div>
-          <button onClick="{{ rodarLaboratorio }}" style="background:linear-gradient(135deg,#0F766E,#14B8A6); border:none; color:#fff; border-radius:9px; padding:10px 14px; cursor:pointer; font-size:12.5px; font-weight:900; box-shadow:0 3px 10px rgba(20,184,166,.22);">Preparar 20 mil jogos</button>
+          <span style="background:#ECFDF5; border:1px solid #10B98155; color:#047857; border-radius:999px; padding:7px 12px; font-size:11px; font-weight:900; white-space:nowrap;">Automatico</span>
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px;">
           <sc-for list="{{ laboratorioCards }}" as="lc" hint-placeholder-count="6">
@@ -1174,6 +1174,7 @@ class Component extends DCLogic {
     indicadoresConferencia: null,
     aprendizadoOrigens: null,
     laboratorio: null,
+    laboratorioConferido: null,
     systemGames: [],
     conferidorGames: [],
     latestResult: null,
@@ -1286,6 +1287,7 @@ class Component extends DCLogic {
         numberStats: data.frequencia_dezenas || [],
         inicioStats: data.inicio_dezena || INICIO_HISTORICO_FALLBACK,
         laboratorio: data.laboratorio || null,
+        laboratorioConferido: data.laboratorio_ultimo_conferido || null,
         recentDraws: data.resultados_recentes || [],
         lastCycle: data.ultimo_ciclo || null,
         panelStatus: `Sistema configurado para o concurso ${data.proximo_concurso}.`
@@ -1307,28 +1309,6 @@ class Component extends DCLogic {
       await this.loadSavedGames();
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao conferir.' });
-    }
-  }
-
-  async rodarLaboratorio() {
-    if (!getAuthToken()) {
-      this.setState({ authStatus: 'Entre para preparar o laboratorio.' });
-      return;
-    }
-    this.setState({ panelStatus: 'Preparando laboratorio com 20 mil jogos...' });
-    try {
-      const data = await painelApi('/api/laboratorio/rodar', {
-        method:'POST',
-        body: JSON.stringify({ concurso: this.state.concursoAlvo, quantidade: 20000 })
-      });
-      this.setState({
-        laboratorio: data.laboratorio || null,
-        panelStatus: data.laboratorio?.status === 'conferido'
-          ? `Laboratorio conferido: melhor jogo fez ${data.laboratorio?.melhor?.acertos || 0} acertos.`
-          : `Laboratorio pronto: ${Number(data.laboratorio?.quantidade || 20000).toLocaleString('pt-BR')} jogos aguardando o concurso ${data.laboratorio?.concurso || this.state.concursoAlvo}.`
-      });
-    } catch (err) {
-      this.setState({ panelStatus: err.message || 'Falha ao rodar laboratorio.' });
     }
   }
 
@@ -2211,13 +2191,14 @@ class Component extends DCLogic {
       ? `${combinacaoDraftRows.length} jogo(s) em previa. Ainda nao foi para o Conferidor.`
       : 'Sem previa montada.';
     const lab = s.laboratorio;
-    const labResumo = lab?.resumo || {};
+    const labConferido = lab?.resumo ? lab : s.laboratorioConferido;
+    const labResumo = labConferido?.resumo || {};
     const labQtd = Number(lab?.quantidade || 20000);
     const labStatusLabel = lab
       ? (lab.status === 'conferido'
         ? `Concurso ${lab.concurso} conferido com ${labQtd.toLocaleString('pt-BR')} jogos de teste.`
-        : `Temos ${labQtd.toLocaleString('pt-BR')} jogos de teste aguardando conferencia do concurso ${lab.concurso}.`)
-      : 'Nenhum lote preparado ainda. Use o laboratorio para criar 20 mil jogos de teste para a proxima rodada.';
+        : `Automatico: ${labQtd.toLocaleString('pt-BR')} jogos de teste ja preparados para o concurso ${lab.concurso}. Quando sair o resultado, o sistema confere e prepara o proximo.`)
+      : 'Automatico: o sistema prepara 20 mil jogos de teste quando identifica o proximo concurso.';
     const laboratorioCards = [
       { label:'Jogos no lote', value: lab ? labQtd.toLocaleString('pt-BR') : '0', style:'background:#F8FAFC;color:#0F172A;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;' },
       { label:'Com 11 acertos', value: Number(labResumo.acertos_11 || 0).toLocaleString('pt-BR'), style:'background:#ECFDF5;color:#047857;border:1px solid #10B98155;border-radius:8px;padding:10px 12px;' },
@@ -2226,7 +2207,7 @@ class Component extends DCLogic {
       { label:'Com 14 acertos', value: Number(labResumo.acertos_14 || 0).toLocaleString('pt-BR'), style:'background:#FFF7ED;color:#C2410C;border:1px solid #FB923C55;border-radius:8px;padding:10px 12px;' },
       { label:'Com 15 acertos', value: Number(labResumo.acertos_15 || 0).toLocaleString('pt-BR'), style:'background:#FDF2F8;color:#BE123C;border:1px solid #EC489955;border-radius:8px;padding:10px 12px;' },
     ];
-    const laboratorioRanking = (lab?.estrategias || []).slice(0, 8).map(row => ({
+    const laboratorioRanking = (labConferido?.estrategias || []).slice(0, 8).map(row => ({
       label: row.label,
       jogos: Number(row.jogos || 0).toLocaleString('pt-BR'),
       media: Number(row.media_acertos || 0).toFixed(4).replace('.', ','),
@@ -2236,9 +2217,9 @@ class Component extends DCLogic {
       acertos15: Number(row.acertos_15 || 0).toLocaleString('pt-BR'),
       melhor: `${row.melhor_acerto || 0} acertos`
     }));
-    const laboratorioMelhor = lab?.melhor
-      ? `Melhor estrategia: ${lab.melhor.estrategia || '--'} | ${lab.melhor.acertos || 0} acertos | ${lab.melhor.dezenas_texto || ''}`
-      : 'O lote fica oculto; somente o resumo e o ranking entram no aprendizado.';
+    const laboratorioMelhor = labConferido?.melhor
+      ? `Ultimo laboratorio conferido C${labConferido.concurso}: melhor estrategia ${labConferido.melhor.estrategia || '--'} | ${labConferido.melhor.acertos || 0} acertos | ${labConferido.melhor.dezenas_texto || ''}`
+      : 'O lote fica oculto; quando houver resultado, somente o resumo e o ranking entram no aprendizado.';
 
     // Radar de Saude: consolida cobertura, status da extensao e media recente M1-M8.
     s.extensaoTick; // Mantem o bloco reativo quando o localStorage muda.
@@ -2383,7 +2364,6 @@ class Component extends DCLogic {
       addGame: () => this.addGame(),
       clearSelected: () => this.clearSelected(),
       conferirDuasRodadas: () => this.conferirDuasRodadas(),
-      rodarLaboratorio: () => this.rodarLaboratorio(),
       registrarJogosSistema: () => this.registrarJogosSistema(),
       sugerirJogo: () => this.sugerirJogo(),
       jogarDiretoIA: () => this.jogarDiretoIA(),
