@@ -395,7 +395,7 @@
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Investimento 2 jogos</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Chance 15 pontos</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:330px;">Sugestões do sistema</th>
-                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:230px;">Leitura do sistema</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:360px;">Leitura do sistema</th>
               </tr>
             </thead>
             <tbody>
@@ -581,9 +581,13 @@
         <sc-if value="{{ hasFechamentoJogos }}" hint-placeholder-val="{{ false }}">
           <div style="margin-top:16px; border-top:1px solid #F1ECFB; padding-top:14px;">
             <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">{{ totalCombos }} jogo(s) gerado(s) — matriz de cobertura reduzida, garantia de 14 pontos (pode ser dividido entre apostadores)</div>
+            <div style="font-size:11px; color:#6B5B8A; margin-bottom:10px;">{{ fechamentoSomaResumo }}</div>
             <div id="fechamentoJogosContainer" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; max-height:220px; overflow:auto;">
               <sc-for list="{{ fechamentoJogos }}" as="fj" hint-placeholder-count="16">
-                <div class="jogo-formatado" style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:6px; padding:6px 10px; font-family:monospace; font-size:11px;">{{ fj.dezenasStr }}</div>
+                <div class="jogo-formatado" style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:6px; padding:6px 10px; font-family:monospace; font-size:11px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                  <span class="jogo-dezenas">{{ fj.dezenasStr }}</span>
+                  <span style="font-family:inherit; font-size:10px; font-weight:700; color:#5B21B6; white-space:nowrap;">soma {{ fj.soma }}</span>
+                </div>
               </sc-for>
             </div>
             <button onClick="{{ copiarTodosJogos }}" style="background:#7c3aed; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:20px;">📋 Copiar todos os jogos para a Extensão</button>
@@ -1244,6 +1248,24 @@ function gerarCombinacoesLista(valores, tamanho) {
   return resultado;
 }
 
+// Entre as dezenas baixas disponiveis para a trava de inicio, escolhe a que
+// deixa a soma do jogo mais perto de 200 (faixa comum 180-220) - sem isso,
+// a substituicao era sempre ciclica e ignorava a soma resultante do jogo.
+function melhorBaixaPorSoma(baixos, restante) {
+  let melhor = baixos[0];
+  let melhorDistancia = Infinity;
+  for (const candidata of baixos) {
+    if (restante.includes(candidata)) continue;
+    const soma = candidata + restante.reduce((a, b) => a + b, 0);
+    const distancia = Math.abs(soma - 200);
+    if (distancia < melhorDistancia) {
+      melhorDistancia = distancia;
+      melhor = candidata;
+    }
+  }
+  return melhor;
+}
+
 function ajustarCoberturaComTravaInicio(matriz, grupo) {
   const ordenado = grupo.slice().sort((a, b) => a - b);
   const baixosFortes = ordenado.filter(n => n <= 2);
@@ -1265,25 +1287,30 @@ function ajustarCoberturaComTravaInicio(matriz, grupo) {
     }
   };
 
-  matriz.forEach((posicoes, indice) => {
+  matriz.forEach((posicoes) => {
     const original = posicoes.map(p => ordenado[p]).sort((a, b) => a - b);
     if (original[0] <= 4) {
       adicionar(original);
       return;
     }
-    const baixa = baixos[indice % baixos.length];
-    adicionar([baixa, ...original.slice(0, 14)]);
+    const restante = original.slice(0, 14);
+    const baixa = melhorBaixaPorSoma(baixos, restante);
+    adicionar([baixa, ...restante]);
   });
 
   // Reconfere todas as possibilidades do grupo. Um jogo de reparo e incluido
   // apenas quando nenhum bloco ajustado cobre ao menos 14 dezenas.
-  gerarCombinacoesLista(ordenado, 15).forEach((sorteio, indice) => {
+  gerarCombinacoesLista(ordenado, 15).forEach((sorteio) => {
     const sorteioSet = new Set(sorteio);
     const coberto = jogos.some(jogo => jogo.reduce((qtd, n) => qtd + (sorteioSet.has(n) ? 1 : 0), 0) >= 14);
     if (coberto) return;
-    const baixa = baixos[indice % baixos.length];
-    const base = sorteio.includes(baixa) ? sorteio : [baixa, ...sorteio.slice(0, 14)];
-    adicionar(base);
+    if (sorteio[0] <= 4) {
+      adicionar(sorteio);
+      return;
+    }
+    const restante = sorteio.slice(0, 14);
+    const baixa = melhorBaixaPorSoma(baixos, restante);
+    adicionar([baixa, ...restante]);
   });
 
   return { jogos, aviso: '' };
@@ -1375,7 +1402,7 @@ function copiarTodosJogos() {
     return;
   }
   const textoParaCopiar = Array.from(elementosJogos)
-    .map(el => el.innerText.trim())
+    .map(el => (el.querySelector('.jogo-dezenas') || el).innerText.trim())
     .join('\n');
 
   navigator.clipboard.writeText(textoParaCopiar).then(() => {
@@ -2285,13 +2312,22 @@ class Component extends DCLogic {
     const fechamentoAjustado = (matrizCobertura && fSelCount === fN)
       ? ajustarCoberturaComTravaInicio(matrizCobertura.matriz, grupoOrdenado)
       : { jogos: [], aviso: '' };
-    const fechamentoJogos = fechamentoAjustado.jogos.map(dezenas => ({
-      dezenasStr: dezenas.map(pad).join('-'),
-    }));
+    const fechamentoJogos = fechamentoAjustado.jogos.map(dezenas => {
+      const soma = dezenas.reduce((a, b) => a + b, 0);
+      return {
+        dezenasStr: dezenas.map(pad).join('-'),
+        soma,
+        somaFaixaComum: soma >= 180 && soma <= 220,
+      };
+    });
     const totalCombos = fSelCount === fN
       ? fechamentoJogos.length
       : (matrizCobertura ? matrizCobertura.matriz.length : totalCombosFull);
     const fechamentoAviso = fechamentoAjustado.aviso;
+    const fechamentoSomas = fechamentoJogos.map(j => j.soma);
+    const fechamentoSomaResumo = fechamentoSomas.length
+      ? `Soma dos jogos: varia de ${Math.min(...fechamentoSomas)} a ${Math.max(...fechamentoSomas)} · ${fechamentoJogos.filter(j => j.somaFaixaComum).length}/${fechamentoJogos.length} dentro da faixa comum (180-220).`
+      : '';
 
     const systemColors = [
       { bg:'#DBEAFE', color:'#1D4ED8' },
@@ -2370,19 +2406,29 @@ class Component extends DCLogic {
       { n:19, jogos:3876, custo:13566, chance15:'1 em 843', leitura:'Estratégia agressiva; mais adequada para estudo ou bolão.' },
       { n:20, jogos:15504, custo:54264, chance15:'1 em 211', leitura:'Maior chance matemática oficial, com custo muito alto.' },
     ];
-    const matematicaDezenasRows = matematicaBase.map(row => ({
-      dezenas: `${row.n} dezenas`,
-      jogos: Number(row.jogos).toLocaleString('pt-BR'),
-      custo: brMoney(row.custo),
-      custoDois: brMoney(row.custo * 2),
-      chance15: row.chance15,
-      sugestaoA: montarGrupoAmpliado(basesMatematica[0], row.n, 0).map(pad).join('-'),
-      sugestaoB: montarGrupoAmpliado(basesMatematica[1], row.n, 1).map(pad).join('-'),
-      leitura: row.leitura,
+    const matematicaComRetorno = matematicaBase.map(row => ({
+      ...row,
+      retorno: resumoRetornoMatematica(row.n, row.custo),
     }));
+    const matematicaDezenasRows = matematicaComRetorno.map(row => {
+      const r = row.retorno;
+      const fraseRetorno = row.n === 15
+        ? 'Retorno: aposta simples, sem parcela fixa extra de outros jogos.'
+        : `Retorno: um jogo de ${row.n} dezenas devolve ${brMoney(r.parcelaFixa)} fixos se o grupo contiver as 15 sorteadas (ROI ${r.roiCenario >= 0 ? '+' : ''}${r.roiCenario.toFixed(0)}% nesse cenário); ponderado pela chance real, o valor esperado é só ${brMoney(r.valorEsperadoFixo)} (ROI esperado ${r.roiEsperado.toFixed(2)}%).`;
+      return {
+        dezenas: `${row.n} dezenas`,
+        jogos: Number(row.jogos).toLocaleString('pt-BR'),
+        custo: brMoney(row.custo),
+        custoDois: brMoney(row.custo * 2),
+        chance15: row.chance15,
+        sugestaoA: montarGrupoAmpliado(basesMatematica[0], row.n, 0).map(pad).join('-'),
+        sugestaoB: montarGrupoAmpliado(basesMatematica[1], row.n, 1).map(pad).join('-'),
+        leitura: `${row.leitura} ${fraseRetorno}`,
+      };
+    });
     const matematicaDezenasResumo = 'Duas sugestões por quantidade de dezenas, com investimento para 1 ou 2 jogos e cenário de retorno quando o grupo contém as 15 sorteadas.';
-    const matematicaRetornoRows = matematicaBase.map(row => {
-      const r = resumoRetornoMatematica(row.n, row.custo);
+    const matematicaRetornoRows = matematicaComRetorno.map(row => {
+      const r = row.retorno;
       return {
         dezenas: `${row.n} dezenas`,
         custo: brMoney(row.custo),
@@ -2840,6 +2886,7 @@ class Component extends DCLogic {
       custoAproximado: `R$ ${(totalCombos * 3.5).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       fechamentoJogos,
       hasFechamentoJogos: fechamentoJogos.length > 0,
+      fechamentoSomaResumo,
       hasFechamentoBloqueado: Boolean(fechamentoAviso),
       fechamentoAviso,
       fechamentoPronto: fSelCount === fN,
