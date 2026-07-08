@@ -637,21 +637,63 @@ function generatedGamesFromResults(results, concurso) {
   ];
   const qualityPenalty = (dezenas) => {
     const stats = scoreSet(dezenas);
+    const rows = [
+      dezenas.filter((dezena) => dezena >= 1 && dezena <= 5).length,
+      dezenas.filter((dezena) => dezena >= 6 && dezena <= 10).length,
+      dezenas.filter((dezena) => dezena >= 11 && dezena <= 15).length,
+      dezenas.filter((dezena) => dezena >= 16 && dezena <= 20).length,
+      dezenas.filter((dezena) => dezena >= 21 && dezena <= 25).length
+    ];
+    const miolo = dezenas.filter((dezena) => [7,8,9,12,13,14,17,18,19].includes(dezena)).length;
     let penalty = Math.abs(stats.soma - 200);
     if (stats.soma < 180) penalty += (180 - stats.soma) * 4;
     if (stats.soma > 220) penalty += (stats.soma - 220) * 4;
+    if (stats.soma < 190) penalty += (190 - stats.soma) * 2;
+    if (stats.soma > 210) penalty += (stats.soma - 210) * 2;
     if (stats.pares < 6) penalty += (6 - stats.pares) * 8;
     if (stats.pares > 9) penalty += (stats.pares - 9) * 8;
     if (!inicioProvavel(dezenas)) penalty += 100;
+    for (const count of rows) {
+      if (count === 0) penalty += 40;
+      if (count > 5) penalty += (count - 5) * 10;
+    }
+    if (miolo < 5) penalty += (5 - miolo) * 6;
+    if (miolo > 8) penalty += (miolo - 8) * 6;
     return penalty;
+  };
+  const optimizeGame = (dezenas, salt = 0, locked = []) => {
+    const lockedSet = new Set(locked);
+    let best = aplicarRegraInicio(dezenas, salt);
+    let bestPenalty = qualityPenalty(best);
+
+    for (let round = 0; round < 12 && bestPenalty > 0; round += 1) {
+      let improved = false;
+      const selected = best.slice();
+      const outside = all.filter((number) => !selected.includes(number));
+      for (const out of outside) {
+        for (const inside of selected) {
+          if (lockedSet.has(inside)) continue;
+          const candidate = aplicarRegraInicio([...selected.filter((number) => number !== inside), out], salt + round + out);
+          const penalty = qualityPenalty(candidate);
+          if (penalty < bestPenalty) {
+            best = candidate;
+            bestPenalty = penalty;
+            improved = true;
+          }
+        }
+      }
+      if (!improved) break;
+    }
+
+    return best;
   };
   const unique15 = (list, salt = 0) => {
     const source = Array.from(new Set([...list, ...byFreq, ...byLate, ...shuffled, ...all]));
-    let best = aplicarRegraInicio(source.slice(0, 15), salt);
+    let best = optimizeGame(source.slice(0, 15), salt);
     let bestPenalty = qualityPenalty(best);
 
     for (let offset = 0; offset < source.length; offset += 1) {
-      const candidate = aplicarRegraInicio([...source.slice(offset), ...source.slice(0, offset)].slice(0, 15), salt + offset);
+      const candidate = optimizeGame([...source.slice(offset), ...source.slice(0, offset)].slice(0, 15), salt + offset);
       const penalty = qualityPenalty(candidate);
       if (penalty < bestPenalty) {
         best = candidate;
@@ -683,7 +725,7 @@ function generatedGamesFromResults(results, concurso) {
   const alternativeGame = (salt, seen) => {
     for (let attempt = 0; attempt < 300; attempt += 1) {
       const randomFn = seededRandom(concurso * 65537 + salt * 4099 + attempt * 131);
-      const candidate = sampleNumbersComInicio(randomFn);
+      const candidate = optimizeGame(sampleNumbersComInicio(randomFn), salt + attempt);
       const key = candidate.join("-");
       if (!seen.has(key) && qualityPenalty(candidate) <= 25) {
         return candidate;
@@ -715,7 +757,7 @@ function generatedGamesFromResults(results, concurso) {
 
   const seen = new Set();
   return games.map((game, idx) => {
-    let dezenas = game.dezenas;
+    let dezenas = optimizeGame(game.dezenas, (idx + 1) * 23);
     let key = dezenas.join("-");
     if (seen.has(key)) {
       dezenas = alternativeGame((idx + 1) * 17, seen);
