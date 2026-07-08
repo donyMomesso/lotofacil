@@ -326,7 +326,7 @@
             </tr>
           </thead>
           <tbody>
-            <sc-for list="{{ desdobramento }}" as="m" hint-placeholder-count="8">
+            <sc-for list="{{ desdobramento }}" as="m" hint-placeholder-count="9">
               <tr>
                 <td style="padding:8px 8px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ m.badgeStyle }}">{{ m.label }}</span></td>
                 <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td data-style-template="{{ c.style }}">{{ c.num }}</td></sc-for>
@@ -882,6 +882,7 @@ const METHOD_LABELS = {
   M6_filtros_combinados: 'M6 Filtros',
   M7_cobertura_pares: 'M7 Cobertura',
   M8_repeticao_controlada: 'M8 Repetição',
+  M9_tese_v2: 'M9 Tese V2',
 };
 
 function methodLabel(metodo) {
@@ -1493,6 +1494,7 @@ class Component extends DCLogic {
       if (/M5/i.test(origem)) return ['soma'];
       if (/M7/i.test(origem)) return ['distribuido'];
       if (/M8/i.test(origem)) return ['conservador'];
+      if (/M9/i.test(origem)) return ['soma', 'distribuido', 'conservador'];
       if (/M6/i.test(origem)) return ['conservador', 'distribuido'];
       if (/M4/i.test(origem)) return ['equilibrado'];
       if (/M2/i.test(origem)) return ['quente'];
@@ -1671,6 +1673,7 @@ class Component extends DCLogic {
     if (/M5/i.test(origem)) return ['soma'];
     if (/M7/i.test(origem)) return ['distribuido'];
     if (/M8/i.test(origem)) return ['conservador'];
+    if (/M9/i.test(origem)) return ['soma', 'distribuido', 'conservador'];
     if (/M6/i.test(origem)) return ['conservador', 'distribuido'];
     if (/M4/i.test(origem)) return ['equilibrado'];
     if (/M2/i.test(origem)) return ['quente'];

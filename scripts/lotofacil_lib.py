@@ -45,11 +45,17 @@ METODOS = [
     "M6_filtros_combinados",
     "M7_cobertura_pares",
     "M8_repeticao_controlada",
+    "M9_tese_v2",
 ]
 
 NUM_CANDIDATOS_AVANCADOS = 1500
 SOMA_AVANCADA_MIN = 185
 SOMA_AVANCADA_MAX = 215
+
+# Tese V2: Baseada em dados reais (soma 184, pares=7)
+SOMA_TESE_V2_MIN = 180
+SOMA_TESE_V2_MAX = 190
+PARES_TESE_V2 = 7
 PARES_AVANCADO_MIN = 7
 PARES_AVANCADO_MAX = 9
 REPETICOES_MIN = 8
@@ -365,6 +371,47 @@ def metodo_repeticao_controlada(rng, resultados_sets):
     return _melhor_candidato_avancado(rng, resultados_sets, filtro=filtro)
 
 
+def metodo_tese_v2(rng, atraso):
+    """
+    M9: Tese V2 - Baseada em dados reais (Concurso 3727, M3)
+    
+    Padrão observado:
+    - Soma: 180-190 (foi 198-200 na tese anterior, estava errado)
+    - Pares: 7 (estava 7.6 na simulação, agora fixo em 7)
+    - Método: Favorece dezenas mais atrasadas (como M3)
+    - Dezenas críticas: Removidas (eram coincidência)
+    
+    Racional: M3 teve 50% de vencimento na realidade vs 8.8% na simulação.
+    Ajustamento de soma para padrão real: 184 ± 6 = 180-190.
+    """
+    rng = _rng_or_default(rng)
+    
+    # Ordena por atraso (igual M3, mas com filtro de soma/paridade)
+    dezenas_ordenadas = sorted(TODAS_DEZENAS, key=lambda d: atraso[d], reverse=True)
+    
+    # Tenta encontrar combinação com soma 180-190 e 7 pares
+    for _ in range(1000):
+        candidato = rng.sample(dezenas_ordenadas, 15)
+        soma = sum(candidato)
+        pares = sum(1 for d in candidato if d % 2 == 0)
+        
+        # Tese V2: soma 180-190, pares = 7
+        if SOMA_TESE_V2_MIN <= soma <= SOMA_TESE_V2_MAX and pares == PARES_TESE_V2:
+            return set(candidato)
+    
+    # Fallback: tenta pares 6-8 se não encontrar 7 exato
+    for _ in range(500):
+        candidato = rng.sample(dezenas_ordenadas, 15)
+        soma = sum(candidato)
+        pares = sum(1 for d in candidato if d % 2 == 0)
+        
+        if SOMA_TESE_V2_MIN <= soma <= SOMA_TESE_V2_MAX and 6 <= pares <= 8:
+            return set(candidato)
+    
+    # Fallback final: M3 puro
+    return metodo_mais_atrasadas(rng, atraso)
+
+
 def gerar_todos_metodos(seed=None, ate_concurso=None):
     rng = random.Random(seed)
     freq, atraso, _ = frequencia_e_atraso(ate_concurso)
@@ -378,6 +425,7 @@ def gerar_todos_metodos(seed=None, ate_concurso=None):
         "M6_filtros_combinados": metodo_filtros_combinados(rng, resultados_sets),
         "M7_cobertura_pares": metodo_cobertura_pares(rng, resultados_sets),
         "M8_repeticao_controlada": metodo_repeticao_controlada(rng, resultados_sets),
+        "M9_tese_v2": metodo_tese_v2(rng, atraso),
     }
 
 

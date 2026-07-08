@@ -1,0 +1,25 @@
+{
+  "data_analise": "2026-07-08",
+  "total_conferencias": 10,
+  "total_vencedores": 1,
+  "taxa_vencimento_pct": 10.0,
+  "vencedores_por_metodo": {
+    "M1_aleatorio_puro": 0,
+    "M2_mais_frequentes": 0,
+    "M3_mais_atrasadas": 1,
+    "M4_par_impar_balanceado": 0,
+    "M5_soma_faixa_comum": 0
+  },
+  "dezenas_top_5": [
+    1,
+    3,
+    4,
+    5,
+    8
+  ],
+  "soma_media": 184,
+  "soma_moda": 184,
+  "soma_range": "184-184",
+  "pares_media": 7,
+  "pares_moda": 7
+}

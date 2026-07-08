@@ -775,6 +775,12 @@ function generatedGamesFromResults(results, concurso, learning = null) {
   const aleatorioBase = top.has("aleatorio_filtrado")
     ? [...anchors.slice(0, 4), ...shuffled]
     : shuffled;
+  const teseV2Base = [
+    ...anchors.slice(0, 6),
+    ...byLate.slice(0, weak.has("atrasadas_controladas") ? 5 : 9),
+    ...byFreq.slice(0, 6),
+    ...shuffled
+  ];
 
   const games = [
     { metodo: "M1_aleatorio_deterministico", dezenas: unique15(aleatorioBase, 1) },
@@ -794,7 +800,8 @@ function generatedGamesFromResults(results, concurso, learning = null) {
     {
       metodo: "M8_repeticao_controlada",
       dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11)
-    }
+    },
+    { metodo: "M9_tese_v2", dezenas: unique15(teseV2Base, 9) }
   ];
 
   const seen = new Set();
