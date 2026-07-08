@@ -46,7 +46,7 @@ def medir_jogo(metodo: str, dezenas: list[int]) -> dict[str, int | str | list[in
     inicio = min(jogo)
     miolo = sum(1 for d in jogo if d in {7, 8, 9, 12, 13, 14, 17, 18, 19})
 
-    # Ranking conservador: privilegia inicio 1-3, aceita 4 com perda,
+    # Ranking conservador: privilegia inicio 1-2; 3 e 4 entram so como fallback,
     # soma perto de 200, pares 6-9 e miolo controlado.
     penalidade = 0
     penalidade += abs(soma - 200)
@@ -57,7 +57,9 @@ def medir_jogo(metodo: str, dezenas: list[int]) -> dict[str, int | str | list[in
     if inicio > 4:
         penalidade += 60
     elif inicio == 4:
-        penalidade += 12
+        penalidade += 36
+    elif inicio == 3:
+        penalidade += 24
     if miolo < 5 or miolo > 8:
         penalidade += 15
     if metodo == "M9_tese_v2":
@@ -85,8 +87,10 @@ def explicar_status(info: dict[str, int | str | list[int]]) -> str:
     miolo = int(info["miolo"])
 
     alertas: list[str] = []
-    if inicio <= 3:
+    if inicio <= 2:
         alertas.append("inicio forte")
+    elif inicio == 3:
+        alertas.append("inicio 3 raro/fallback")
     elif inicio == 4:
         alertas.append("inicio 4 raro/aceitavel")
     else:
@@ -124,11 +128,11 @@ def main() -> None:
     ranking = sorted(jogos, key=lambda item: int(item["penalidade"]))
 
     print("=" * 92)
-    print("  RECOMENDACOES PARA HOJE - 9 METODOS DO SISTEMA")
+    print("  SUGESTOES DO DIA - ATE 6 SEQUENCIAS DOS 9 METODOS")
     print("=" * 92)
     print(f"Data: {datetime.now().strftime('%d/%m/%Y')}")
     print(f"Seed: {seed_hoje}")
-    print("Objetivo tecnico: filtrar jogos ruins e estudar candidatos para 11+ acertos.")
+    print("Objetivo tecnico: escolher ate 6 combinacoes para tentar superar 11 acertos.")
     print("Aviso: isto e estudo estatistico, nao previsao garantida.")
 
     print("\n" + "=" * 92)
@@ -158,16 +162,26 @@ def main() -> None:
         )
         print(f"Leitura: {explicar_status(info)}")
 
-    melhor = ranking[0]
-    melhor_dezenas = cast(list[int], melhor["dezenas"])
+    inicio_forte = [info for info in ranking if int(info["inicio"]) <= 2]
+    fallback = [info for info in ranking if int(info["inicio"]) <= 4]
+    pacote = (inicio_forte or fallback or ranking)[:6]
+    custo = len(pacote) * 3.50
+    retorno_12 = 20.00
 
     print("\n" + "=" * 92)
-    print("RECOMENDACAO DO FILTRO")
+    print("SUGESTOES DO DIA")
     print("=" * 92)
-    print(f"Primeira escolha tecnica: {melhor['label']}")
-    print(f"Jogo: {dezenas_texto(melhor_dezenas)}")
-    print(f"Motivo: {explicar_status(melhor)}")
-    print("\nUse os 9 como base de comparacao. O sistema deve aprender com a conferencia real.")
+    print(f"Pacote: {len(pacote)} sequencia(s)")
+    print(f"Custo estimado: R$ {custo:.2f}")
+    print(f"Referencia 12 pontos: R$ {retorno_12:.2f}")
+    print(f"Risco liquido se uma sequencia fizer 12 pontos: R$ {max(0, custo - retorno_12):.2f}")
+    print("Regra de inicio: prioriza 01 e 02; 03/04 so entram como fallback raro.")
+    print("\nSequencias escolhidas:")
+    for posicao, info in enumerate(pacote, start=1):
+        dezenas = cast(list[int], info["dezenas"])
+        print(f"{posicao}. {info['label']}: {dezenas_texto(dezenas)}")
+        print(f"   Motivo: {explicar_status(info)}")
+    print("\nOs 9 metodos servem como base de comparacao; o pacote do dia usa no maximo os 6 primeiros colocados do filtro.")
 
 
 if __name__ == "__main__":

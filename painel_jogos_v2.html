@@ -291,7 +291,7 @@
               <thead><tr style="color:#64748B; font-size:10px; text-transform:uppercase;"><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">Estrategia</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">Jogos</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">Media</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">11+</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">13</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">14</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">15</th><th style="text-align:left; padding:7px 8px; border-bottom:1px solid #E2E8F0;">Melhor</th></tr></thead>
               <tbody>
                 <sc-for list="{{ laboratorioRanking }}" as="lr" hint-placeholder-count="5">
-                  <tr>
+                  <tr data-style-template="{{ lr.rowStyle }}">
                     <td style="padding:7px 8px; border-bottom:1px solid #F1F5F9; font-weight:800; color:#0F172A;">{{ lr.label }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1F5F9;">{{ lr.jogos }}</td>
                     <td style="padding:7px 8px; border-bottom:1px solid #F1F5F9; font-weight:800; color:#0F766E;">{{ lr.media }}</td>
@@ -307,6 +307,108 @@
           </div>
         </sc-if>
         <div style="font-size:11px; color:#64748B; margin-top:10px;">{{ laboratorioMelhor }}</div>
+      </div>
+
+      <sc-if value="{{ hasSugestaoDia }}" hint-placeholder-val="{{ true }}">
+        <div style="background:linear-gradient(135deg,#F0FDFA 0%,#EFF6FF 100%); border:2px solid #0EA5E9; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(14,165,233,.16); margin-bottom:16px;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <div>
+              <div style="font-size:11px; font-weight:900; color:#075985; text-transform:uppercase; letter-spacing:.06em;">Sugestoes do dia</div>
+              <div style="font-size:12px; color:#64748B; margin-top:4px;">{{ sugestaoDia.resumo }}</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button onClick="{{ copiarSugestaoDia }}" style="background:#EEF2FF; border:1px solid #4F46E555; color:#3730A3; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:900;">Copiar bloco</button>
+              <button onClick="{{ registrarSugestaoDia }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:900;">Aceitar ate 6 sequencias</button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px;">
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Sequencias</div>
+              <div style="font-size:18px; font-weight:900; color:#0F766E; margin-top:3px;">{{ sugestaoDia.total }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Investimento</div>
+              <div style="font-size:18px; font-weight:900; color:#5B21B6; margin-top:3px;">{{ sugestaoDia.custo }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Referencia 12 pontos</div>
+              <div style="font-size:18px; font-weight:900; color:#92400E; margin-top:3px;">{{ sugestaoDia.retorno12 }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Risco liquido</div>
+              <div style="font-size:18px; font-weight:900; color:#1E40AF; margin-top:3px;">{{ sugestaoDia.riscoLiquido }}</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px;">
+            <sc-for list="{{ sugestaoDiaRows }}" as="sd" hint-placeholder-count="6">
+              <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                  <span style="font-size:12px; font-weight:900; color:#0F172A;">{{ sd.posicao }}. {{ sd.metodo }}</span>
+                  <span style="font-size:11px; font-weight:900; color:#0F766E;">{{ sd.resumo }}</span>
+                </div>
+                <div style="font-size:14px; font-weight:900; color:#1F1235; line-height:1.5;">{{ sd.dezenas }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ hasSugestaoPrincipal }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid; grid-template-columns:minmax(220px,1fr) repeat(4,minmax(90px,.35fr)); gap:10px; align-items:stretch; margin-top:12px;">
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:12px; font-weight:900; color:#0F172A; margin-bottom:6px;">{{ sugestaoDia.metodo }}</div>
+              <div style="font-size:15px; font-weight:900; color:#1F1235; line-height:1.55;">{{ sugestaoDia.dezenas }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Inicio</div>
+              <div style="font-size:18px; font-weight:900; color:#0F766E; margin-top:3px;">{{ sugestaoDia.inicio }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Soma</div>
+              <div style="font-size:18px; font-weight:900; color:#5B21B6; margin-top:3px;">{{ sugestaoDia.soma }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Pares</div>
+              <div style="font-size:18px; font-weight:900; color:#92400E; margin-top:3px;">{{ sugestaoDia.pares }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:8px; padding:12px;">
+              <div style="font-size:10px; color:#64748B; text-transform:uppercase;">Miolo</div>
+              <div style="font-size:18px; font-weight:900; color:#1E40AF; margin-top:3px;">{{ sugestaoDia.miolo }}</div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <div style="background:linear-gradient(135deg,#EFF6FF 0%,#F0FDFA 100%); border:2px solid #2563EB; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(37,99,235,.16); margin-bottom:16px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px; font-weight:900; color:#1D4ED8; text-transform:uppercase; letter-spacing:.06em;">Matematica de mais dezenas</div>
+            <div style="font-size:12px; color:#475569; margin-top:4px;">{{ matematicaDezenasResumo }}</div>
+          </div>
+          <span style="background:#DBEAFE;color:#1D4ED8;border:1px solid #2563EB55;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;white-space:nowrap;">Quadro comparativo</span>
+        </div>
+        <div style="overflow:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="color:#64748B; font-size:10.5px; text-transform:uppercase;">
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Dezenas</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Jogos equivalentes</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Custo oficial</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Chance 15 pontos</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Leitura do sistema</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ matematicaDezenasRows }}" as="mr" hint-placeholder-count="6">
+                <tr>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#0F172A;">{{ mr.dezenas }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF;">{{ mr.jogos }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#0F766E;">{{ mr.custo }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#1D4ED8;">{{ mr.chance15 }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#475569;">{{ mr.leitura }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
@@ -370,7 +472,7 @@
               <tr><td colspan="18" style="text-align:center; color:#8B76B0; padding:18px;">Conferidor limpo. Nenhum jogo registrado ativo para conferir nesta rodada.</td></tr>
             </sc-if>
             <sc-for list="{{ conferidor }}" as="m" hint-placeholder-count="5">
-              <tr>
+              <tr data-style-template="{{ m.rowStyle }}">
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ m.badgeStyle }}">{{ m.label }}</span></td>
                 <sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="15"><td data-style-template="{{ c.style }}; text-align:center; padding:6px;">{{ c.num }}</td></sc-for>
                 <td style="padding:7px 8px; border-bottom:1px solid #F1ECFB; text-align:center;"><span data-style-template="{{ m.acertosStyle }}">{{ m.acertosLabel }}</span></td>
@@ -620,7 +722,7 @@
               <tr><td colspan="8" style="text-align:center; color:#8B76B0; padding:20px;">Nenhum jogo ativo para o concurso atual. Jogos conferidos ficam no histÃ³rico.</td></tr>
             </sc-if>
             <sc-for list="{{ savedGamesView }}" as="g" hint-placeholder-count="0">
-              <tr>
+              <tr data-style-template="{{ g.rowStyle }}">
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ g.concurso }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ g.origemStyle }}">{{ g.origem }}</span></td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ g.dezenasStr }}</td>
@@ -735,7 +837,7 @@
               <tr><td colspan="8" style="text-align:center; color:#8B76B0; padding:20px;">Nenhum jogo antigo ou conferido ainda.</td></tr>
             </sc-if>
             <sc-for list="{{ historicalGamesView }}" as="hg" hint-placeholder-count="0">
-              <tr>
+              <tr data-style-template="{{ hg.rowStyle }}">
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ hg.concurso }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ hg.origem }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB; font-family:monospace;">{{ hg.dezenasStr }}</td>
@@ -792,7 +894,7 @@
           <thead><tr style="color:#8B76B0; font-size:11px; text-transform:uppercase;"><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Concurso</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Método</th><th style="text-align:left; padding:8px 10px; border-bottom:1px solid #E9DFFB;">Acertos</th></tr></thead>
           <tbody>
             <sc-for list="{{ historico }}" as="h" hint-placeholder-count="5">
-              <tr>
+              <tr data-style-template="{{ h.rowStyle }}">
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ h.concurso }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;">{{ h.metodo }}</td>
                 <td style="padding:8px 10px; border-bottom:1px solid #F1ECFB;"><span data-style-template="{{ h.style }}">{{ h.acertos }}</span></td>
@@ -891,13 +993,13 @@ function methodLabel(metodo) {
 
 function methodKey(metodo, fallback = '') {
   const raw = String(metodo || fallback || '');
-  const match = raw.match(/\bM([1-8])\b|M([1-8])_/i);
+  const match = raw.match(/\bM([1-9])\b|M([1-9])_/i);
   return match ? `M${match[1] || match[2]}` : raw.split(/\s+/)[0] || 'Sistema';
 }
 
 function origemLabel(metodo) {
   const raw = String(metodo || '').trim();
-  if (/^Sistema\s+M[1-8]\b/i.test(raw)) return raw.match(/^Sistema\s+M[1-8]/i)[0].replace(/\s+/, ' ');
+  if (/^Sistema\s+M[1-9]\b/i.test(raw)) return raw.match(/^Sistema\s+M[1-9]/i)[0].replace(/\s+/, ' ');
   if (/^Painel IA Direto/i.test(raw)) return 'IA Direto';
   if (/^Painel Manual/i.test(raw)) return 'Manual';
   if (/^Painel/i.test(raw)) return raw.replace(/^Painel\s*/i, '') || 'Painel';
@@ -1068,6 +1170,34 @@ function combinacoes(n, k) {
   let r = 1;
   for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
   return Math.round(r);
+}
+
+function brMoney(valor) {
+  return `R$ ${Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function acertoLevel(acertos) {
+  const n = Math.max(0, Math.min(15, Number(acertos || 0)));
+  if (n >= 15) return { bg:'#FDF2F8', color:'#BE123C', border:'#EC4899', strong:true };
+  if (n >= 14) return { bg:'#FFF7ED', color:'#C2410C', border:'#FB923C', strong:true };
+  if (n >= 13) return { bg:'#FFFBEB', color:'#92400E', border:'#F59E0B', strong:true };
+  if (n >= 12) return { bg:'#F0FDFA', color:'#0F766E', border:'#14B8A6', strong:true };
+  if (n >= 11) return { bg:'#ECFDF5', color:'#047857', border:'#10B981', strong:true };
+  if (n >= 10) return { bg:'#DCFCE7', color:'#166534', border:'#16A34A', strong:false };
+  if (n >= 9) return { bg:'#FEF3C7', color:'#92400E', border:'#F59E0B', strong:false };
+  return { bg:'#F3E8FF', color:'#5B21B6', border:'#7C3AED', strong:false };
+}
+
+function acertoBadgeStyle(acertos) {
+  const c = acertoLevel(acertos);
+  return `background:${c.bg};color:${c.color};border:1px solid ${c.border}55;border-radius:999px;padding:3px 12px;font-weight:800;font-size:13px;`;
+}
+
+function acertoRowStyle(acertos) {
+  const c = acertoLevel(acertos);
+  return c.strong
+    ? `background:${c.bg};box-shadow:inset 4px 0 0 ${c.border};`
+    : '';
 }
 
 // Matrizes de cobertura reduzidas (garantia de 14 pontos), geradas e verificadas
@@ -1627,6 +1757,81 @@ class Component extends DCLogic {
         }));
   }
 
+  pontuarJogoSistema(jogo, contexto) {
+    const a = analisarJogo(jogo.dezenas || [], contexto || this.analysisContext());
+    const inicio = a.menorDezena || 99;
+    let penalidade = 0;
+    penalidade += Math.abs(a.soma - 200);
+    if (!a.somaFaixaComum) penalidade += 30;
+    if (!a.parImparEquilibrado) penalidade += 20;
+    if (inicio > 4) penalidade += 60;
+    else if (inicio === 4) penalidade += 36;
+    else if (inicio === 3) penalidade += 24;
+    if (a.miolo < 5 || a.miolo > 8) penalidade += 15;
+    if (/M9/i.test(jogo.key || jogo.label || '')) penalidade -= 8;
+    if (/M3/i.test(jogo.key || jogo.label || '')) penalidade -= 4;
+    return { ...jogo, analise: a, penalidade };
+  }
+
+  sugestaoDoDia(contexto) {
+    return this.sugestoesDoDia(contexto, 1)[0] || null;
+  }
+
+  sugestoesDoDia(contexto, limite = 6) {
+    const candidatos = this.jogosSistemaAtuais()
+      .filter(jogo => jogo.dezenas.length === 15)
+      .map(jogo => this.pontuarJogoSistema(jogo, contexto))
+      .sort((a, b) => a.penalidade - b.penalidade);
+    const inicioForte = candidatos.filter(jogo => (jogo.analise.menorDezena || 99) <= 2);
+    const base = inicioForte.length ? inicioForte : candidatos.filter(jogo => (jogo.analise.menorDezena || 99) <= 4);
+    return (base.length ? base : candidatos)
+      .slice(0, limite);
+  }
+
+  async registrarSugestaoDia() {
+    if (!getAuthToken()) {
+      this.setState({ authStatus: 'Entre para salvar as sugestoes do dia.' });
+      return;
+    }
+    const sugestoes = this.sugestoesDoDia(null, 6);
+    if (!sugestoes.length) {
+      this.setState({ panelStatus: 'Ainda nao ha sugestoes do dia para registrar.' });
+      return;
+    }
+    const jogos = sugestoes.filter(sugestao => !this.state.savedGames.some(g => mesmaCombinacao(g.dezenas, sugestao.dezenas)));
+    const pulados = sugestoes.length - jogos.length;
+    if (!jogos.length) {
+      this.setState({ panelStatus: 'As sugestoes do dia ja estao em Jogos registrados.' });
+      return;
+    }
+    this.setState({ panelStatus: `Registrando ${jogos.length} sugestao(oes) do dia em Jogos registrados...` });
+    let salvos = 0;
+    try {
+      for (const sugestao of jogos) {
+        await painelApi('/api/jogos', {
+          method:'POST',
+          body: JSON.stringify({
+            concurso: this.state.concursoAlvo,
+            metodo: `Sugestao do Dia - ${sugestao.key}`,
+            dezenas: sugestao.dezenas,
+            observacao: this.state.keepSaved
+              ? `Bloco de ate 6 sugestoes do dia (${sugestao.label}) - manter salvo`
+              : `Bloco de ate 6 sugestoes do dia (${sugestao.label}) - descartar apos 2 conferencias`,
+            manter_salvo: this.state.keepSaved,
+            descartar_apos_rodadas: 2
+          })
+        });
+        salvos++;
+      }
+      const extra = pulados ? ` ${pulados} duplicada(s) ignorada(s).` : '';
+      this.setState({ panelStatus: `${salvos} sugestao(oes) do dia salvas em Jogos registrados.${extra}` });
+      await this.loadSavedGames();
+    } catch (err) {
+      this.setState({ panelStatus: `${salvos} sugestao(oes) salvas. Erro no restante: ${err.message || 'falha ao registrar.'}` });
+      await this.loadSavedGames();
+    }
+  }
+
   async registrarJogosSistema() {
     if (!getAuthToken()) {
       this.setState({ authStatus: 'Entre para registrar os jogos do sistema.' });
@@ -1943,6 +2148,7 @@ class Component extends DCLogic {
       { bg:'#ECFEFF', color:'#0E7490' },
       { bg:'#F0FDF4', color:'#15803D' },
       { bg:'#FFF1F2', color:'#BE123C' },
+      { bg:'#E0F2FE', color:'#0369A1' },
     ];
     const sourceMethods = s.systemGames.length
       ? s.systemGames.map((game, idx) => ({
@@ -1976,6 +2182,45 @@ class Component extends DCLogic {
       hotNumbers: statsByNumber.slice().sort((a,b) => b.frequencia_pct - a.frequencia_pct).slice(0,5).map(x => x.dezena),
       lateNumbers: statsByNumber.slice().sort((a,b) => b.atraso - a.atraso).slice(0,5).map(x => x.dezena),
     };
+    const sugestoesDiaRaw = this.sugestoesDoDia(analysisContext, 6);
+    const sugestaoDiaRaw = sugestoesDiaRaw[0] || null;
+    const sugestaoDiaAnalise = sugestaoDiaRaw?.analise || null;
+    const custoSugestao = sugestoesDiaRaw.length * 3.5;
+    const retornoReferencia12 = 20;
+    const matematicaDezenasRows = [
+      { n:15, jogos:1, custo:3.5, chance15:'1 em 3.268.760', leitura:'Aposta simples; base de comparacao.' },
+      { n:16, jogos:16, custo:56, chance15:'1 em 204.298', leitura:'Melhora a chance, mas custa mais que o pacote economico.' },
+      { n:17, jogos:136, custo:476, chance15:'1 em 24.035', leitura:'Ja vira estrategia de cobertura; precisa controle de orcamento.' },
+      { n:18, jogos:816, custo:2856, chance15:'1 em 4.006', leitura:'Forte em probabilidade, alto custo.' },
+      { n:19, jogos:3876, custo:13566, chance15:'1 em 843', leitura:'Agressivo; so faz sentido como estudo ou bolao.' },
+      { n:20, jogos:15504, custo:54264, chance15:'1 em 211', leitura:'Chance maxima oficial, custo muito alto.' },
+    ].map(row => ({
+      dezenas: `${row.n} dezenas`,
+      jogos: Number(row.jogos).toLocaleString('pt-BR'),
+      custo: brMoney(row.custo),
+      chance15: row.chance15,
+      leitura: row.leitura,
+    }));
+    const matematicaDezenasResumo = 'Mais dezenas aumentam a cobertura matematica, mas o custo cresce combinatoriamente. O site usa este quadro para comparar cobertura cheia contra pacotes filtrados.';
+    const sugestaoDia = sugestaoDiaRaw && sugestaoDiaAnalise ? {
+      metodo: sugestaoDiaRaw.label,
+      dezenas: sugestaoDiaRaw.dezenas.map(pad).join('-'),
+      inicio: pad(sugestaoDiaAnalise.menorDezena),
+      soma: sugestaoDiaAnalise.soma,
+      pares: `${sugestaoDiaAnalise.pares} / ${15 - sugestaoDiaAnalise.pares}`,
+      miolo: `${sugestaoDiaAnalise.miolo}/9`,
+      total: sugestoesDiaRaw.length,
+      custo: brMoney(custoSugestao),
+      retorno12: brMoney(retornoReferencia12),
+      riscoLiquido: brMoney(Math.max(0, custoSugestao - retornoReferencia12)),
+      resumo: `Ate 6 sequencias escolhidas entre os ${sourceMethods.length} metodos do sistema para tentar superar 11 acertos no concurso ${s.concursoAlvo}. Prioridade obrigatoria para inicio 01 ou 02; inicio 03/04 so entra como fallback raro. Com 6 jogos, o custo estimado e R$ 21,00; 12 pontos tem retorno de referencia de R$ 20,00, sem garantia.`
+    } : null;
+    const sugestaoDiaRows = sugestoesDiaRaw.map((jogo, idx) => ({
+      posicao: idx + 1,
+      metodo: jogo.label,
+      dezenas: jogo.dezenas.map(pad).join('-'),
+      resumo: `${jogo.analise.soma} soma / ${jogo.analise.pares}p / inicio ${pad(jogo.analise.menorDezena)}`
+    }));
     const recentDraws = s.recentDraws.length
       ? s.recentDraws.map(sr => ({
           concurso: sr.concurso,
@@ -1992,7 +2237,6 @@ class Component extends DCLogic {
     const conferidorSource = jogosRegistradosConferidor;
     const conferidor = conferidorSource.map(m => {
       const acertos = m.dezenas.filter(n => sorteadasConferidor.includes(n)).length;
-      const acLevel = acertos >= 10 ? {bg:'#DCFCE7',c:'#166534'} : acertos >= 9 ? {bg:'#FEF3C7',c:'#92400E'} : {bg:'#F3E8FF',c:'#5B21B6'};
       return {
         label: m.label,
         badgeStyle: `background:${m.bg};color:${m.color};border:1px solid ${m.color}33;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;`,
@@ -2002,7 +2246,8 @@ class Component extends DCLogic {
         }),
         acertos,
         acertosLabel: `${acertos} acertos`,
-        acertosStyle: `background:${acLevel.bg};color:${acLevel.c};border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;`,
+        acertosStyle: acertoBadgeStyle(acertos),
+        rowStyle: acertoRowStyle(acertos),
         onCopy: () => this.copiarDezenas(m.dezenas, m.label),
       };
     });
@@ -2062,6 +2307,7 @@ class Component extends DCLogic {
 
     const savedGamesView = activeGameEntries.map(({ g, idx }) => {
       const a = analisarJogo(g.dezenas, analysisContext);
+      const melhorAcerto = (g.conferencias || []).reduce((max, c) => Math.max(max, Number(c.acertos || 0)), 0);
       const conferenciasResumo = (g.conferencias || []).length
         ? (g.conferencias || []).map(c => `C${c.concurso}: ${c.acertos} acertos`).join(' | ')
         : 'Sem conferencia';
@@ -2097,6 +2343,7 @@ class Component extends DCLogic {
           : a.classificacao === 'Frio'
             ? 'background:#EFF6FF;color:#1E40AF;border:1px solid #2563EB55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;'
             : 'background:#F3E8FF;color:#5B21B6;border:1px solid #7C3AED55;border-radius:999px;padding:2px 10px;font-weight:700;font-size:11.5px;',
+        rowStyle: acertoRowStyle(melhorAcerto),
         onRemove: () => this.removeGame(idx),
       };
     });
@@ -2116,6 +2363,7 @@ class Component extends DCLogic {
         perfil: a.classificacao,
         status,
         detalhes: ultima?.dezenas_acertadas ? `Acertadas: ${ultima.dezenas_acertadas}` : 'Movido para historico',
+        rowStyle: acertoRowStyle(ultima?.acertos || 0),
         onRemove: () => this.removeGame(idx),
       };
     });
@@ -2245,7 +2493,8 @@ class Component extends DCLogic {
       acertos13: Number(row.acertos_13 || 0).toLocaleString('pt-BR'),
       acertos14: Number(row.acertos_14 || 0).toLocaleString('pt-BR'),
       acertos15: Number(row.acertos_15 || 0).toLocaleString('pt-BR'),
-      melhor: `${row.melhor_acerto || 0} acertos`
+      melhor: `${row.melhor_acerto || 0} acertos`,
+      rowStyle: acertoRowStyle(row.melhor_acerto || 0),
     }));
     const laboratorioMelhor = labConferido?.melhor
       ? `Ultimo laboratorio conferido C${labConferido.concurso}: melhor estrategia ${labConferido.melhor.estrategia || '--'} | ${labConferido.melhor.acertos || 0} acertos | ${labConferido.melhor.dezenas_texto || ''}`
@@ -2345,6 +2594,17 @@ class Component extends DCLogic {
       onLogout: () => this.logout(),
       tabs,
       radarSaude,
+      hasSugestaoDia: Boolean(sugestaoDia),
+      hasSugestaoPrincipal: Boolean(sugestaoDia),
+      sugestaoDia,
+      sugestaoDiaRows,
+      matematicaDezenasResumo,
+      matematicaDezenasRows,
+      copiarSugestaoDia: () => {
+        const bloco = sugestoesDiaRaw.map((jogo, idx) => `${idx + 1}. ${jogo.label}: ${jogo.dezenas.map(pad).join('-')}`).join('\n');
+        return this.copiarTexto(bloco, `${sugestoesDiaRaw.length} sugestao(oes) do dia copiadas`);
+      },
+      registrarSugestaoDia: () => this.registrarSugestaoDia(),
       isJogos: tab === 'jogos',
       isMeusJogos: tab === 'meusjogos',
       isSequencias: tab === 'sequencias',
@@ -2446,7 +2706,11 @@ class Component extends DCLogic {
       hasLaboratorioRanking: laboratorioRanking.length > 0,
       laboratorioMelhor,
       heatmap,
-      historico: HISTORICO,
+      historico: HISTORICO.map(h => ({
+        ...h,
+        style: acertoBadgeStyle(h.acertos),
+        rowStyle: acertoRowStyle(h.acertos),
+      })),
       qtdOptions: [10,20,50].map(q => ({
         q, onClick: () => this.setQtdHistorico(q),
         style: `padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ${s.qtdHistorico===q?'#7C3AED':'#E9DFFB'};background:${s.qtdHistorico===q?'#7C3AED':'#FAF7FF'};color:${s.qtdHistorico===q?'#fff':'#6B5B8A'};`,
