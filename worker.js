@@ -611,7 +611,34 @@ async function recentResultsForGeneration(env) {
   }));
 }
 
-function generatedGamesFromResults(results, concurso) {
+function learnedGenerationContext(laboratorio) {
+  const estrategias = laboratorio?.estrategias || [];
+  const anchorCounts = new Map();
+  const topStrategies = estrategias.slice(0, 3).map((item) => item.key);
+  const weakStrategies = estrategias
+    .filter((item) => Number(item.taxa_11_mais || 0) <= 1 || Number(item.melhor_acerto || 0) < 11)
+    .map((item) => item.key);
+
+  const addAnchors = (dezenas, weight) => {
+    for (const dezena of dezenas || []) {
+      anchorCounts.set(dezena, (anchorCounts.get(dezena) || 0) + weight);
+    }
+  };
+
+  addAnchors(laboratorio?.melhor?.dezenas, 5);
+  estrategias.slice(0, 3).forEach((item, idx) => addAnchors(item.melhor_dezenas, 3 - idx));
+
+  return {
+    topStrategies,
+    weakStrategies,
+    anchors: Array.from(anchorCounts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .map(([dezena]) => dezena)
+      .slice(0, 10)
+  };
+}
+
+function generatedGamesFromResults(results, concurso, learning = null) {
   const all = Array.from({ length: 25 }, (_, index) => index + 1);
   const freq = new Map(all.map((number) => [number, 0]));
   const lastSeen = new Map(all.map((number) => [number, 9999]));
@@ -630,7 +657,12 @@ function generatedGamesFromResults(results, concurso) {
   const byLate = all.slice().sort((a, b) => lastSeen.get(b) - lastSeen.get(a) || a - b);
   const seed = (concurso * 9301 + 49297) % 233280;
   const shuffled = all.slice().sort((a, b) => ((a * seed) % 97) - ((b * seed) % 97));
+  const learned = learning || {};
+  const anchors = learned.anchors || [];
+  const weak = new Set(learned.weakStrategies || []);
+  const top = new Set(learned.topStrategies || []);
   const balanced = [
+    ...anchors,
     ...byFreq.slice(0, 5),
     ...byLate.slice(0, 5),
     ...shuffled
@@ -734,11 +766,21 @@ function generatedGamesFromResults(results, concurso) {
     return bestAdvancedGame(results, concurso, salt);
   };
 
+  const atrasoBase = weak.has("atrasadas_controladas")
+    ? [...byLate.slice(0, 4), ...anchors, ...byFreq.slice(0, 7), ...shuffled]
+    : [...byLate, ...anchors, ...shuffled];
+  const frequenciaBase = top.has("quentes_balanceadas")
+    ? [...anchors, ...byFreq, ...shuffled]
+    : [...byFreq, ...anchors, ...shuffled];
+  const aleatorioBase = top.has("aleatorio_filtrado")
+    ? [...anchors.slice(0, 4), ...shuffled]
+    : shuffled;
+
   const games = [
-    { metodo: "M1_aleatorio_deterministico", dezenas: unique15(shuffled, 1) },
-    { metodo: "M2_mais_frequentes", dezenas: unique15(byFreq, 2) },
-    { metodo: "M3_mais_atrasadas", dezenas: unique15(byLate, 3) },
-    { metodo: "M4_balanceado", dezenas: unique15([...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled], 4) },
+    { metodo: "M1_aleatorio_deterministico", dezenas: unique15(aleatorioBase, 1) },
+    { metodo: "M2_mais_frequentes", dezenas: unique15(frequenciaBase, 2) },
+    { metodo: "M3_mais_atrasadas", dezenas: unique15(atrasoBase, 3) },
+    { metodo: "M4_balanceado", dezenas: unique15([...anchors, ...byFreq.slice(0, 8), ...byLate.slice(0, 7), ...shuffled], 4) },
     { metodo: "M5_soma_faixa_comum", dezenas: makeSumRange() },
     {
       metodo: "M6_filtros_combinados",
@@ -1081,7 +1123,9 @@ async function rodarLaboratorio(request, env) {
 
 async function generateNextContestGames(env, concurso) {
   const results = await recentResultsForGeneration(env);
-  const games = generatedGamesFromResults(results, concurso);
+  const laboratorioConferido = await latestLaboratorioConferido(env);
+  const learning = learnedGenerationContext(laboratorioConferido);
+  const games = generatedGamesFromResults(results, concurso, learning);
 
   for (const game of games) {
     const stats = scoreSet(game.dezenas);
@@ -2266,6 +2310,10 @@ export default {
     try {
       if (url.pathname.startsWith("/api/")) {
         return await handleApi(request, env, url);
+      }
+
+      if (url.pathname === "/") {
+        return Response.redirect(new URL("/index", url).toString(), 302);
       }
 
       if (PANEL_ROUTES[url.pathname]) {
