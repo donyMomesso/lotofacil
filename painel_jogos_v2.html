@@ -395,7 +395,7 @@
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Investimento 2 jogos</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Chance 15 pontos</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:330px;">Sugestões do sistema</th>
-                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:250px;">Retorno possível por jogo</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:230px;">Leitura do sistema</th>
               </tr>
             </thead>
             <tbody>
@@ -410,14 +410,53 @@
                     <div><b style="color:#1D4ED8;">A</b> {{ mr.sugestaoA }}</div>
                     <div><b style="color:#0F766E;">B</b> {{ mr.sugestaoB }}</div>
                   </td>
-                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#475569; line-height:1.55;">{{ mr.retorno }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#475569; line-height:1.55;">{{ mr.leitura }}</td>
                 </tr>
               </sc-for>
             </tbody>
           </table>
         </div>
-        <div style="margin-top:10px; padding:9px 11px; background:#FFFFFFAA; border:1px solid #BAE6FD; border-radius:8px; color:#475569; font-size:10.5px; line-height:1.55;">
-          Retorno não é garantia. Os valores de 11, 12 e 13 pontos são fixos; 14 e 15 pontos dependem do rateio do concurso. Ao jogar duas sugestões, o investimento dobra, mas o retorno não dobra automaticamente.
+      </div>
+
+      <div style="background:linear-gradient(135deg,#FFFBEB 0%,#FFF7ED 100%); border:2px solid #D97706; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(217,119,6,.14); margin-bottom:16px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px; font-weight:900; color:#92400E; text-transform:uppercase; letter-spacing:.06em;">Resumo de retorno de investimento</div>
+            <div style="font-size:12px; color:#475569; margin-top:4px;">{{ matematicaRetornoResumo }}</div>
+          </div>
+          <span style="background:#FEF3C7;color:#92400E;border:1px solid #D9770655;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;white-space:nowrap;">ROI estimado</span>
+        </div>
+        <div style="overflow:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="color:#92400E; font-size:10.5px; text-transform:uppercase;">
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A;">Dezenas</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A;">Investimento (1 jogo)</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A; min-width:170px;">Retorno fixo se grupo contém as 15</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A;">ROI nesse cenário</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A;">Valor esperado (fixo)</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #FDE68A;">ROI esperado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ matematicaRetornoRows }}" as="rr" hint-placeholder-count="6">
+                <tr>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7; font-weight:900; color:#0F172A;">{{ rr.dezenas }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7;">{{ rr.custo }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7; font-weight:900; color:#0F766E;">
+                    {{ rr.parcelaFixa }}
+                    <div style="font-size:10.5px; font-weight:600; color:#78716C;">{{ rr.detalheFixa }}</div>
+                  </td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7; font-weight:900; color:#1D4ED8;">{{ rr.roiCenario }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7;">{{ rr.valorEsperado }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #FEF3C7; font-weight:900; color:#B91C1C;">{{ rr.roiEsperado }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:10px; padding:9px 11px; background:#FFFFFFAA; border:1px solid #FDE68A; border-radius:8px; color:#78350F; font-size:10.5px; line-height:1.55;">
+          Retorno não é garantia de lucro. O ROI esperado é negativo em todas as linhas — mais dezenas custam proporcionalmente mais caro e não mudam essa conta a seu favor; ao jogar duas sugestões (A e B), o investimento dobra, mas o retorno não dobra automaticamente.
         </div>
       </div>
 
@@ -508,6 +547,7 @@
         </div>
         <div style="font-size:12px; color:#6B5B8A; line-height:1.6; margin-bottom:14px;">
           Em vez de escolher 15 dezenas, você escolhe um grupo maior. O sistema consulta uma <b>matriz de cobertura reduzida</b> (pré-calculada e verificada por computação, não a combinação total) para esse tamanho de grupo — garantindo que, se as 15 dezenas sorteadas estiverem todas no seu grupo, pelo menos um jogo acerta <b>14 das 15</b> dezenas. Isso é bem mais barato que a combinação total (que chegaria a 15.504 jogos para um grupo de 20 dezenas), ao custo de trocar a garantia de 15 pontos por 14.
+          Cada jogo final também passa pela trava de início: <b>01 ou 02 são prioritários</b>, 03/04 são fallback e nenhum jogo pode começar em 05 ou acima.
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
           <span style="font-size:11px; color:#8B76B0;">Tamanho do grupo:</span>
@@ -548,6 +588,9 @@
             </div>
             <button onClick="{{ copiarTodosJogos }}" style="background:#7c3aed; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:20px;">📋 Copiar todos os jogos para a Extensão</button>
           </div>
+        </sc-if>
+        <sc-if value="{{ hasFechamentoBloqueado }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px; background:#FFF7ED; border:1px solid #FB923C; color:#9A3412; border-radius:8px; padding:10px 12px; font-size:11.5px; font-weight:700;">{{ fechamentoAviso }}</div>
         </sc-if>
       </div>
 
@@ -1182,8 +1225,105 @@ function combinacoes(n, k) {
   return Math.round(r);
 }
 
+function gerarCombinacoesLista(valores, tamanho) {
+  const resultado = [];
+  const atual = [];
+  const visitar = (inicio) => {
+    if (atual.length === tamanho) {
+      resultado.push(atual.slice());
+      return;
+    }
+    const faltam = tamanho - atual.length;
+    for (let i = inicio; i <= valores.length - faltam; i++) {
+      atual.push(valores[i]);
+      visitar(i + 1);
+      atual.pop();
+    }
+  };
+  visitar(0);
+  return resultado;
+}
+
+function ajustarCoberturaComTravaInicio(matriz, grupo) {
+  const ordenado = grupo.slice().sort((a, b) => a - b);
+  const baixosFortes = ordenado.filter(n => n <= 2);
+  const baixosFallback = ordenado.filter(n => n <= 4);
+  const baixos = baixosFortes.length ? baixosFortes : baixosFallback;
+  if (!matriz || !baixos.length) {
+    return { jogos: [], aviso: 'Selecione pelo menos uma dezena entre 01 e 04. O preenchimento automático prioriza 01 e 02.' };
+  }
+
+  const vistos = new Set();
+  const jogos = [];
+  const adicionar = (dezenas) => {
+    const jogo = Array.from(new Set(dezenas)).sort((a, b) => a - b);
+    if (jogo.length !== 15 || jogo[0] > 4) return;
+    const chave = jogo.join('-');
+    if (!vistos.has(chave)) {
+      vistos.add(chave);
+      jogos.push(jogo);
+    }
+  };
+
+  matriz.forEach((posicoes, indice) => {
+    const original = posicoes.map(p => ordenado[p]).sort((a, b) => a - b);
+    if (original[0] <= 4) {
+      adicionar(original);
+      return;
+    }
+    const baixa = baixos[indice % baixos.length];
+    adicionar([baixa, ...original.slice(0, 14)]);
+  });
+
+  // Reconfere todas as possibilidades do grupo. Um jogo de reparo e incluido
+  // apenas quando nenhum bloco ajustado cobre ao menos 14 dezenas.
+  gerarCombinacoesLista(ordenado, 15).forEach((sorteio, indice) => {
+    const sorteioSet = new Set(sorteio);
+    const coberto = jogos.some(jogo => jogo.reduce((qtd, n) => qtd + (sorteioSet.has(n) ? 1 : 0), 0) >= 14);
+    if (coberto) return;
+    const baixa = baixos[indice % baixos.length];
+    const base = sorteio.includes(baixa) ? sorteio : [baixa, ...sorteio.slice(0, 14)];
+    adicionar(base);
+  });
+
+  return { jogos, aviso: '' };
+}
+
 function brMoney(valor) {
   return `R$ ${Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Premios fixos oficiais da Lotofacil (Caixa, reajuste de 09/07/2025).
+// 14 e 15 pontos nao entram aqui: sao pagos por rateio (valor variavel por concurso).
+const PREMIOS_FIXOS = { 11: 7, 12: 14, 13: 30 };
+
+// Para um grupo de `n` dezenas cujas 15 sorteadas estejam TODAS dentro dele,
+// o numero de jogos (dentre os C(n,15) embutidos) que acerta exatamente `t`
+// pontos e C(15,t) * C(n-15, 15-t) - combinatoria pura, nao depende de sorteio.
+function contagemAcertosGarantidos(n) {
+  const extra = n - 15;
+  const porPontos = {};
+  for (let t = 11; t <= 15; t++) {
+    const faltam = 15 - t;
+    porPontos[t] = faltam <= extra ? combinacoes(15, t) * combinacoes(extra, faltam) : 0;
+  }
+  return porPontos;
+}
+
+// Chance hipergeometrica (N=25, K=15 sorteadas, amostra=n) de que as 15
+// sorteadas estejam todas dentro do grupo de n dezenas: C(n,15)/C(25,15).
+function chanceGrupoContemTodas(n) {
+  return combinacoes(n, 15) / combinacoes(25, 15);
+}
+
+function resumoRetornoMatematica(n, custoUmJogo) {
+  const contagem = contagemAcertosGarantidos(n);
+  const parcelaFixa = [11, 12, 13].reduce((soma, t) => soma + contagem[t] * PREMIOS_FIXOS[t], 0);
+  const chance = chanceGrupoContemTodas(n);
+  const valorEsperadoFixo = chance * parcelaFixa;
+  const roiCenario = custoUmJogo > 0 ? ((parcelaFixa - custoUmJogo) / custoUmJogo) * 100 : 0;
+  const roiEsperado = custoUmJogo > 0 ? ((valorEsperadoFixo - custoUmJogo) / custoUmJogo) * 100 : 0;
+  return { contagem, parcelaFixa, chance, valorEsperadoFixo, roiCenario, roiEsperado };
 }
 
 function acertoLevel(acertos) {
@@ -1529,7 +1669,7 @@ class Component extends DCLogic {
     let escolhidas = [];
     ROWS.forEach((faixa, idx) => {
       const ranked = faixa
-        .map(n => ({ n, score: (HOT.includes(n)?2:0) + (LATE.includes(n)?1.5:0) + (INNER_CORE.includes(n)?1:0) + Math.random() }))
+        .map(n => ({ n, score: (n <= 2 ? 100 : 0) + (HOT.includes(n)?2:0) + (LATE.includes(n)?1.5:0) + (INNER_CORE.includes(n)?1:0) + Math.random() }))
         .sort((a,b) => b.score - a.score)
         .slice(0, quotas[idx])
         .map(x => x.n);
@@ -2142,12 +2282,16 @@ class Component extends DCLogic {
     // Grupo escolhido, em ordem crescente - a matriz guarda posicoes 0-based
     // dentro dessa ordem (ver scripts/gerar_matrizes_cobertura.py).
     const grupoOrdenado = [...s.fechamentoSelected].sort((a, b) => a - b);
-    const fechamentoJogos = (matrizCobertura && fSelCount === fN)
-      ? matrizCobertura.matriz.map((posicoes) => ({
-          dezenasStr: posicoes.map((p) => grupoOrdenado[p]).sort((a, b) => a - b).map(pad).join('-'),
-        }))
-      : [];
-    const totalCombos = matrizCobertura ? matrizCobertura.matriz.length : totalCombosFull;
+    const fechamentoAjustado = (matrizCobertura && fSelCount === fN)
+      ? ajustarCoberturaComTravaInicio(matrizCobertura.matriz, grupoOrdenado)
+      : { jogos: [], aviso: '' };
+    const fechamentoJogos = fechamentoAjustado.jogos.map(dezenas => ({
+      dezenasStr: dezenas.map(pad).join('-'),
+    }));
+    const totalCombos = fSelCount === fN
+      ? fechamentoJogos.length
+      : (matrizCobertura ? matrizCobertura.matriz.length : totalCombosFull);
+    const fechamentoAviso = fechamentoAjustado.aviso;
 
     const systemColors = [
       { bg:'#DBEAFE', color:'#1D4ED8' },
@@ -2196,7 +2340,8 @@ class Component extends DCLogic {
     const sugestaoDiaRaw = sugestoesDiaRaw[0] || null;
     const sugestaoDiaAnalise = sugestaoDiaRaw?.analise || null;
     const custoSugestao = sugestoesDiaRaw.length * 3.5;
-    const retornoReferencia12 = 20;
+    // Valor fixo oficial da Caixa para 12 pontos (reajuste de 09/07/2025); ver PREMIOS_FIXOS.
+    const retornoReferencia12 = PREMIOS_FIXOS[12];
     const montarGrupoAmpliado = (base, quantidade, variante = 0) => {
       const grupo = Array.from(new Set((base || []).map(Number).filter(n => n >= 1 && n <= 25)));
       const candidatos = statsByNumber
@@ -2217,14 +2362,15 @@ class Component extends DCLogic {
       sugestoesDiaRaw[0]?.dezenas || sourceMethods[0]?.dezenas || [],
       sugestoesDiaRaw[1]?.dezenas || sourceMethods[1]?.dezenas || sugestoesDiaRaw[0]?.dezenas || [],
     ];
-    const matematicaDezenasRows = [
-      { n:15, jogos:1, custo:3.5, chance15:'1 em 3.268.760', retorno:'Se acertar 15: 1 prêmio variável de 15 pontos.' },
-      { n:16, jogos:16, custo:56, chance15:'1 em 204.298', retorno:'Se contiver as 15 sorteadas: 1 prêmio de 15 + 15 prêmios de 14, ambos variáveis.' },
-      { n:17, jogos:136, custo:476, chance15:'1 em 24.035', retorno:'Se contiver as 15 sorteadas: 1x15 + 30x14 + 105x13. Parcela fixa: R$ 3.675,00, além dos rateios.' },
-      { n:18, jogos:816, custo:2856, chance15:'1 em 4.006', retorno:'Se contiver as 15 sorteadas: 1x15 + 45x14 + 315x13 + 455x12. Parcela fixa: R$ 17.395,00, além dos rateios.' },
-      { n:19, jogos:3876, custo:13566, chance15:'1 em 843', retorno:'Se contiver as 15 sorteadas: 1x15 + 60x14 + 630x13 + 1.820x12 + 1.365x11. Parcela fixa: R$ 57.085,00, além dos rateios.' },
-      { n:20, jogos:15504, custo:54264, chance15:'1 em 211', retorno:'Se contiver as 15 sorteadas: 1x15 + 75x14 + 1.050x13 + 4.550x12 + 6.825x11. Parcela fixa: R$ 148.225,00, além dos rateios.' },
-    ].map(row => ({
+    const matematicaBase = [
+      { n:15, jogos:1, custo:3.5, chance15:'1 em 3.268.760', leitura:'Aposta simples; base de comparação.' },
+      { n:16, jogos:16, custo:56, chance15:'1 em 204.298', leitura:'Melhora a chance, mas custa mais que o pacote econômico.' },
+      { n:17, jogos:136, custo:476, chance15:'1 em 24.035', leitura:'Já vira estratégia de cobertura; precisa controle de orçamento.' },
+      { n:18, jogos:816, custo:2856, chance15:'1 em 4.006', leitura:'Forte em probabilidade, com investimento alto.' },
+      { n:19, jogos:3876, custo:13566, chance15:'1 em 843', leitura:'Estratégia agressiva; mais adequada para estudo ou bolão.' },
+      { n:20, jogos:15504, custo:54264, chance15:'1 em 211', leitura:'Maior chance matemática oficial, com custo muito alto.' },
+    ];
+    const matematicaDezenasRows = matematicaBase.map(row => ({
       dezenas: `${row.n} dezenas`,
       jogos: Number(row.jogos).toLocaleString('pt-BR'),
       custo: brMoney(row.custo),
@@ -2232,9 +2378,26 @@ class Component extends DCLogic {
       chance15: row.chance15,
       sugestaoA: montarGrupoAmpliado(basesMatematica[0], row.n, 0).map(pad).join('-'),
       sugestaoB: montarGrupoAmpliado(basesMatematica[1], row.n, 1).map(pad).join('-'),
-      retorno: row.retorno,
+      leitura: row.leitura,
     }));
     const matematicaDezenasResumo = 'Duas sugestões por quantidade de dezenas, com investimento para 1 ou 2 jogos e cenário de retorno quando o grupo contém as 15 sorteadas.';
+    const matematicaRetornoRows = matematicaBase.map(row => {
+      const r = resumoRetornoMatematica(row.n, row.custo);
+      return {
+        dezenas: `${row.n} dezenas`,
+        custo: brMoney(row.custo),
+        parcelaFixa: row.n === 15 ? '—' : brMoney(r.parcelaFixa),
+        detalheFixa: row.n === 15
+          ? 'Sem parcela fixa garantida extra; só há 1 jogo (o próprio).'
+          : ([11, 12, 13].filter(t => r.contagem[t] > 0)
+              .map(t => `${r.contagem[t].toLocaleString('pt-BR')}x${t}p`)
+              .join(' + ') || 'Nenhum acerto fixo de 11-13 garantido nesse tamanho (só 14 e 15, variáveis).'),
+        roiCenario: row.n === 15 ? '—' : `${r.roiCenario >= 0 ? '+' : ''}${r.roiCenario.toFixed(0)}%`,
+        valorEsperado: brMoney(r.valorEsperadoFixo),
+        roiEsperado: `${r.roiEsperado.toFixed(2)}%`,
+      };
+    });
+    const matematicaRetornoResumo = 'Considera só a parte garantida (prêmios fixos de 11, 12 e 13 pontos, R$ 7 / R$ 14 / R$ 30 cada) no cenário em que as 15 sorteadas caem todas dentro do grupo escolhido. 14 e 15 pontos pagam por rateio variável e não entram nesta conta. "Valor esperado" pondera esse retorno fixo pela chance real de o grupo conter as 15 dezenas — por isso fica muito abaixo do investimento em todas as linhas: aumentar dezenas não muda essa conclusão.';
     const sugestaoDia = sugestaoDiaRaw && sugestaoDiaAnalise ? {
       metodo: sugestaoDiaRaw.label,
       dezenas: sugestaoDiaRaw.dezenas.map(pad).join('-'),
@@ -2246,7 +2409,7 @@ class Component extends DCLogic {
       custo: brMoney(custoSugestao),
       retorno12: brMoney(retornoReferencia12),
       riscoLiquido: brMoney(Math.max(0, custoSugestao - retornoReferencia12)),
-      resumo: `Ate 6 sequencias escolhidas entre os ${sourceMethods.length} metodos do sistema para tentar superar 11 acertos no concurso ${s.concursoAlvo}. Prioridade obrigatoria para inicio 01 ou 02; inicio 03/04 so entra como fallback raro. Com 6 jogos, o custo estimado e R$ 21,00; 12 pontos tem retorno de referencia de R$ 20,00, sem garantia.`
+      resumo: `Ate 6 sequencias escolhidas entre os ${sourceMethods.length} metodos do sistema para tentar superar 11 acertos no concurso ${s.concursoAlvo}. Prioridade obrigatoria para inicio 01 ou 02; inicio 03/04 so entra como fallback raro. Com ${sugestoesDiaRaw.length} jogo(s), o custo estimado e ${brMoney(custoSugestao)}; 12 pontos paga o valor fixo oficial de ${brMoney(retornoReferencia12)} (14 e 15 pontos variam por rateio, sem garantia).`
     } : null;
     const sugestaoDiaRows = sugestoesDiaRaw.map((jogo, idx) => ({
       posicao: idx + 1,
@@ -2633,6 +2796,8 @@ class Component extends DCLogic {
       sugestaoDiaRows,
       matematicaDezenasResumo,
       matematicaDezenasRows,
+      matematicaRetornoResumo,
+      matematicaRetornoRows,
       copiarSugestaoDia: () => {
         const bloco = sugestoesDiaRaw.map((jogo, idx) => `${idx + 1}. ${jogo.label}: ${jogo.dezenas.map(pad).join('-')}`).join('\n');
         return this.copiarTexto(bloco, `${sugestoesDiaRaw.length} sugestao(oes) do dia copiadas`);
@@ -2675,6 +2840,8 @@ class Component extends DCLogic {
       custoAproximado: `R$ ${(totalCombos * 3.5).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       fechamentoJogos,
       hasFechamentoJogos: fechamentoJogos.length > 0,
+      hasFechamentoBloqueado: Boolean(fechamentoAviso),
+      fechamentoAviso,
       fechamentoPronto: fSelCount === fN,
       sorteadasView: sorteadasConferidor.map(pad),
       selCount, selSoma, selParImpar,

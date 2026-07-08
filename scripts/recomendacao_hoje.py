@@ -2,28 +2,18 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
-from typing import TypedDict, cast
+from typing import cast
 
 import lotofacil_lib
 
 GeradorMetodos = Callable[[int | None, int | None], dict[str, list[int]]]
 
-gerar_todos_metodos = cast(
-    GeradorMetodos,
-    getattr(lotofacil_lib, "gerar_todos_metodos"),
-)
+gerar_todos_metodos = cast(GeradorMetodos, lotofacil_lib.gerar_todos_metodos)
 
-
-class JogoMedido(TypedDict):
-    metodo: str
-    label: str
-    dezenas: list[int]
-    inicio: int
-    soma: int
-    pares: int
-    impares: int
-    miolo: int
-    penalidade: int
+PRECO_APOSTA_SIMPLES = 3.50
+# Premios fixos oficiais da Caixa (reajuste de 09/07/2025, concurso 3439+).
+# 14 e 15 pontos nao entram aqui: pagam por rateio variavel do concurso.
+PREMIOS_FIXOS = {11: 7.00, 12: 14.00, 13: 30.00}
 
 METHOD_LABELS = {
     "M1_aleatorio_puro": "M1 Aleatorio",
@@ -54,14 +44,14 @@ def dezenas_texto(dezenas: list[int]) -> str:
     return "-".join(f"{d:02d}" for d in dezenas)
 
 
-def medir_jogo(metodo: str, dezenas: list[int]) -> JogoMedido:
+def medir_jogo(metodo: str, dezenas: list[int]) -> dict[str, int | str | list[int]]:
     jogo = sorted(int(d) for d in dezenas)
     soma = sum(jogo)
     pares = sum(1 for d in jogo if d % 2 == 0)
     inicio = min(jogo)
     miolo = sum(1 for d in jogo if d in {7, 8, 9, 12, 13, 14, 17, 18, 19})
 
-    # Ranking conservador: privilegia inicio 1-2; 3 e 4 entram so como fallback,
+    # Ranking conservador: privilegia inicio 1-3, aceita 4 com perda,
     # soma perto de 200, pares 6-9 e miolo controlado.
     penalidade = 0
     penalidade += abs(soma - 200)
@@ -72,9 +62,7 @@ def medir_jogo(metodo: str, dezenas: list[int]) -> JogoMedido:
     if inicio > 4:
         penalidade += 60
     elif inicio == 4:
-        penalidade += 36
-    elif inicio == 3:
-        penalidade += 24
+        penalidade += 12
     if miolo < 5 or miolo > 8:
         penalidade += 15
     if metodo == "M9_tese_v2":
@@ -95,17 +83,15 @@ def medir_jogo(metodo: str, dezenas: list[int]) -> JogoMedido:
     }
 
 
-def explicar_status(info: JogoMedido) -> str:
-    inicio = info["inicio"]
-    soma = info["soma"]
-    pares = info["pares"]
-    miolo = info["miolo"]
+def explicar_status(info: dict[str, int | str | list[int]]) -> str:
+    inicio = int(info["inicio"])
+    soma = int(info["soma"])
+    pares = int(info["pares"])
+    miolo = int(info["miolo"])
 
     alertas: list[str] = []
-    if inicio <= 2:
+    if inicio <= 3:
         alertas.append("inicio forte")
-    elif inicio == 3:
-        alertas.append("inicio 3 raro/fallback")
     elif inicio == 4:
         alertas.append("inicio 4 raro/aceitavel")
     else:
@@ -140,7 +126,7 @@ def main() -> None:
         for metodo in METHOD_ORDER
         if metodo in metodos
     ]
-    ranking = sorted(jogos, key=lambda item: item["penalidade"])
+    ranking = sorted(jogos, key=lambda item: int(item["penalidade"]))
 
     print("=" * 92)
     print("  SUGESTOES DO DIA - ATE 6 SEQUENCIAS DOS 9 METODOS")
@@ -156,44 +142,60 @@ def main() -> None:
     print(f"{'#':<3} {'Metodo':<30} {'Inicio':<7} {'Soma':<6} {'Pares':<6} {'Miolo':<6} Dezenas")
     print("-" * 92)
     for posicao, info in enumerate(ranking, start=1):
+        dezenas = cast(list[int], info["dezenas"])
         print(
-            f"{posicao:<3} {info['label']:<30} "
-            f"{info['inicio']:02d}      {info['soma']:<6} "
-            f"{info['pares']:<6} {info['miolo']:<6} {dezenas_texto(info['dezenas'])}"
+            f"{posicao:<3} {str(info['label']):<30} "
+            f"{int(info['inicio']):02d}      {int(info['soma']):<6} "
+            f"{int(info['pares']):<6} {int(info['miolo']):<6} {dezenas_texto(dezenas)}"
         )
 
     print("\n" + "=" * 92)
     print("DETALHE DOS 9 METODOS")
     print("=" * 92)
     for info in jogos:
+        dezenas = cast(list[int], info["dezenas"])
         print(f"\n{info['label']}")
-        print(f"Dezenas: {dezenas_texto(info['dezenas'])}")
+        print(f"Dezenas: {dezenas_texto(dezenas)}")
         print(
-            f"Inicio: {info['inicio']:02d} | Soma: {info['soma']} | "
-            f"Pares: {info['pares']} | Impares: {info['impares']} | "
-            f"Miolo: {info['miolo']}"
+            f"Inicio: {int(info['inicio']):02d} | Soma: {int(info['soma'])} | "
+            f"Pares: {int(info['pares'])} | Impares: {int(info['impares'])} | "
+            f"Miolo: {int(info['miolo'])}"
         )
         print(f"Leitura: {explicar_status(info)}")
 
-    inicio_forte = [info for info in ranking if info["inicio"] <= 2]
-    fallback = [info for info in ranking if info["inicio"] <= 4]
+    inicio_forte = [info for info in ranking if cast(int, info["inicio"]) <= 2]
+    fallback = [info for info in ranking if cast(int, info["inicio"]) <= 4]
     pacote = (inicio_forte or fallback or ranking)[:6]
-    custo = len(pacote) * 3.50
-    retorno_12 = 20.00
+    custo = len(pacote) * PRECO_APOSTA_SIMPLES
 
     print("\n" + "=" * 92)
     print("SUGESTOES DO DIA")
     print("=" * 92)
     print(f"Pacote: {len(pacote)} sequencia(s)")
     print(f"Custo estimado: R$ {custo:.2f}")
-    print(f"Referencia 12 pontos: R$ {retorno_12:.2f}")
-    print(f"Risco liquido se uma sequencia fizer 12 pontos: R$ {max(0, custo - retorno_12):.2f}")
     print("Regra de inicio: prioriza 01 e 02; 03/04 so entram como fallback raro.")
     print("\nSequencias escolhidas:")
     for posicao, info in enumerate(pacote, start=1):
-        print(f"{posicao}. {info['label']}: {dezenas_texto(info['dezenas'])}")
+        dezenas = cast(list[int], info["dezenas"])
+        print(f"{posicao}. {info['label']}: {dezenas_texto(dezenas)}")
         print(f"   Motivo: {explicar_status(info)}")
-    print("\nOs 9 metodos servem como base de comparacao; o pacote do dia usa no maximo os 6 primeiros colocados do filtro.")
+
+    print("\n" + "=" * 92)
+    print("RESUMO DE RETORNO DE INVESTIMENTO (valores fixos oficiais da Caixa)")
+    print("=" * 92)
+    print(f"Investido no pacote: R$ {custo:.2f} ({len(pacote)} sequencia(s) x R$ {PRECO_APOSTA_SIMPLES:.2f})")
+    for pontos, premio in sorted(PREMIOS_FIXOS.items()):
+        risco_liquido = max(0.0, custo - premio)
+        roi_pct = (premio - custo) / custo * 100 if custo else 0.0
+        print(
+            f"Se 1 sequencia fizer {pontos} pontos: retorno R$ {premio:.2f} | "
+            f"risco liquido R$ {risco_liquido:.2f} | ROI {roi_pct:.1f}%"
+        )
+    print("14 e 15 pontos pagam por rateio variavel do concurso, sem valor fixo previsivel.")
+    print(
+        "\nOs 9 metodos servem como base de comparacao; o pacote do dia usa no maximo "
+        "os 6 primeiros colocados do filtro. O sistema deve aprender com a conferencia real."
+    )
 
 
 if __name__ == "__main__":
