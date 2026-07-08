@@ -391,9 +391,11 @@
               <tr style="color:#64748B; font-size:10.5px; text-transform:uppercase;">
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Dezenas</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Jogos equivalentes</th>
-                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Custo oficial</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Investimento 1 jogo</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Investimento 2 jogos</th>
                 <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Chance 15 pontos</th>
-                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE;">Leitura do sistema</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:330px;">Sugestões do sistema</th>
+                <th style="text-align:left; padding:7px 8px; border-bottom:1px solid #DBEAFE; min-width:250px;">Retorno possível por jogo</th>
               </tr>
             </thead>
             <tbody>
@@ -402,12 +404,20 @@
                   <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#0F172A;">{{ mr.dezenas }}</td>
                   <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF;">{{ mr.jogos }}</td>
                   <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#0F766E;">{{ mr.custo }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#0F766E;">{{ mr.custoDois }}</td>
                   <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; font-weight:900; color:#1D4ED8;">{{ mr.chance15 }}</td>
-                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#475569;">{{ mr.leitura }}</td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#334155; line-height:1.65;">
+                    <div><b style="color:#1D4ED8;">A</b> {{ mr.sugestaoA }}</div>
+                    <div><b style="color:#0F766E;">B</b> {{ mr.sugestaoB }}</div>
+                  </td>
+                  <td style="padding:8px 8px; border-bottom:1px solid #EFF6FF; color:#475569; line-height:1.55;">{{ mr.retorno }}</td>
                 </tr>
               </sc-for>
             </tbody>
           </table>
+        </div>
+        <div style="margin-top:10px; padding:9px 11px; background:#FFFFFFAA; border:1px solid #BAE6FD; border-radius:8px; color:#475569; font-size:10.5px; line-height:1.55;">
+          Retorno não é garantia. Os valores de 11, 12 e 13 pontos são fixos; 14 e 15 pontos dependem do rateio do concurso. Ao jogar duas sugestões, o investimento dobra, mas o retorno não dobra automaticamente.
         </div>
       </div>
 
@@ -2187,21 +2197,44 @@ class Component extends DCLogic {
     const sugestaoDiaAnalise = sugestaoDiaRaw?.analise || null;
     const custoSugestao = sugestoesDiaRaw.length * 3.5;
     const retornoReferencia12 = 20;
+    const montarGrupoAmpliado = (base, quantidade, variante = 0) => {
+      const grupo = Array.from(new Set((base || []).map(Number).filter(n => n >= 1 && n <= 25)));
+      const candidatos = statsByNumber
+        .filter(item => !grupo.includes(item.dezena))
+        .sort((a, b) => {
+          if (variante === 0) {
+            return (b.frequencia_pct - a.frequencia_pct) || (b.atraso - a.atraso) || (a.dezena - b.dezena);
+          }
+          return (b.atraso - a.atraso) || (b.frequencia_pct - a.frequencia_pct) || (a.dezena - b.dezena);
+        });
+      for (const item of candidatos) {
+        if (grupo.length >= quantidade) break;
+        grupo.push(item.dezena);
+      }
+      return grupo.slice(0, quantidade).sort((a, b) => a - b);
+    };
+    const basesMatematica = [
+      sugestoesDiaRaw[0]?.dezenas || sourceMethods[0]?.dezenas || [],
+      sugestoesDiaRaw[1]?.dezenas || sourceMethods[1]?.dezenas || sugestoesDiaRaw[0]?.dezenas || [],
+    ];
     const matematicaDezenasRows = [
-      { n:15, jogos:1, custo:3.5, chance15:'1 em 3.268.760', leitura:'Aposta simples; base de comparacao.' },
-      { n:16, jogos:16, custo:56, chance15:'1 em 204.298', leitura:'Melhora a chance, mas custa mais que o pacote economico.' },
-      { n:17, jogos:136, custo:476, chance15:'1 em 24.035', leitura:'Ja vira estrategia de cobertura; precisa controle de orcamento.' },
-      { n:18, jogos:816, custo:2856, chance15:'1 em 4.006', leitura:'Forte em probabilidade, alto custo.' },
-      { n:19, jogos:3876, custo:13566, chance15:'1 em 843', leitura:'Agressivo; so faz sentido como estudo ou bolao.' },
-      { n:20, jogos:15504, custo:54264, chance15:'1 em 211', leitura:'Chance maxima oficial, custo muito alto.' },
+      { n:15, jogos:1, custo:3.5, chance15:'1 em 3.268.760', retorno:'Se acertar 15: 1 prêmio variável de 15 pontos.' },
+      { n:16, jogos:16, custo:56, chance15:'1 em 204.298', retorno:'Se contiver as 15 sorteadas: 1 prêmio de 15 + 15 prêmios de 14, ambos variáveis.' },
+      { n:17, jogos:136, custo:476, chance15:'1 em 24.035', retorno:'Se contiver as 15 sorteadas: 1x15 + 30x14 + 105x13. Parcela fixa: R$ 3.675,00, além dos rateios.' },
+      { n:18, jogos:816, custo:2856, chance15:'1 em 4.006', retorno:'Se contiver as 15 sorteadas: 1x15 + 45x14 + 315x13 + 455x12. Parcela fixa: R$ 17.395,00, além dos rateios.' },
+      { n:19, jogos:3876, custo:13566, chance15:'1 em 843', retorno:'Se contiver as 15 sorteadas: 1x15 + 60x14 + 630x13 + 1.820x12 + 1.365x11. Parcela fixa: R$ 57.085,00, além dos rateios.' },
+      { n:20, jogos:15504, custo:54264, chance15:'1 em 211', retorno:'Se contiver as 15 sorteadas: 1x15 + 75x14 + 1.050x13 + 4.550x12 + 6.825x11. Parcela fixa: R$ 148.225,00, além dos rateios.' },
     ].map(row => ({
       dezenas: `${row.n} dezenas`,
       jogos: Number(row.jogos).toLocaleString('pt-BR'),
       custo: brMoney(row.custo),
+      custoDois: brMoney(row.custo * 2),
       chance15: row.chance15,
-      leitura: row.leitura,
+      sugestaoA: montarGrupoAmpliado(basesMatematica[0], row.n, 0).map(pad).join('-'),
+      sugestaoB: montarGrupoAmpliado(basesMatematica[1], row.n, 1).map(pad).join('-'),
+      retorno: row.retorno,
     }));
-    const matematicaDezenasResumo = 'Mais dezenas aumentam a cobertura matematica, mas o custo cresce combinatoriamente. O site usa este quadro para comparar cobertura cheia contra pacotes filtrados.';
+    const matematicaDezenasResumo = 'Duas sugestões por quantidade de dezenas, com investimento para 1 ou 2 jogos e cenário de retorno quando o grupo contém as 15 sorteadas.';
     const sugestaoDia = sugestaoDiaRaw && sugestaoDiaAnalise ? {
       metodo: sugestaoDiaRaw.label,
       dezenas: sugestaoDiaRaw.dezenas.map(pad).join('-'),
