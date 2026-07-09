@@ -16,6 +16,7 @@ const RECENT_RESULTS = [
   }
 ];
 const LOTOFACIL_API_BASE = "https://loteriascaixa-api.herokuapp.com/api/lotofacil";
+const LOTOFACIL_CAIXA_API_BASE = "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -229,15 +230,31 @@ function parseApiResult(data) {
 }
 
 async function fetchConcurso(concurso) {
-  const response = await fetch(`${LOTOFACIL_API_BASE}/${concurso}`, {
-    headers: { accept: "application/json" }
-  });
+  const urls = [
+    `${LOTOFACIL_CAIXA_API_BASE}/${concurso}`,
+    `${LOTOFACIL_API_BASE}/${concurso}`
+  ];
 
-  if (!response.ok) {
-    return null;
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        headers: { accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const resultado = parseApiResult(await response.json());
+      if (resultado && resultado.concurso === concurso) {
+        return resultado;
+      }
+    } catch (_err) {
+      // Tenta a proxima fonte antes de declarar o concurso indisponivel.
+    }
   }
 
-  return parseApiResult(await response.json());
+  return null;
 }
 
 async function seedInitialResults(env) {
