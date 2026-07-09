@@ -481,3 +481,10 @@ O histórico real agora tem 3729 concurso(s). Quanto mais dados entram, mais est
 | M8_repeticao_controlada | 02-04-05-06-08-11-12-13-14-16-18-20-21-23-25 |
 | M8_repeticao_controlada | 01-03-05-08-10-11-12-15-16-17-18-20-21-22-24 |
 
+
+---
+
+## 09/07/2026
+
+Nenhum concurso novo encontrado nesta execução (pode ser dia sem sorteio da Lotofácil, ou a fonte de dados ainda não publicou o resultado). Nenhuma alteração feita — a tarefa tenta de novo na próxima execução.
+
