@@ -2,9 +2,9 @@
   "resumo_historico": [
     {
       "metodo": "M1_aleatorio_puro",
-      "total_jogos_conferidos": 4,
-      "media_acertos": 8.25,
-      "desvio_padrao_acertos": 1.299,
+      "total_jogos_conferidos": 5,
+      "media_acertos": 8.4,
+      "desvio_padrao_acertos": 1.2,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 10,
@@ -19,7 +19,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 2,
       "qtd_8_acertos": 0,
-      "qtd_9_acertos": 1,
+      "qtd_9_acertos": 2,
       "qtd_10_acertos": 1,
       "qtd_11_acertos": 0,
       "qtd_12_acertos": 0,
@@ -29,13 +29,13 @@
     },
     {
       "metodo": "M2_mais_frequentes",
-      "total_jogos_conferidos": 4,
-      "media_acertos": 9.25,
-      "desvio_padrao_acertos": 1.479,
+      "total_jogos_conferidos": 5,
+      "media_acertos": 9.4,
+      "desvio_padrao_acertos": 1.356,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 11,
-      "pct_11_ou_mais": 25.0,
+      "pct_11_ou_mais": 20.0,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -47,7 +47,7 @@
       "qtd_7_acertos": 1,
       "qtd_8_acertos": 0,
       "qtd_9_acertos": 1,
-      "qtd_10_acertos": 1,
+      "qtd_10_acertos": 2,
       "qtd_11_acertos": 1,
       "qtd_12_acertos": 0,
       "qtd_13_acertos": 0,
@@ -56,13 +56,13 @@
     },
     {
       "metodo": "M3_mais_atrasadas",
-      "total_jogos_conferidos": 4,
-      "media_acertos": 9.5,
-      "desvio_padrao_acertos": 1.118,
+      "total_jogos_conferidos": 5,
+      "media_acertos": 9.2,
+      "desvio_padrao_acertos": 1.166,
       "esperanca_teorica": 9.0,
       "min_acertos": 8,
       "max_acertos": 11,
-      "pct_11_ou_mais": 25.0,
+      "pct_11_ou_mais": 20.0,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -72,7 +72,7 @@
       "qtd_5_acertos": 0,
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 0,
-      "qtd_8_acertos": 1,
+      "qtd_8_acertos": 2,
       "qtd_9_acertos": 1,
       "qtd_10_acertos": 1,
       "qtd_11_acertos": 1,
@@ -83,9 +83,9 @@
     },
     {
       "metodo": "M4_par_impar_balanceado",
-      "total_jogos_conferidos": 4,
-      "media_acertos": 8.5,
-      "desvio_padrao_acertos": 0.5,
+      "total_jogos_conferidos": 5,
+      "media_acertos": 8.6,
+      "desvio_padrao_acertos": 0.49,
       "esperanca_teorica": 9.0,
       "min_acertos": 8,
       "max_acertos": 9,
@@ -100,7 +100,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 0,
       "qtd_8_acertos": 2,
-      "qtd_9_acertos": 2,
+      "qtd_9_acertos": 3,
       "qtd_10_acertos": 0,
       "qtd_11_acertos": 0,
       "qtd_12_acertos": 0,
@@ -110,9 +110,9 @@
     },
     {
       "metodo": "M5_soma_faixa_comum",
-      "total_jogos_conferidos": 4,
-      "media_acertos": 9.25,
-      "desvio_padrao_acertos": 0.829,
+      "total_jogos_conferidos": 5,
+      "media_acertos": 9.2,
+      "desvio_padrao_acertos": 0.748,
       "esperanca_teorica": 9.0,
       "min_acertos": 8,
       "max_acertos": 10,
@@ -127,7 +127,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 0,
       "qtd_8_acertos": 1,
-      "qtd_9_acertos": 1,
+      "qtd_9_acertos": 2,
       "qtd_10_acertos": 2,
       "qtd_11_acertos": 0,
       "qtd_12_acertos": 0,
@@ -137,13 +137,13 @@
     },
     {
       "metodo": "M6_filtros_combinados",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 8.727,
-      "desvio_padrao_acertos": 1.213,
+      "total_jogos_conferidos": 16,
+      "media_acertos": 9.062,
+      "desvio_padrao_acertos": 1.345,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
-      "max_acertos": 11,
-      "pct_11_ou_mais": 9.09,
+      "max_acertos": 12,
+      "pct_11_ou_mais": 12.5,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -153,24 +153,24 @@
       "qtd_5_acertos": 0,
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 2,
-      "qtd_8_acertos": 3,
-      "qtd_9_acertos": 3,
-      "qtd_10_acertos": 2,
+      "qtd_8_acertos": 4,
+      "qtd_9_acertos": 4,
+      "qtd_10_acertos": 4,
       "qtd_11_acertos": 1,
-      "qtd_12_acertos": 0,
+      "qtd_12_acertos": 1,
       "qtd_13_acertos": 0,
       "qtd_14_acertos": 0,
       "qtd_15_acertos": 0
     },
     {
       "metodo": "M7_cobertura_pares",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 8.727,
-      "desvio_padrao_acertos": 1.213,
+      "total_jogos_conferidos": 16,
+      "media_acertos": 9.188,
+      "desvio_padrao_acertos": 1.379,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
-      "max_acertos": 11,
-      "pct_11_ou_mais": 9.09,
+      "max_acertos": 12,
+      "pct_11_ou_mais": 18.75,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -181,23 +181,23 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 2,
       "qtd_8_acertos": 3,
-      "qtd_9_acertos": 3,
-      "qtd_10_acertos": 2,
-      "qtd_11_acertos": 1,
-      "qtd_12_acertos": 0,
+      "qtd_9_acertos": 5,
+      "qtd_10_acertos": 3,
+      "qtd_11_acertos": 2,
+      "qtd_12_acertos": 1,
       "qtd_13_acertos": 0,
       "qtd_14_acertos": 0,
       "qtd_15_acertos": 0
     },
     {
       "metodo": "M8_repeticao_controlada",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 8.364,
-      "desvio_padrao_acertos": 1.432,
+      "total_jogos_conferidos": 16,
+      "media_acertos": 8.938,
+      "desvio_padrao_acertos": 1.519,
       "esperanca_teorica": 9.0,
       "min_acertos": 6,
       "max_acertos": 11,
-      "pct_11_ou_mais": 9.09,
+      "pct_11_ou_mais": 18.75,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -208,9 +208,9 @@
       "qtd_6_acertos": 2,
       "qtd_7_acertos": 0,
       "qtd_8_acertos": 4,
-      "qtd_9_acertos": 3,
-      "qtd_10_acertos": 1,
-      "qtd_11_acertos": 1,
+      "qtd_9_acertos": 4,
+      "qtd_10_acertos": 3,
+      "qtd_11_acertos": 3,
       "qtd_12_acertos": 0,
       "qtd_13_acertos": 0,
       "qtd_14_acertos": 0,
@@ -224,7 +224,8 @@
       3726,
       3727,
       3728,
-      3729
+      3729,
+      3730
     ],
     "series": [
       {
@@ -233,12 +234,13 @@
           7,
           9,
           7,
-          10
+          10,
+          9
         ],
-        "media_periodo": 8.25,
-        "desvio_padrao_periodo": 1.299,
-        "desvio_vs_esperanca_rms": 1.5,
-        "total_concursos_periodo": 4
+        "media_periodo": 8.4,
+        "desvio_padrao_periodo": 1.2,
+        "desvio_vs_esperanca_rms": 1.3416,
+        "total_concursos_periodo": 5
       },
       {
         "metodo": "M2_mais_frequentes",
@@ -246,12 +248,13 @@
           9,
           10,
           7,
-          11
+          11,
+          10
         ],
-        "media_periodo": 9.25,
-        "desvio_padrao_periodo": 1.479,
-        "desvio_vs_esperanca_rms": 1.5,
-        "total_concursos_periodo": 4
+        "media_periodo": 9.4,
+        "desvio_padrao_periodo": 1.3565,
+        "desvio_vs_esperanca_rms": 1.4142,
+        "total_concursos_periodo": 5
       },
       {
         "metodo": "M3_mais_atrasadas",
@@ -259,12 +262,13 @@
           8,
           11,
           10,
-          9
+          9,
+          8
         ],
-        "media_periodo": 9.5,
-        "desvio_padrao_periodo": 1.118,
-        "desvio_vs_esperanca_rms": 1.2247,
-        "total_concursos_periodo": 4
+        "media_periodo": 9.2,
+        "desvio_padrao_periodo": 1.1662,
+        "desvio_vs_esperanca_rms": 1.1832,
+        "total_concursos_periodo": 5
       },
       {
         "metodo": "M4_par_impar_balanceado",
@@ -272,12 +276,13 @@
           8,
           8,
           9,
+          9,
           9
         ],
-        "media_periodo": 8.5,
-        "desvio_padrao_periodo": 0.5,
-        "desvio_vs_esperanca_rms": 0.7071,
-        "total_concursos_periodo": 4
+        "media_periodo": 8.6,
+        "desvio_padrao_periodo": 0.4899,
+        "desvio_vs_esperanca_rms": 0.6325,
+        "total_concursos_periodo": 5
       },
       {
         "metodo": "M5_soma_faixa_comum",
@@ -285,12 +290,13 @@
           10,
           9,
           8,
-          10
+          10,
+          9
         ],
-        "media_periodo": 9.25,
-        "desvio_padrao_periodo": 0.8292,
-        "desvio_vs_esperanca_rms": 0.866,
-        "total_concursos_periodo": 4
+        "media_periodo": 9.2,
+        "desvio_padrao_periodo": 0.7483,
+        "desvio_vs_esperanca_rms": 0.7746,
+        "total_concursos_periodo": 5
       },
       {
         "metodo": "M6_filtros_combinados",
@@ -298,12 +304,13 @@
           null,
           null,
           11,
-          7
+          7,
+          8
         ],
-        "media_periodo": 9,
-        "desvio_padrao_periodo": 2.0,
-        "desvio_vs_esperanca_rms": 2.0,
-        "total_concursos_periodo": 2
+        "media_periodo": 8.6667,
+        "desvio_padrao_periodo": 1.6997,
+        "desvio_vs_esperanca_rms": 1.7321,
+        "total_concursos_periodo": 3
       },
       {
         "metodo": "M7_cobertura_pares",
@@ -311,12 +318,13 @@
           null,
           null,
           7,
+          9,
           9
         ],
-        "media_periodo": 8,
-        "desvio_padrao_periodo": 1.0,
-        "desvio_vs_esperanca_rms": 1.4142,
-        "total_concursos_periodo": 2
+        "media_periodo": 8.3333,
+        "desvio_padrao_periodo": 0.9428,
+        "desvio_vs_esperanca_rms": 1.1547,
+        "total_concursos_periodo": 3
       },
       {
         "metodo": "M8_repeticao_controlada",
@@ -324,12 +332,13 @@
           null,
           null,
           6,
-          8
+          8,
+          10
         ],
-        "media_periodo": 7,
-        "desvio_padrao_periodo": 1.0,
-        "desvio_vs_esperanca_rms": 2.2361,
-        "total_concursos_periodo": 2
+        "media_periodo": 8,
+        "desvio_padrao_periodo": 1.633,
+        "desvio_vs_esperanca_rms": 1.9149,
+        "total_concursos_periodo": 3
       }
     ],
     "metodo_mais_estavel": "M4_par_impar_balanceado"
