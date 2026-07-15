@@ -1,9 +1,9 @@
 metodo,total_jogos_conferidos,media_acertos,desvio_padrao_acertos,esperanca_teorica,min_acertos,max_acertos,pct_11_ou_mais,pct_13_ou_mais,qtd_0_acertos,qtd_1_acertos,qtd_2_acertos,qtd_3_acertos,qtd_4_acertos,qtd_5_acertos,qtd_6_acertos,qtd_7_acertos,qtd_8_acertos,qtd_9_acertos,qtd_10_acertos,qtd_11_acertos,qtd_12_acertos,qtd_13_acertos,qtd_14_acertos,qtd_15_acertos
-M1_aleatorio_puro,8,8.625,1.111,9.0,7,10,0.0,0.0,0,0,0,0,0,0,0,2,1,3,2,0,0,0,0,0
-M2_mais_frequentes,8,9.5,1.323,9.0,7,11,25.0,0.0,0,0,0,0,0,0,0,1,1,1,3,2,0,0,0,0
-M3_mais_atrasadas,8,9,1.225,9.0,7,11,12.5,0.0,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0
-M4_par_impar_balanceado,8,8.75,0.661,9.0,8,10,0.0,0.0,0,0,0,0,0,0,0,0,3,4,1,0,0,0,0,0
-M5_soma_faixa_comum,8,8.875,1.269,9.0,6,10,0.0,0.0,0,0,0,0,0,0,1,0,1,3,3,0,0,0,0,0
-M6_filtros_combinados,31,9.484,1.267,9.0,7,12,19.35,0.0,0,0,0,0,0,0,0,2,5,8,10,4,2,0,0,0
-M7_cobertura_pares,31,9.516,1.292,9.0,7,12,22.58,0.0,0,0,0,0,0,0,0,2,5,8,9,5,2,0,0,0
-M8_repeticao_controlada,31,9.355,1.427,9.0,6,12,19.35,0.0,0,0,0,0,0,0,2,1,5,6,11,5,1,0,0,0
+M1_aleatorio_puro,9,8.778,1.133,9.0,7,10,0.0,0.0,0,0,0,0,0,0,0,2,1,3,3,0,0,0,0,0
+M2_mais_frequentes,9,9.444,1.257,9.0,7,11,22.22,0.0,0,0,0,0,0,0,0,1,1,2,3,2,0,0,0,0
+M3_mais_atrasadas,9,9.111,1.197,9.0,7,11,11.11,0.0,0,0,0,0,0,0,0,1,2,2,3,1,0,0,0,0
+M4_par_impar_balanceado,9,8.889,0.737,9.0,8,10,0.0,0.0,0,0,0,0,0,0,0,0,3,4,2,0,0,0,0,0
+M5_soma_faixa_comum,9,9,1.247,9.0,6,10,0.0,0.0,0,0,0,0,0,0,1,0,1,3,4,0,0,0,0,0
+M6_filtros_combinados,36,9.444,1.257,9.0,7,12,19.44,0.0,0,0,0,0,0,0,0,2,7,9,11,5,2,0,0,0
+M7_cobertura_pares,36,9.556,1.212,9.0,7,12,19.44,0.0,0,0,0,0,0,0,0,2,5,9,13,5,2,0,0,0
+M8_repeticao_controlada,36,9.25,1.402,9.0,6,12,16.67,0.0,0,0,0,0,0,0,2,2,6,8,12,5,1,0,0,0
