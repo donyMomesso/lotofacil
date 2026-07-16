@@ -1,13 +1,13 @@
 # Relatório Estatístico Educativo — Lotofácil
 
-_Atualizado em 15/07/2026 00:57 (horário de Brasília)_
+_Atualizado em 16/07/2026 01:08 (horário de Brasília)_
 
 Este relatório é gerado automaticamente a partir de resultados reais da Lotofácil. Serve para estudo estatístico. Não prevê resultados, não recomenda apostas e não indica que qualquer combinação está mais perto de dar 14 ou 15 pontos.
 
 ## Base analisada
 
-- Total de concursos no histórico: 3735
-- Concurso mais recente: 3735 (14/07/2026)
+- Total de concursos no histórico: 3736
+- Concurso mais recente: 3736 (15/07/2026)
 - Soma média das dezenas por concurso: 195.15
 - Menor soma observada: 133
 - Maior soma observada: 257
@@ -15,19 +15,19 @@ Este relatório é gerado automaticamente a partir de resultados reais da Lotof�
 
 ## Último concurso
 
-- Concurso: 3735
-- Data: 14/07/2026
-- Dezenas: 03-05-07-12-14-15-16-17-18-20-21-22-23-24-25
-- Soma: 242
+- Concurso: 3736
+- Data: 15/07/2026
+- Dezenas: 03-04-06-07-08-09-11-12-14-17-18-19-21-22-23
+- Soma: 194
 - Pares: 7 / Ímpares: 8
 
 ### Distribuição por linha (faixas de 5 dezenas)
 
 - linha_01_05: 2
-- linha_06_10: 1
+- linha_06_10: 4
 - linha_11_15: 3
-- linha_16_20: 4
-- linha_21_25: 5
+- linha_16_20: 3
+- linha_21_25: 3
 
 ## Frequência das dezenas (histórico completo)
 
@@ -36,24 +36,24 @@ Este relatório é gerado automaticamente a partir de resultados reais da Lotof�
 - 20: 2335 vez(es) (62.5%)
 - 10: 2327 vez(es) (62.3%)
 - 25: 2322 vez(es) (62.2%)
-- 11: 2295 vez(es) (61.4%)
+- 11: 2296 vez(es) (61.5%)
 - 13: 2274 vez(es) (60.9%)
 
 ### Menos frequentes
 
 - 16: 2136 vez(es) (57.2%)
-- 08: 2161 vez(es) (57.9%)
-- 23: 2190 vez(es) (58.6%)
-- 17: 2193 vez(es) (58.7%)
-- 06: 2196 vez(es) (58.8%)
+- 08: 2162 vez(es) (57.9%)
+- 23: 2191 vez(es) (58.6%)
+- 17: 2194 vez(es) (58.7%)
+- 06: 2197 vez(es) (58.8%)
 
 ### Maior atraso atual (concursos sem sair)
 
-- 09: 8 concurso(s)
-- 04: 4 concurso(s)
-- 06: 4 concurso(s)
-- 01: 2 concurso(s)
-- 11: 2 concurso(s)
+- 01: 3 concurso(s)
+- 02: 2 concurso(s)
+- 10: 2 concurso(s)
+- 13: 2 concurso(s)
+- 05: 1 concurso(s)
 
 ## Desempenho comparado dos métodos (jogos fictícios de estudo)
 
@@ -61,14 +61,14 @@ Valor teórico esperado de acertos por jogo de 15 dezenas: **9.0** (distribuiç�
 
 | Método | Jogos conferidos | Média de acertos | Desvio padrão | % com 11+ | % com 13+ |
 |---|---|---|---|---|---|
-| M1_aleatorio_puro | 9 | 8.778 | 1.133 | 0.0% | 0.0% |
-| M2_mais_frequentes | 9 | 9.444 | 1.257 | 22.22% | 0.0% |
-| M3_mais_atrasadas | 9 | 9.111 | 1.197 | 11.11% | 0.0% |
-| M4_par_impar_balanceado | 9 | 8.889 | 0.737 | 0.0% | 0.0% |
-| M5_soma_faixa_comum | 9 | 9 | 1.247 | 0.0% | 0.0% |
-| M6_filtros_combinados | 36 | 9.444 | 1.257 | 19.44% | 0.0% |
-| M7_cobertura_pares | 36 | 9.556 | 1.212 | 19.44% | 0.0% |
-| M8_repeticao_controlada | 36 | 9.25 | 1.402 | 16.67% | 0.0% |
+| M1_aleatorio_puro | 10 | 9 | 1.265 | 10.0% | 0.0% |
+| M2_mais_frequentes | 10 | 9.1 | 1.578 | 20.0% | 0.0% |
+| M3_mais_atrasadas | 10 | 9.1 | 1.136 | 10.0% | 0.0% |
+| M4_par_impar_balanceado | 10 | 9.2 | 1.166 | 10.0% | 0.0% |
+| M5_soma_faixa_comum | 10 | 8.9 | 1.221 | 0.0% | 0.0% |
+| M6_filtros_combinados | 41 | 9.39 | 1.266 | 17.07% | 0.0% |
+| M7_cobertura_pares | 41 | 9.415 | 1.209 | 17.07% | 0.0% |
+| M8_repeticao_controlada | 41 | 9.22 | 1.353 | 14.63% | 0.0% |
 
 ## Backtest completo M1-M8 (retroativo contra todo o histórico)
 
