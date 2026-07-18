@@ -2,35 +2,35 @@
   "meta": {
     "nome": "Laboratório Estatístico Lotofácil",
     "tipo": "estudo_educativo",
-    "gerado_em": "17/07/2026 00:59",
+    "gerado_em": "18/07/2026 00:54",
     "timezone": "America/Sao_Paulo",
-    "total_concursos": 3737,
+    "total_concursos": 3738,
     "ultimo_concurso": {
-      "concurso": 3737,
-      "data": "16/07/2026",
+      "concurso": 3738,
+      "data": "17/07/2026",
       "dezenas": [
         2,
         3,
+        4,
         5,
-        6,
+        7,
         8,
-        9,
+        10,
         11,
-        12,
         13,
         14,
-        15,
         17,
-        22,
+        18,
+        20,
         23,
-        25
+        24
       ],
-      "dezenas_formatadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "soma": 185,
-      "pares": 6,
-      "impares": 9
+      "dezenas_formatadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "soma": 179,
+      "pares": 8,
+      "impares": 7
     },
-    "proximo_concurso": 3738,
+    "proximo_concurso": 3739,
     "esperanca_teorica_acertos": 9.0,
     "aviso": "Estudo estatístico. Não prevê resultados e não recomenda apostas."
   },
@@ -46,6 +46,31 @@
     "relatorio": "reports/relatorio_estatistico.md"
   },
   "ultimos_resultados": [
+    {
+      "concurso": 3738,
+      "data": "17/07/2026",
+      "dezenas": [
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        10,
+        11,
+        13,
+        14,
+        17,
+        18,
+        20,
+        23,
+        24
+      ],
+      "dezenas_formatadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "soma": 179,
+      "pares": 8,
+      "impares": 7
+    },
     {
       "concurso": 3737,
       "data": "16/07/2026",
@@ -270,31 +295,6 @@
       "soma": 179,
       "pares": 8,
       "impares": 7
-    },
-    {
-      "concurso": 3728,
-      "data": "06/07/2026",
-      "dezenas": [
-        1,
-        2,
-        3,
-        6,
-        7,
-        8,
-        10,
-        11,
-        16,
-        17,
-        19,
-        21,
-        22,
-        23,
-        25
-      ],
-      "dezenas_formatadas": "01-02-03-06-07-08-10-11-16-17-19-21-22-23-25",
-      "soma": 191,
-      "pares": 6,
-      "impares": 9
     }
   ],
   "frequencia_dezenas": [
@@ -302,191 +302,191 @@
       "dezena": 1,
       "dezena_formatada": "01",
       "frequencia_absoluta": 2265,
-      "frequencia_pct": 60.61,
-      "atraso_atual": 4
+      "frequencia_pct": 60.59,
+      "atraso_atual": 5
     },
     {
       "dezena": 2,
       "dezena_formatada": "02",
-      "frequencia_absoluta": 2242,
-      "frequencia_pct": 59.99,
+      "frequencia_absoluta": 2243,
+      "frequencia_pct": 60.01,
       "atraso_atual": 0
     },
     {
       "dezena": 3,
       "dezena_formatada": "03",
-      "frequencia_absoluta": 2251,
-      "frequencia_pct": 60.24,
+      "frequencia_absoluta": 2252,
+      "frequencia_pct": 60.25,
       "atraso_atual": 0
     },
     {
       "dezena": 4,
       "dezena_formatada": "04",
-      "frequencia_absoluta": 2256,
-      "frequencia_pct": 60.37,
-      "atraso_atual": 1
+      "frequencia_absoluta": 2257,
+      "frequencia_pct": 60.38,
+      "atraso_atual": 0
     },
     {
       "dezena": 5,
       "dezena_formatada": "05",
-      "frequencia_absoluta": 2247,
-      "frequencia_pct": 60.13,
+      "frequencia_absoluta": 2248,
+      "frequencia_pct": 60.14,
       "atraso_atual": 0
     },
     {
       "dezena": 6,
       "dezena_formatada": "06",
       "frequencia_absoluta": 2198,
-      "frequencia_pct": 58.82,
-      "atraso_atual": 0
+      "frequencia_pct": 58.8,
+      "atraso_atual": 1
     },
     {
       "dezena": 7,
       "dezena_formatada": "07",
-      "frequencia_absoluta": 2208,
-      "frequencia_pct": 59.08,
-      "atraso_atual": 1
+      "frequencia_absoluta": 2209,
+      "frequencia_pct": 59.1,
+      "atraso_atual": 0
     },
     {
       "dezena": 8,
       "dezena_formatada": "08",
-      "frequencia_absoluta": 2163,
-      "frequencia_pct": 57.88,
+      "frequencia_absoluta": 2164,
+      "frequencia_pct": 57.89,
       "atraso_atual": 0
     },
     {
       "dezena": 9,
       "dezena_formatada": "09",
       "frequencia_absoluta": 2228,
-      "frequencia_pct": 59.62,
-      "atraso_atual": 0
+      "frequencia_pct": 59.6,
+      "atraso_atual": 1
     },
     {
       "dezena": 10,
       "dezena_formatada": "10",
-      "frequencia_absoluta": 2327,
-      "frequencia_pct": 62.27,
-      "atraso_atual": 3
+      "frequencia_absoluta": 2328,
+      "frequencia_pct": 62.28,
+      "atraso_atual": 0
     },
     {
       "dezena": 11,
       "dezena_formatada": "11",
-      "frequencia_absoluta": 2297,
-      "frequencia_pct": 61.47,
+      "frequencia_absoluta": 2298,
+      "frequencia_pct": 61.48,
       "atraso_atual": 0
     },
     {
       "dezena": 12,
       "dezena_formatada": "12",
       "frequencia_absoluta": 2246,
-      "frequencia_pct": 60.1,
-      "atraso_atual": 0
+      "frequencia_pct": 60.09,
+      "atraso_atual": 1
     },
     {
       "dezena": 13,
       "dezena_formatada": "13",
-      "frequencia_absoluta": 2275,
-      "frequencia_pct": 60.88,
+      "frequencia_absoluta": 2276,
+      "frequencia_pct": 60.89,
       "atraso_atual": 0
     },
     {
       "dezena": 14,
       "dezena_formatada": "14",
-      "frequencia_absoluta": 2262,
-      "frequencia_pct": 60.53,
+      "frequencia_absoluta": 2263,
+      "frequencia_pct": 60.54,
       "atraso_atual": 0
     },
     {
       "dezena": 15,
       "dezena_formatada": "15",
       "frequencia_absoluta": 2232,
-      "frequencia_pct": 59.73,
-      "atraso_atual": 0
+      "frequencia_pct": 59.71,
+      "atraso_atual": 1
     },
     {
       "dezena": 16,
       "dezena_formatada": "16",
       "frequencia_absoluta": 2136,
-      "frequencia_pct": 57.16,
-      "atraso_atual": 2
+      "frequencia_pct": 57.14,
+      "atraso_atual": 3
     },
     {
       "dezena": 17,
       "dezena_formatada": "17",
-      "frequencia_absoluta": 2195,
-      "frequencia_pct": 58.74,
+      "frequencia_absoluta": 2196,
+      "frequencia_pct": 58.75,
       "atraso_atual": 0
     },
     {
       "dezena": 18,
       "dezena_formatada": "18",
-      "frequencia_absoluta": 2226,
-      "frequencia_pct": 59.57,
-      "atraso_atual": 1
+      "frequencia_absoluta": 2227,
+      "frequencia_pct": 59.58,
+      "atraso_atual": 0
     },
     {
       "dezena": 19,
       "dezena_formatada": "19",
       "frequencia_absoluta": 2227,
-      "frequencia_pct": 59.59,
-      "atraso_atual": 1
+      "frequencia_pct": 59.58,
+      "atraso_atual": 2
     },
     {
       "dezena": 20,
       "dezena_formatada": "20",
-      "frequencia_absoluta": 2335,
-      "frequencia_pct": 62.48,
-      "atraso_atual": 2
+      "frequencia_absoluta": 2336,
+      "frequencia_pct": 62.49,
+      "atraso_atual": 0
     },
     {
       "dezena": 21,
       "dezena_formatada": "21",
       "frequencia_absoluta": 2220,
-      "frequencia_pct": 59.41,
-      "atraso_atual": 1
+      "frequencia_pct": 59.39,
+      "atraso_atual": 2
     },
     {
       "dezena": 22,
       "dezena_formatada": "22",
       "frequencia_absoluta": 2237,
-      "frequencia_pct": 59.86,
-      "atraso_atual": 0
+      "frequencia_pct": 59.84,
+      "atraso_atual": 1
     },
     {
       "dezena": 23,
       "dezena_formatada": "23",
-      "frequencia_absoluta": 2192,
-      "frequencia_pct": 58.66,
+      "frequencia_absoluta": 2193,
+      "frequencia_pct": 58.67,
       "atraso_atual": 0
     },
     {
       "dezena": 24,
       "dezena_formatada": "24",
-      "frequencia_absoluta": 2267,
-      "frequencia_pct": 60.66,
-      "atraso_atual": 2
+      "frequencia_absoluta": 2268,
+      "frequencia_pct": 60.67,
+      "atraso_atual": 0
     },
     {
       "dezena": 25,
       "dezena_formatada": "25",
       "frequencia_absoluta": 2323,
-      "frequencia_pct": 62.16,
-      "atraso_atual": 0
+      "frequencia_pct": 62.15,
+      "atraso_atual": 1
     }
   ],
   "jogos_proximo_concurso": [
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M1_aleatorio_puro",
-      "dezenas": "04-06-07-08-10-12-13-14-16-18-19-20-22-23-25",
-      "soma": "217",
-      "pares": "10",
-      "impares": "5"
+      "dezenas": "01-03-04-07-09-11-13-14-15-16-17-18-20-21-22",
+      "soma": "191",
+      "pares": "6",
+      "impares": "9"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M2_mais_frequentes",
       "dezenas": "01-02-03-04-05-10-11-12-13-14-15-20-22-24-25",
       "soma": "181",
@@ -494,340 +494,340 @@
       "impares": "7"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M3_mais_atrasadas",
-      "dezenas": "01-04-05-06-07-10-12-13-16-18-19-20-21-23-24",
-      "soma": "199",
-      "pares": "8",
-      "impares": "7"
+      "dezenas": "01-02-06-08-09-11-12-15-16-19-20-21-22-23-25",
+      "soma": "210",
+      "pares": "7",
+      "impares": "8"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M4_par_impar_balanceado",
-      "dezenas": "01-02-05-07-08-10-12-13-14-15-16-18-19-24-25",
-      "soma": "189",
+      "dezenas": "01-02-06-07-08-09-10-11-13-14-16-17-18-19-22",
+      "soma": "173",
       "pares": "8",
       "impares": "7"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M5_soma_faixa_comum",
-      "dezenas": "01-02-04-05-06-11-12-13-15-16-18-20-21-22-24",
-      "soma": "190",
-      "pares": "9",
-      "impares": "6"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M6_filtros_combinados",
-      "dezenas": "02-04-05-06-07-08-12-14-15-17-20-21-22-23-25",
-      "soma": "201",
+      "dezenas": "01-02-04-06-07-11-13-14-15-16-18-20-22-23-25",
+      "soma": "197",
       "pares": "8",
       "impares": "7"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M6_filtros_combinados",
-      "dezenas": "01-02-03-06-10-11-12-13-14-15-18-22-23-24-25",
-      "soma": "199",
-      "pares": "8",
-      "impares": "7"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M6_filtros_combinados",
-      "dezenas": "02-05-06-07-08-09-11-13-14-15-16-20-23-24-25",
-      "soma": "198",
-      "pares": "7",
-      "impares": "8"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M6_filtros_combinados",
-      "dezenas": "02-04-06-08-09-11-12-13-14-16-17-18-21-22-25",
-      "soma": "198",
-      "pares": "9",
-      "impares": "6"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M6_filtros_combinados",
-      "dezenas": "02-03-05-06-08-10-12-13-15-16-18-22-23-24-25",
-      "soma": "202",
-      "pares": "9",
-      "impares": "6"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M7_cobertura_pares",
-      "dezenas": "03-04-06-07-08-09-11-12-15-17-18-20-22-23-25",
+      "dezenas": "01-02-03-04-05-10-13-14-17-18-19-22-23-24-25",
       "soma": "200",
       "pares": "7",
       "impares": "8"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M7_cobertura_pares",
-      "dezenas": "02-05-06-07-08-09-11-14-15-17-18-20-22-23-24",
-      "soma": "201",
-      "pares": "8",
-      "impares": "7"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M7_cobertura_pares",
-      "dezenas": "02-03-06-08-09-10-11-14-15-16-17-21-22-23-24",
-      "soma": "201",
-      "pares": "8",
-      "impares": "7"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M7_cobertura_pares",
-      "dezenas": "02-05-06-08-10-11-12-13-15-16-17-19-20-22-23",
-      "soma": "199",
-      "pares": "8",
-      "impares": "7"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M7_cobertura_pares",
-      "dezenas": "02-05-06-07-09-10-11-13-14-15-16-22-23-24-25",
-      "soma": "202",
-      "pares": "7",
-      "impares": "8"
-    },
-    {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M8_repeticao_controlada",
-      "dezenas": "02-03-04-05-06-08-12-14-17-18-20-21-22-23-25",
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "02-03-05-08-09-10-11-12-14-17-18-20-22-24-25",
       "soma": "200",
       "pares": "9",
       "impares": "6"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M8_repeticao_controlada",
-      "dezenas": "03-04-06-08-09-10-12-13-14-15-17-19-22-24-25",
-      "soma": "201",
-      "pares": "8",
-      "impares": "7"
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "02-03-04-08-10-11-12-13-16-17-18-20-21-22-23",
+      "soma": "200",
+      "pares": "9",
+      "impares": "6"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M8_repeticao_controlada",
-      "dezenas": "02-03-05-08-09-10-12-13-15-16-17-20-22-23-24",
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "02-03-04-05-06-10-11-13-14-19-20-21-23-24-25",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M6_filtros_combinados",
+      "dezenas": "02-03-05-07-09-10-12-14-16-17-18-19-20-23-24",
       "soma": "199",
       "pares": "8",
       "impares": "7"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
-      "metodo": "M8_repeticao_controlada",
-      "dezenas": "02-03-05-08-09-10-11-12-15-16-17-19-22-24-25",
-      "soma": "198",
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "02-04-05-06-08-10-11-13-15-16-18-20-23-24-25",
+      "soma": "200",
+      "pares": "9",
+      "impares": "6"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "03-04-05-08-10-12-13-14-15-16-17-18-20-22-23",
+      "soma": "200",
+      "pares": "9",
+      "impares": "6"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "01-02-04-07-08-10-12-13-14-17-18-22-23-24-25",
+      "soma": "200",
+      "pares": "9",
+      "impares": "6"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "02-03-05-07-08-10-13-14-15-16-18-20-21-23-25",
+      "soma": "200",
       "pares": "7",
       "impares": "8"
     },
     {
-      "data_geracao": "17/07/2026",
-      "concurso_alvo": 3738,
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M7_cobertura_pares",
+      "dezenas": "03-05-08-09-10-11-12-13-14-15-16-17-20-23-24",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
       "metodo": "M8_repeticao_controlada",
-      "dezenas": "03-04-05-06-08-09-10-12-14-15-18-22-23-24-25",
-      "soma": "198",
+      "dezenas": "02-04-05-08-10-12-13-14-15-16-17-18-19-23-24",
+      "soma": "200",
       "pares": "9",
       "impares": "6"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "02-03-04-07-10-11-12-14-15-17-18-19-21-23-24",
+      "soma": "200",
+      "pares": "7",
+      "impares": "8"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "02-03-05-06-08-10-11-12-17-18-19-20-22-23-24",
+      "soma": "200",
+      "pares": "9",
+      "impares": "6"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "02-03-04-07-11-12-13-14-15-16-18-19-20-23-24",
+      "soma": "201",
+      "pares": "8",
+      "impares": "7"
+    },
+    {
+      "data_geracao": "18/07/2026",
+      "concurso_alvo": 3739,
+      "metodo": "M8_repeticao_controlada",
+      "dezenas": "03-04-05-08-09-10-12-13-14-15-18-20-21-23-24",
+      "soma": "199",
+      "pares": "8",
+      "impares": "7"
     }
   ],
   "ultimas_conferencias": [
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M8_repeticao_controlada",
-      "dezenas_jogo": "02-05-06-07-08-11-12-14-15-17-18-19-21-22-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M8_repeticao_controlada",
-      "dezenas_jogo": "03-06-08-09-10-11-12-13-14-15-16-18-21-22-23",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 11
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M8_repeticao_controlada",
-      "dezenas_jogo": "03-05-06-07-08-11-12-14-15-17-18-19-20-21-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "03-04-05-06-08-09-10-12-14-15-18-22-23-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M8_repeticao_controlada",
-      "dezenas_jogo": "03-04-07-08-09-10-12-14-15-16-17-18-19-23-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 9
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M8_repeticao_controlada",
-      "dezenas_jogo": "02-04-06-08-09-11-12-13-16-17-18-19-20-22-23",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M7_cobertura_pares",
-      "dezenas_jogo": "02-03-06-08-09-10-11-12-13-18-19-21-22-23-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M7_cobertura_pares",
-      "dezenas_jogo": "02-04-07-08-09-10-11-13-14-17-18-19-21-22-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "02-03-05-08-09-10-11-12-15-16-17-19-22-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 8
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M7_cobertura_pares",
-      "dezenas_jogo": "01-03-06-08-09-10-11-12-14-18-19-20-21-23-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 9
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M8_repeticao_controlada",
+      "dezenas_jogo": "02-03-05-08-09-10-12-13-15-16-17-20-22-23-24",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 10
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M7_cobertura_pares",
-      "dezenas_jogo": "01-03-06-07-09-10-12-14-16-17-19-20-21-22-23",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M8_repeticao_controlada",
+      "dezenas_jogo": "03-04-06-08-09-10-12-13-14-15-17-19-22-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 8
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M8_repeticao_controlada",
+      "dezenas_jogo": "02-03-04-05-06-08-12-14-17-18-20-21-22-23-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 10
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M7_cobertura_pares",
-      "dezenas_jogo": "02-03-04-06-07-08-14-15-16-17-18-21-22-23-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "02-05-06-07-09-10-11-13-14-15-16-22-23-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M6_filtros_combinados",
-      "dezenas_jogo": "02-04-06-07-08-09-12-13-14-17-19-20-22-23-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M7_cobertura_pares",
+      "dezenas_jogo": "02-05-06-08-10-11-12-13-15-16-17-19-20-22-23",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M7_cobertura_pares",
+      "dezenas_jogo": "02-03-06-08-09-10-11-14-15-16-17-21-22-23-24",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M7_cobertura_pares",
+      "dezenas_jogo": "02-05-06-07-08-09-11-14-15-17-18-20-22-23-24",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 11
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M7_cobertura_pares",
+      "dezenas_jogo": "03-04-06-07-08-09-11-12-15-17-18-20-22-23-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M6_filtros_combinados",
-      "dezenas_jogo": "01-03-06-07-08-11-12-14-15-17-18-20-22-23-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "02-03-05-06-08-10-12-13-15-16-18-22-23-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M6_filtros_combinados",
+      "dezenas_jogo": "02-04-06-08-09-11-12-13-14-16-17-18-21-22-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 8
+    },
+    {
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
+      "metodo": "M6_filtros_combinados",
+      "dezenas_jogo": "02-05-06-07-08-09-11-13-14-15-16-20-23-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 10
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M6_filtros_combinados",
-      "dezenas_jogo": "01-03-04-07-09-10-12-14-16-17-18-21-22-23-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 7
+      "dezenas_jogo": "01-02-03-06-10-11-12-13-14-15-18-22-23-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M6_filtros_combinados",
-      "dezenas_jogo": "01-06-07-08-09-11-12-13-14-15-17-18-22-23-24",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 11
+      "dezenas_jogo": "02-04-05-06-07-08-12-14-15-17-20-21-22-23-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
-      "metodo": "M6_filtros_combinados",
-      "dezenas_jogo": "05-06-07-08-09-10-11-12-13-14-19-20-21-22-23",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
-    },
-    {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M5_soma_faixa_comum",
-      "dezenas_jogo": "01-02-05-07-08-09-10-12-16-17-18-19-21-23-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "01-02-04-05-06-11-12-13-15-16-18-20-21-22-24",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 8
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M4_par_impar_balanceado",
-      "dezenas_jogo": "02-03-05-08-09-10-12-16-19-20-21-22-23-24-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_jogo": "01-02-05-07-08-10-12-13-14-15-16-18-19-24-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M3_mais_atrasadas",
-      "dezenas_jogo": "01-02-05-06-10-11-12-13-15-16-20-22-23-24-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
+      "dezenas_jogo": "01-04-05-06-07-10-12-13-16-18-19-20-21-23-24",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M2_mais_frequentes",
       "dezenas_jogo": "01-02-03-04-05-10-11-12-13-14-15-20-22-24-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
       "acertos": 10
     },
     {
-      "concurso": 3737,
-      "data_sorteio": "16/07/2026",
+      "concurso": 3738,
+      "data_sorteio": "17/07/2026",
       "metodo": "M1_aleatorio_puro",
-      "dezenas_jogo": "03-04-07-08-09-11-12-13-16-17-18-22-23-24-25",
-      "dezenas_sorteadas": "02-03-05-06-08-09-11-12-13-14-15-17-22-23-25",
-      "acertos": 10
+      "dezenas_jogo": "04-06-07-08-10-12-13-14-16-18-19-20-22-23-25",
+      "dezenas_sorteadas": "02-03-04-05-07-08-10-11-13-14-17-18-20-23-24",
+      "acertos": 9
     }
   ],
   "estatisticas_metodos": [
     {
       "metodo": "M1_aleatorio_puro",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 9.091,
-      "desvio_padrao_acertos": 1.24,
+      "total_jogos_conferidos": 12,
+      "media_acertos": 9.083,
+      "desvio_padrao_acertos": 1.187,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 11,
-      "pct_11_ou_mais": 9.09,
+      "pct_11_ou_mais": 8.33,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -838,7 +838,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 2,
       "qtd_8_acertos": 1,
-      "qtd_9_acertos": 3,
+      "qtd_9_acertos": 4,
       "qtd_10_acertos": 4,
       "qtd_11_acertos": 1,
       "qtd_12_acertos": 0,
@@ -848,13 +848,13 @@
     },
     {
       "metodo": "M2_mais_frequentes",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 9.182,
-      "desvio_padrao_acertos": 1.527,
+      "total_jogos_conferidos": 12,
+      "media_acertos": 9.25,
+      "desvio_padrao_acertos": 1.479,
       "esperanca_teorica": 9.0,
       "min_acertos": 6,
       "max_acertos": 11,
-      "pct_11_ou_mais": 18.18,
+      "pct_11_ou_mais": 16.67,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -866,7 +866,7 @@
       "qtd_7_acertos": 1,
       "qtd_8_acertos": 1,
       "qtd_9_acertos": 2,
-      "qtd_10_acertos": 4,
+      "qtd_10_acertos": 5,
       "qtd_11_acertos": 2,
       "qtd_12_acertos": 0,
       "qtd_13_acertos": 0,
@@ -875,13 +875,13 @@
     },
     {
       "metodo": "M3_mais_atrasadas",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 9.182,
-      "desvio_padrao_acertos": 1.113,
+      "total_jogos_conferidos": 12,
+      "media_acertos": 9.167,
+      "desvio_padrao_acertos": 1.067,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 11,
-      "pct_11_ou_mais": 9.09,
+      "pct_11_ou_mais": 8.33,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -892,7 +892,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 1,
       "qtd_8_acertos": 2,
-      "qtd_9_acertos": 3,
+      "qtd_9_acertos": 4,
       "qtd_10_acertos": 4,
       "qtd_11_acertos": 1,
       "qtd_12_acertos": 0,
@@ -902,13 +902,13 @@
     },
     {
       "metodo": "M4_par_impar_balanceado",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 9.182,
-      "desvio_padrao_acertos": 1.113,
+      "total_jogos_conferidos": 12,
+      "media_acertos": 9.167,
+      "desvio_padrao_acertos": 1.067,
       "esperanca_teorica": 9.0,
       "min_acertos": 8,
       "max_acertos": 12,
-      "pct_11_ou_mais": 9.09,
+      "pct_11_ou_mais": 8.33,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -919,7 +919,7 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 0,
       "qtd_8_acertos": 3,
-      "qtd_9_acertos": 5,
+      "qtd_9_acertos": 6,
       "qtd_10_acertos": 2,
       "qtd_11_acertos": 0,
       "qtd_12_acertos": 1,
@@ -929,9 +929,9 @@
     },
     {
       "metodo": "M5_soma_faixa_comum",
-      "total_jogos_conferidos": 11,
-      "media_acertos": 8.818,
-      "desvio_padrao_acertos": 1.192,
+      "total_jogos_conferidos": 12,
+      "media_acertos": 8.75,
+      "desvio_padrao_acertos": 1.164,
       "esperanca_teorica": 9.0,
       "min_acertos": 6,
       "max_acertos": 10,
@@ -945,7 +945,7 @@
       "qtd_5_acertos": 0,
       "qtd_6_acertos": 1,
       "qtd_7_acertos": 0,
-      "qtd_8_acertos": 3,
+      "qtd_8_acertos": 4,
       "qtd_9_acertos": 3,
       "qtd_10_acertos": 4,
       "qtd_11_acertos": 0,
@@ -956,13 +956,13 @@
     },
     {
       "metodo": "M6_filtros_combinados",
-      "total_jogos_conferidos": 46,
-      "media_acertos": 9.435,
-      "desvio_padrao_acertos": 1.296,
+      "total_jogos_conferidos": 51,
+      "media_acertos": 9.392,
+      "desvio_padrao_acertos": 1.254,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 12,
-      "pct_11_ou_mais": 19.57,
+      "pct_11_ou_mais": 17.65,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -972,9 +972,9 @@
       "qtd_5_acertos": 0,
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 4,
-      "qtd_8_acertos": 8,
-      "qtd_9_acertos": 9,
-      "qtd_10_acertos": 16,
+      "qtd_8_acertos": 9,
+      "qtd_9_acertos": 12,
+      "qtd_10_acertos": 17,
       "qtd_11_acertos": 7,
       "qtd_12_acertos": 2,
       "qtd_13_acertos": 0,
@@ -983,13 +983,13 @@
     },
     {
       "metodo": "M7_cobertura_pares",
-      "total_jogos_conferidos": 46,
-      "media_acertos": 9.348,
-      "desvio_padrao_acertos": 1.184,
+      "total_jogos_conferidos": 51,
+      "media_acertos": 9.353,
+      "desvio_padrao_acertos": 1.152,
       "esperanca_teorica": 9.0,
       "min_acertos": 7,
       "max_acertos": 12,
-      "pct_11_ou_mais": 15.22,
+      "pct_11_ou_mais": 15.69,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -1000,9 +1000,9 @@
       "qtd_6_acertos": 0,
       "qtd_7_acertos": 2,
       "qtd_8_acertos": 10,
-      "qtd_9_acertos": 13,
+      "qtd_9_acertos": 17,
       "qtd_10_acertos": 14,
-      "qtd_11_acertos": 5,
+      "qtd_11_acertos": 6,
       "qtd_12_acertos": 2,
       "qtd_13_acertos": 0,
       "qtd_14_acertos": 0,
@@ -1010,13 +1010,13 @@
     },
     {
       "metodo": "M8_repeticao_controlada",
-      "total_jogos_conferidos": 46,
-      "media_acertos": 9.283,
-      "desvio_padrao_acertos": 1.313,
+      "total_jogos_conferidos": 51,
+      "media_acertos": 9.255,
+      "desvio_padrao_acertos": 1.281,
       "esperanca_teorica": 9.0,
       "min_acertos": 6,
       "max_acertos": 12,
-      "pct_11_ou_mais": 15.22,
+      "pct_11_ou_mais": 13.73,
       "pct_13_ou_mais": 0.0,
       "qtd_0_acertos": 0,
       "qtd_1_acertos": 0,
@@ -1026,9 +1026,9 @@
       "qtd_5_acertos": 0,
       "qtd_6_acertos": 2,
       "qtd_7_acertos": 2,
-      "qtd_8_acertos": 8,
-      "qtd_9_acertos": 11,
-      "qtd_10_acertos": 16,
+      "qtd_8_acertos": 10,
+      "qtd_9_acertos": 12,
+      "qtd_10_acertos": 18,
       "qtd_11_acertos": 6,
       "qtd_12_acertos": 1,
       "qtd_13_acertos": 0,

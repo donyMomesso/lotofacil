@@ -846,3 +846,53 @@ O histórico real agora tem 3737 concurso(s). Quanto mais dados entram, mais est
 | M8_repeticao_controlada | 02-03-05-08-09-10-11-12-15-16-17-19-22-24-25 |
 | M8_repeticao_controlada | 03-04-05-06-08-09-10-12-14-15-18-22-23-24-25 |
 
+
+---
+
+## 18/07/2026
+
+**1. O que foi observado**
+
+- Concurso 3738: registrado e conferido contra os jogos de estudo — M1_aleatorio_puro: 9 acerto(s), M2_mais_frequentes: 10 acerto(s), M3_mais_atrasadas: 9 acerto(s), M4_par_impar_balanceado: 9 acerto(s), M5_soma_faixa_comum: 8 acerto(s), M6_filtros_combinados: 9 acerto(s), M6_filtros_combinados: 9 acerto(s), M6_filtros_combinados: 10 acerto(s), M6_filtros_combinados: 8 acerto(s), M6_filtros_combinados: 9 acerto(s), M7_cobertura_pares: 9 acerto(s), M7_cobertura_pares: 11 acerto(s), M7_cobertura_pares: 9 acerto(s), M7_cobertura_pares: 9 acerto(s), M7_cobertura_pares: 9 acerto(s), M8_repeticao_controlada: 10 acerto(s), M8_repeticao_controlada: 8 acerto(s), M8_repeticao_controlada: 10 acerto(s), M8_repeticao_controlada: 8 acerto(s), M8_repeticao_controlada: 9 acerto(s).
+
+**2. O que isso pode significar estatisticamente**
+
+A média de acertos dos jogos de estudo hoje foi 9.10, contra a esperança teórica de 9.0 por jogo (distribuição hipergeométrica). Diferenças pontuais como essa são esperadas em qualquer sorteio aleatório e tendem a se equilibrar conforme mais concursos entram na série.
+
+**3. O que isso não significa**
+
+Não significa que algum método está "mais perto" de 14 ou 15 acertos, nem que a frequência ou o atraso de uma dezena influenciam o próximo sorteio. Cada concurso da Lotofácil é independente dos anteriores — a bola não tem memória.
+
+**4. Risco de confundir padrão histórico com previsão**
+
+Observar uma sequência de acertos altos (ou baixos) em poucos concursos pode parecer um sinal de que um método está funcionando, mas é o tipo de variação que o acaso produz sozinho em amostras pequenas. Tratar isso como previsão é viés de confirmação — e é exatamente o que este laboratório existe para demonstrar, não para praticar.
+
+**5. Conclusão educativa**
+
+O histórico real agora tem 3738 concurso(s). Quanto mais dados entram, mais estável fica a comparação entre os métodos e mais claro fica que todos oscilam ao redor do mesmo valor esperado — esse é o ponto central do laboratório: mostrar a matemática do acaso, não encontrar um método vencedor.
+
+*Jogos fictícios gerados para o concurso 3739 (estudo estatístico — não é recomendação de aposta):*
+
+| Método | Dezenas |
+|---|---|
+| M1_aleatorio_puro | 01-03-04-07-09-11-13-14-15-16-17-18-20-21-22 |
+| M2_mais_frequentes | 01-02-03-04-05-10-11-12-13-14-15-20-22-24-25 |
+| M3_mais_atrasadas | 01-02-06-08-09-11-12-15-16-19-20-21-22-23-25 |
+| M4_par_impar_balanceado | 01-02-06-07-08-09-10-11-13-14-16-17-18-19-22 |
+| M5_soma_faixa_comum | 01-02-04-06-07-11-13-14-15-16-18-20-22-23-25 |
+| M6_filtros_combinados | 01-02-03-04-05-10-13-14-17-18-19-22-23-24-25 |
+| M6_filtros_combinados | 02-03-05-08-09-10-11-12-14-17-18-20-22-24-25 |
+| M6_filtros_combinados | 02-03-04-08-10-11-12-13-16-17-18-20-21-22-23 |
+| M6_filtros_combinados | 02-03-04-05-06-10-11-13-14-19-20-21-23-24-25 |
+| M6_filtros_combinados | 02-03-05-07-09-10-12-14-16-17-18-19-20-23-24 |
+| M7_cobertura_pares | 02-04-05-06-08-10-11-13-15-16-18-20-23-24-25 |
+| M7_cobertura_pares | 03-04-05-08-10-12-13-14-15-16-17-18-20-22-23 |
+| M7_cobertura_pares | 01-02-04-07-08-10-12-13-14-17-18-22-23-24-25 |
+| M7_cobertura_pares | 02-03-05-07-08-10-13-14-15-16-18-20-21-23-25 |
+| M7_cobertura_pares | 03-05-08-09-10-11-12-13-14-15-16-17-20-23-24 |
+| M8_repeticao_controlada | 02-04-05-08-10-12-13-14-15-16-17-18-19-23-24 |
+| M8_repeticao_controlada | 02-03-04-07-10-11-12-14-15-17-18-19-21-23-24 |
+| M8_repeticao_controlada | 02-03-05-06-08-10-11-12-17-18-19-20-22-23-24 |
+| M8_repeticao_controlada | 02-03-04-07-11-12-13-14-15-16-18-19-20-23-24 |
+| M8_repeticao_controlada | 03-04-05-08-09-10-12-13-14-15-18-20-21-23-24 |
+
