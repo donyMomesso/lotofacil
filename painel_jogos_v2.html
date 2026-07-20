@@ -171,8 +171,11 @@
 
       <sc-if value="{{ hasAprendizado }}" hint-placeholder-val="{{ false }}">
         <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:16px;">
-          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🧠 Aprendizado do sistema</div>
-          <div style="font-size:11px; color:#6B5B8A; margin:-6px 0 12px;">{{ aprendizadoResumo.janela }}</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🧠 Aprendizado do sistema</div>
+            <span style="background:#EDE9FE; border:1px solid #C4B5FD; color:#5B21B6; border-radius:999px; padding:4px 10px; font-size:10.5px; font-weight:800; white-space:nowrap;">Confiança: {{ aprendizadoResumo.janela }}</span>
+          </div>
+          <div style="font-size:11px; color:#6B5B8A; margin:-2px 0 12px;">Quanto menor a amostra abaixo do mínimo confiável, menos essa recomendação deve pesar na sua escolha — é sinal de dado insuficiente, não de método travado.</div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:14px;">
             <div style="background:#F8F2FF; border:1px solid #E9DFFB; border-radius:8px; padding:12px;">
               <div style="font-size:10px; color:#8B76B0; text-transform:uppercase;">Perfil mais estável</div>
@@ -269,19 +272,31 @@
         </div>
       </sc-if>
 
-      <div style="background:#fff; border:1px solid #DDE7F3; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(15,23,42,.06); margin-bottom:16px;">
+      <div style="background:linear-gradient(135deg,#F8FAFC 0%,#EEF6FF 100%); border:2px solid #38BDF8; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(14,165,233,.14); margin-bottom:16px;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <div>
-            <div style="font-size:11px; font-weight:800; color:#0F172A; text-transform:uppercase; letter-spacing:.06em;">Cerebro laboratorio</div>
-            <div style="font-size:11px; color:#64748B; margin-top:3px;">{{ laboratorioStatus }}</div>
+            <div style="font-size:12px; font-weight:900; color:#0369A1; text-transform:uppercase; letter-spacing:.06em;">Laboratorio automatico — 20 mil jogos</div>
+            <div style="font-size:11px; color:#475569; margin-top:3px;">{{ laboratorioStatus }}</div>
           </div>
-          <span style="background:#ECFDF5; border:1px solid #10B98155; color:#047857; border-radius:999px; padding:7px 12px; font-size:11px; font-weight:900; white-space:nowrap;">Automatico</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="background:#DBEAFE; border:1px solid #2563EB55; color:#1D4ED8; border-radius:999px; padding:7px 12px; font-size:11px; font-weight:900; white-space:nowrap;">Gera e confere sozinho</span>
+            <button onClick="{{ irParaSemana }}" style="background:#7C3AED; border:0; color:#fff; border-radius:999px; padding:7px 14px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap;">📅 Ver análise completa da semana →</button>
+          </div>
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px;">
           <sc-for list="{{ laboratorioCards }}" as="lc" hint-placeholder-count="6">
             <div data-style-template="{{ lc.style }}">
               <div style="font-size:10px; text-transform:uppercase; opacity:.76;">{{ lc.label }}</div>
               <div style="font-size:18px; font-weight:900; margin-top:3px;">{{ lc.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-bottom:12px;">
+          <sc-for list="{{ laboratorioTeses }}" as="lt" hint-placeholder-count="4">
+            <div data-style-template="{{ lt.style }}">
+              <div style="font-size:10px; text-transform:uppercase; opacity:.76; font-weight:900;">{{ lt.titulo }}</div>
+              <div style="font-size:15px; font-weight:900; margin-top:4px; word-break:break-word;">{{ lt.valor }}</div>
+              <div style="font-size:11px; line-height:1.45; margin-top:5px; opacity:.86;">{{ lt.detalhe }}</div>
             </div>
           </sc-for>
         </div>
@@ -506,7 +521,10 @@
       </div>
 
       <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
-        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔍 Conferidor — acertos por método</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">🔍 Conferidor — acertos por método</div>
+          <button onClick="{{ limparConferidor }}" disabled="{{ hasNoConferidor }}" data-style-template="{{ limparConferidorStyle }}">Limpar tudo</button>
+        </div>
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
           <thead>
             <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
@@ -530,6 +548,144 @@
             </sc-for>
           </tbody>
         </table>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== SEMANA & TESES ===================== -->
+  <sc-if value="{{ isSemana }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:24px 28px; max-width:1280px; margin:0 auto;">
+
+      <div style="background:linear-gradient(135deg,#F5F3FF 0%,#EDE9FE 100%); border:2px solid #7C3AED; border-radius:14px; padding:18px 20px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div style="font-size:12px; font-weight:900; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📅 Semana & Teses — laboratório de 20 mil jogos</div>
+          <div style="font-size:13px; color:#4C1D95; margin-top:4px; font-weight:700;">{{ semanaCabecalho }}</div>
+          <div style="font-size:11px; color:#6B5B8A; margin-top:4px;">Segunda a sábado: a semana fecha sozinha no domingo (sem sorteio) e recomeça vazia na segunda seguinte — sem precisar zerar nada na mão.</div>
+        </div>
+        <span data-style-template="{{ semanaStatusBadge.style }}">{{ semanaStatusBadge.label }}</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin-bottom:18px;">
+        <sc-for list="{{ semanaTeses }}" as="st" hint-placeholder-count="4">
+          <div data-style-template="{{ st.style }}">
+            <div style="font-size:10px; text-transform:uppercase; opacity:.76; font-weight:900;">{{ st.titulo }}</div>
+            <div style="font-size:15px; font-weight:900; margin-top:4px; word-break:break-word;">{{ st.valor }}</div>
+            <div style="font-size:11px; line-height:1.45; margin-top:5px; opacity:.86;">{{ st.detalhe }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:18px;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">📊 Concursos da semana — média de acertos do laboratório</div>
+        <canvas id="semanaChart" style="max-height:280px;"></canvas>
+        <sc-if value="{{ hasSemanaConcursos }}" hint-placeholder-val="{{ false }}">
+          <div style="overflow:auto; margin-top:14px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
+                  <th style="text-align:left; padding:6px 8px;">Concurso</th>
+                  <th style="text-align:left; padding:6px 8px;">Data</th>
+                  <th style="text-align:left; padding:6px 8px;">Média</th>
+                  <th style="text-align:left; padding:6px 8px;">Melhor</th>
+                  <th style="text-align:left; padding:6px 8px;">Destaque</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ semanaConcursos }}" as="sc" hint-placeholder-count="6">
+                  <tr data-style-template="{{ sc.rowStyle }}">
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sc.concurso }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sc.data }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sc.media }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sc.melhor }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sc.badge }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasNoSemanaConcursos }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12px; color:#8B76B0; margin-top:10px;">Ainda sem concurso conferido nesta semana. Assim que sair o resultado de hoje, o laboratório entra aqui.</div>
+        </sc-if>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:18px;">
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🏆 Ranking de estratégias — só esta semana</div>
+          <sc-if value="{{ hasSemanaRanking }}" hint-placeholder-val="{{ false }}">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
+                  <th style="text-align:left; padding:6px 8px;">Estratégia</th>
+                  <th style="text-align:left; padding:6px 8px;">Jogos</th>
+                  <th style="text-align:left; padding:6px 8px;">Média</th>
+                  <th style="text-align:left; padding:6px 8px;">% 11+</th>
+                  <th style="text-align:left; padding:6px 8px;">Melhor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ semanaRanking }}" as="sr" hint-placeholder-count="8">
+                  <tr data-style-template="{{ sr.rowStyle }}">
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.label }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.jogos }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.media }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.taxa11Mais }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.melhor }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </sc-if>
+          <sc-if value="{{ hasNoSemanaRanking }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px; color:#8B76B0;">Sem estratégias conferidas nesta semana ainda.</div>
+          </sc-if>
+        </div>
+        <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06);">
+          <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">🔥 Dezenas mais quentes da semana (sorteios reais)</div>
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:280px; margin:0 auto;">
+            <sc-for list="{{ semanaHeatCells }}" as="hc" hint-placeholder-count="25">
+              <div data-style-template="{{ hc.style }}">{{ hc.num }}</div>
+            </sc-for>
+          </div>
+          <div style="margin-top:12px; font-size:11px; color:#8B76B0;">Quanto mais escuro, mais vezes a dezena saiu nos concursos já sorteados desta semana. Só descreve o passado da semana — não prevê o próximo sorteio.</div>
+        </div>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); margin-bottom:18px;">
+        <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px;">📈 Tendência — últimas semanas</div>
+        <canvas id="semanaTendenciaChart" style="max-height:260px;"></canvas>
+        <sc-if value="{{ hasSemanaHistorico }}" hint-placeholder-val="{{ false }}">
+          <div style="overflow:auto; margin-top:14px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="color:#8B76B0; font-size:10.5px; text-transform:uppercase;">
+                  <th style="text-align:left; padding:6px 8px;">Semana</th>
+                  <th style="text-align:left; padding:6px 8px;">Concursos</th>
+                  <th style="text-align:left; padding:6px 8px;">Jogos</th>
+                  <th style="text-align:left; padding:6px 8px;">Média</th>
+                  <th style="text-align:left; padding:6px 8px;">Melhor</th>
+                  <th style="text-align:left; padding:6px 8px;">% 11+</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ semanaHistorico }}" as="sh" hint-placeholder-count="6">
+                  <tr>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.periodo }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.concursos }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.jogos }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.media }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.melhor }}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sh.taxa11Mais }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="background:#FFF7EA; border:1px solid #FDE9C4; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400E; line-height:1.6;">
+        <b style="color:#7C2D12;">Leitura honesta:</b> isto é estudo estatístico do que já aconteceu, não previsão do próximo sorteio. Cada concurso é um evento novo e independente — nenhuma estratégia muda a chance matemática de acertar. Use o tamanho da amostra (jogos analisados) para saber o quanto confiar em cada leitura.
       </div>
     </div>
   </sc-if>
@@ -767,7 +923,7 @@
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <button onClick="{{ copiarJogosRegistrados }}" disabled="{{ copySavedDisabled }}" data-style-template="{{ copySavedStyle }}">⧉ Copiar bloco</button>
             <button onClick="{{ conferirDuasRodadas }}" style="background:#DCFCE7; border:1px solid #16A34A55; color:#166534; border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; font-weight:700;">Atualizar conferencias</button>
-            <button onClick="{{ apagarTodosJogos }}" disabled="{{ hasNoGames }}" data-style-template="{{ apagarTodosStyle }}">🗑 Apagar tudo</button>
+            <button onClick="{{ apagarTodosJogos }}" disabled="{{ hasNoGames }}" data-style-template="{{ apagarTodosStyle }}">Limpar tudo</button>
             <span style="font-size:12px; color:#8B76B0;">{{ savedCount }}</span>
           </div>
         </div>
@@ -1022,6 +1178,21 @@ function cellCircleStyle(n, zoneSet, zoneColor, size) {
   return `width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ${border};background:${bg};color:${color};`;
 }
 
+function heatCellStyle(freq, maxFreq, size) {
+  const intensity = maxFreq > 0 ? freq / maxFreq : 0;
+  const palette = [
+    { bg:'#FAF7FF', border:'#E9DFFB', color:'#B8A6DB' },
+    { bg:'#F3E8FF', border:'#D8B4FE', color:'#6B21A8' },
+    { bg:'#E9D5FF', border:'#C084FC', color:'#581C87' },
+    { bg:'#D8B4FE', border:'#A855F7', color:'#4C1D95' },
+    { bg:'#C084FC', border:'#7C3AED', color:'#fff' },
+    { bg:'#7C3AED', border:'#5B21B6', color:'#fff' },
+  ];
+  const idx = freq === 0 ? 0 : Math.min(palette.length - 1, 1 + Math.floor(intensity * (palette.length - 2)));
+  const { bg, border, color } = palette[idx];
+  return `width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;border:2px solid ${border};background:${bg};color:${color};`;
+}
+
 function tdStyle(n) {
   let bg,color;
   if (HOT.includes(n)) { bg='#FFFBEB'; color='#92400E'; }
@@ -1125,6 +1296,7 @@ const SORTEIOS_RECENTES = [
 
 const TABS_DEF = [
   { key:'jogos', label:'🎯 Jogos & Moldura' },
+  { key:'semana', label:'📅 Semana & Teses' },
   { key:'meusjogos', label:'✏️ Meus Jogos' },
   { key:'sequencias', label:'🔢 Sequências' },
   { key:'historico', label:'📊 Backtest & Histórico' },
@@ -1487,6 +1659,11 @@ class Component extends DCLogic {
     aprendizadoOrigens: null,
     laboratorio: null,
     laboratorioConferido: null,
+    laboratorioAcumulado: null,
+    laboratorioHistorico: [],
+    semanaAtual: null,
+    semanaHistorico: [],
+    semanaJanela: null,
     systemGames: [],
     conferidorGames: [],
     latestResult: null,
@@ -1600,6 +1777,11 @@ class Component extends DCLogic {
         inicioStats: data.inicio_dezena || INICIO_HISTORICO_FALLBACK,
         laboratorio: data.laboratorio || null,
         laboratorioConferido: data.laboratorio_ultimo_conferido || null,
+        laboratorioAcumulado: data.laboratorio_acumulado || null,
+        laboratorioHistorico: data.laboratorio_historico || [],
+        semanaAtual: data.laboratorio_semana_atual || null,
+        semanaHistorico: data.laboratorio_semana_historico || [],
+        semanaJanela: data.semana_janela || null,
         recentDraws: data.resultados_recentes || [],
         lastCycle: data.ultimo_ciclo || null,
         panelStatus: `Sistema configurado para o concurso ${data.proximo_concurso}.`
@@ -1631,7 +1813,7 @@ class Component extends DCLogic {
       this.setState({ panelStatus: 'Nenhum jogo ativo para apagar.' });
       return;
     }
-    const confirmado = window.confirm(`Apagar todos os ${ativos.length} jogo(s) ativos em Jogos registrados? Esta acao nao pode ser desfeita.`);
+    const confirmado = window.confirm(`Limpar todos os ${ativos.length} jogo(s) ativos do Conferidor e de Jogos registrados? Esta acao nao pode ser desfeita.`);
     if (!confirmado) return;
 
     this.setState({ panelStatus: `Apagando ${ativos.length} jogo(s)...` });
@@ -1710,6 +1892,7 @@ class Component extends DCLogic {
   setTab(t) {
     this.setState({ tab: t });
     if (t === 'historico') setTimeout(() => this.initChart(), 50);
+    if (t === 'semana') setTimeout(() => this.initSemanaChart(), 50);
   }
 
   toggleNum(n) {
@@ -1937,9 +2120,16 @@ class Component extends DCLogic {
   pontuarJogoSistema(jogo, contexto) {
     const a = analisarJogo(jogo.dezenas || [], contexto || this.analysisContext());
     const inicio = a.menorDezena || 99;
+    const somaAlvo = Number(contexto?.somaAlvo) || 190;
+    const somaMin = Number(contexto?.somaMinPreferida) || 175;
+    const somaMax = Number(contexto?.somaMaxPreferida) || 210;
+    const distanciaFaixa = a.soma < somaMin ? somaMin - a.soma : (a.soma > somaMax ? a.soma - somaMax : 0);
     let penalidade = 0;
-    penalidade += Math.abs(a.soma - 200);
-    if (!a.somaFaixaComum) penalidade += 30;
+    penalidade += Math.abs(a.soma - somaAlvo) * 3;
+    penalidade += distanciaFaixa * 3;
+    if (somaAlvo < 190 && a.soma > 195) penalidade += (a.soma - 195) * 4;
+    if (a.soma >= somaMin && a.soma <= somaMax) penalidade -= 10;
+    if (!a.somaFaixaComum) penalidade += 12;
     if (!a.parImparEquilibrado) penalidade += 20;
     if (inicio > 4) penalidade += 60;
     else if (inicio === 4) penalidade += 36;
@@ -2263,6 +2453,50 @@ class Component extends DCLogic {
     });
   }
 
+  initSemanaChart() {
+    if (!window.Chart) return;
+    const muted = '#8B76B0';
+    const concursos = this.state.semanaAtual?.concursos || [];
+    const canvasSemana = document.getElementById('semanaChart');
+    if (canvasSemana) {
+      const existing = Chart.getChart(canvasSemana);
+      if (existing) existing.destroy();
+      new Chart(canvasSemana, {
+        data: {
+          labels: concursos.map(c => `C${c.concurso}`),
+          datasets: [
+            { type:'bar', label:'Média de acertos (lote da rodada)', data: concursos.map(c => Number(c.media_acertos || 0)), backgroundColor:'#7C3AED', borderRadius:4 },
+            { type:'line', label:'Esperança teórica', data: concursos.map(() => 9.0), borderColor:'#16A34A', borderDash:[6,4], pointRadius:0 },
+          ],
+        },
+        options: {
+          plugins: { legend:{ labels:{ color:'#1F1235' } }, title:{ display:true, text:'Laboratório de 20 mil jogos — concursos desta semana', color:'#1F1235' } },
+          scales: { x:{ ticks:{ color:muted } }, y:{ ticks:{ color:muted }, min:7, max:11 } },
+        },
+      });
+    }
+
+    const historico = (this.state.semanaHistorico || []).slice().reverse();
+    const canvasTendencia = document.getElementById('semanaTendenciaChart');
+    if (canvasTendencia) {
+      const existing = Chart.getChart(canvasTendencia);
+      if (existing) existing.destroy();
+      new Chart(canvasTendencia, {
+        data: {
+          labels: historico.map(row => row.semana_inicio),
+          datasets: [
+            { type:'line', label:'Média de acertos por semana', data: historico.map(row => Number(row.media_acertos || 0)), borderColor:'#7C3AED', backgroundColor:'#7C3AED22', fill:true, tension:.3 },
+            { type:'line', label:'Esperança teórica', data: historico.map(() => 9.0), borderColor:'#16A34A', borderDash:[6,4], pointRadius:0 },
+          ],
+        },
+        options: {
+          plugins: { legend:{ labels:{ color:'#1F1235' } }, title:{ display:true, text:'Tendência — média semanal do laboratório', color:'#1F1235' } },
+          scales: { x:{ ticks:{ color:muted } }, y:{ ticks:{ color:muted }, min:7, max:11 } },
+        },
+      });
+    }
+  }
+
   renderVals() {
     const s = this.state;
     const tab = s.tab;
@@ -2367,10 +2601,20 @@ class Component extends DCLogic {
     const statsByNumber = s.numberStats.length
       ? s.numberStats.slice().sort((a,b) => a.dezena - b.dezena)
       : Array.from({length:25}, (_,i) => ({ dezena:i+1, frequencia_pct:FREQ_PCT[i], atraso:ATRASO[i] }));
+    const somasRecentes = (s.recentDraws || [])
+      .slice(0, 3)
+      .map(sr => (sr.dezenas || []).reduce((acc, dezena) => acc + Number(dezena || 0), 0))
+      .filter(soma => soma > 0);
+    const somaAlvoRecente = somasRecentes.length
+      ? Math.max(178, Math.min(200, Math.round(somasRecentes.reduce((acc, soma, idx) => acc + soma * (somasRecentes.length - idx), 0) / somasRecentes.reduce((acc, _soma, idx) => acc + (somasRecentes.length - idx), 0))))
+      : 190;
     const analysisContext = {
       sorteadasReferencia: sorteadasConferidor,
       hotNumbers: statsByNumber.slice().sort((a,b) => b.frequencia_pct - a.frequencia_pct).slice(0,5).map(x => x.dezena),
       lateNumbers: statsByNumber.slice().sort((a,b) => b.atraso - a.atraso).slice(0,5).map(x => x.dezena),
+      somaAlvo: somaAlvoRecente,
+      somaMinPreferida: 175,
+      somaMaxPreferida: 210,
     };
     const sugestoesDiaRaw = this.sugestoesDoDia(analysisContext, 6);
     const sugestaoDiaRaw = sugestoesDiaRaw[0] || null;
@@ -2455,7 +2699,7 @@ class Component extends DCLogic {
       custo: brMoney(custoSugestao),
       retorno12: brMoney(retornoReferencia12),
       riscoLiquido: brMoney(Math.max(0, custoSugestao - retornoReferencia12)),
-      resumo: `Ate 6 sequencias escolhidas entre os ${sourceMethods.length} metodos do sistema para tentar superar 11 acertos no concurso ${s.concursoAlvo}. Prioridade obrigatoria para inicio 01 ou 02; inicio 03/04 so entra como fallback raro. Com ${sugestoesDiaRaw.length} jogo(s), o custo estimado e ${brMoney(custoSugestao)}; 12 pontos paga o valor fixo oficial de ${brMoney(retornoReferencia12)} (14 e 15 pontos variam por rateio, sem garantia).`
+      resumo: `Ate 6 sequencias escolhidas entre os ${sourceMethods.length} metodos do sistema para tentar superar 11 acertos no concurso ${s.concursoAlvo}. Prioridade obrigatoria para inicio 01 ou 02; inicio 03/04 so entra como fallback raro. A soma agora acompanha a media recente: alvo ${somaAlvoRecente}, com faixa preferida 175-210. Com ${sugestoesDiaRaw.length} jogo(s), o custo estimado e ${brMoney(custoSugestao)}; 12 pontos paga o valor fixo oficial de ${brMoney(retornoReferencia12)} (14 e 15 pontos variam por rateio, sem garantia).`
     } : null;
     const sugestaoDiaRows = sugestoesDiaRaw.map((jogo, idx) => ({
       posicao: idx + 1,
@@ -2712,22 +2956,62 @@ class Component extends DCLogic {
       : 'Sem previa montada.';
     const lab = s.laboratorio;
     const labConferido = lab?.resumo ? lab : s.laboratorioConferido;
+    const labAcumulado = s.laboratorioAcumulado || null;
     const labResumo = labConferido?.resumo || {};
+    const labAcumuladoResumo = labAcumulado?.resumo || {};
     const labQtd = Number(lab?.quantidade || 20000);
+    const labConferidoQtd = Number(labConferido?.quantidade || 0);
+    const labAcumuladoQtd = Number(labAcumulado?.quantidade || labAcumuladoResumo.quantidade || 0);
+    const labEstrategiasAcumuladas = labAcumulado?.estrategias || [];
+    const labTop = labEstrategiasAcumuladas[0] || null;
+    const labEvitar = labEstrategiasAcumuladas.slice().reverse().find(row => Number(row.jogos || 0) > 0) || null;
+    const labMelhoresDezenas = Array.from(new Set([
+      ...(labAcumulado?.melhor?.dezenas || []),
+      ...(labTop?.melhor_dezenas || [])
+    ])).slice(0, 15).map(pad).join('-') || '--';
+    const finalEspecial = Number(s.concursoAlvo || 0) % 5 === 0;
+    const labTesesRows = [
+      {
+        titulo: finalEspecial ? 'Rodada final 0/5' : 'Rodada comum',
+        valor: finalEspecial ? `C${s.concursoAlvo} com premio mais cobicado` : `C${s.concursoAlvo}`,
+        detalhe: finalEspecial ? 'Usar leitura mais seletiva: priorizar 13+ e 14 recente, evitar jogo disperso.' : 'Usar ranking acumulado e nao apenas o ultimo sorteio.',
+        style:'background:#FFF7ED;color:#9A3412;border:1px solid #FB923C66;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Priorizar agora',
+        valor: labTop ? labTop.label : '--',
+        detalhe: labTop ? `${Number(labTop.taxa_11_mais || 0).toFixed(2)}% com 11+ | media ${Number(labTop.media_acertos || 0).toFixed(2)}` : 'Aguardando laboratorios.',
+        style:'background:#ECFDF5;color:#047857;border:1px solid #10B98166;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Evitar/rebaixar',
+        valor: labEvitar ? labEvitar.label : '--',
+        detalhe: labEvitar ? `${Number(labEvitar.taxa_11_mais || 0).toFixed(2)}% com 11+ | melhor ${labEvitar.melhor_acerto || 0}` : 'Sem leitura.',
+        style:'background:#FEE2E2;color:#991B1B;border:1px solid #EF444466;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Base visual das melhores',
+        valor: labMelhoresDezenas,
+        detalhe: `${labAcumuladoQtd.toLocaleString('pt-BR')} jogos analisados no acumulado recente.`,
+        style:'background:#EFF6FF;color:#1D4ED8;border:1px solid #60A5FA66;border-radius:10px;padding:12px;'
+      }
+    ];
     const labStatusLabel = lab
       ? (lab.status === 'conferido'
         ? `Concurso ${lab.concurso} conferido com ${labQtd.toLocaleString('pt-BR')} jogos de teste.`
         : `Automatico: ${labQtd.toLocaleString('pt-BR')} jogos de teste ja preparados para o concurso ${lab.concurso}. Quando sair o resultado, o sistema confere e prepara o proximo.`)
       : 'Automatico: o sistema prepara 20 mil jogos de teste quando identifica o proximo concurso.';
     const laboratorioCards = [
-      { label:'Jogos no lote', value: lab ? labQtd.toLocaleString('pt-BR') : '0', style:'background:#F8FAFC;color:#0F172A;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;' },
+      { label:'Proximo lote', value: lab ? `C${lab.concurso} · ${labQtd.toLocaleString('pt-BR')}` : 'aguardando', style:'background:#EFF6FF;color:#1D4ED8;border:1px solid #60A5FA55;border-radius:8px;padding:10px 12px;' },
+      { label:'Ultimo conferido', value: labConferido ? `C${labConferido.concurso} · ${labConferidoQtd.toLocaleString('pt-BR')}` : 'sem resumo', style:'background:#F8FAFC;color:#0F172A;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;' },
+      { label:'Acumulado recente', value: labAcumuladoQtd ? labAcumuladoQtd.toLocaleString('pt-BR') : '0', style:'background:#F5F3FF;color:#5B21B6;border:1px solid #8B5CF655;border-radius:8px;padding:10px 12px;' },
       { label:'Com 11 acertos', value: Number(labResumo.acertos_11 || 0).toLocaleString('pt-BR'), style:'background:#ECFDF5;color:#047857;border:1px solid #10B98155;border-radius:8px;padding:10px 12px;' },
       { label:'Com 12 acertos', value: Number(labResumo.acertos_12 || 0).toLocaleString('pt-BR'), style:'background:#F0FDFA;color:#0F766E;border:1px solid #14B8A655;border-radius:8px;padding:10px 12px;' },
       { label:'Com 13 acertos', value: Number(labResumo.acertos_13 || 0).toLocaleString('pt-BR'), style:'background:#FFFBEB;color:#92400E;border:1px solid #F59E0B55;border-radius:8px;padding:10px 12px;' },
       { label:'Com 14 acertos', value: Number(labResumo.acertos_14 || 0).toLocaleString('pt-BR'), style:'background:#FFF7ED;color:#C2410C;border:1px solid #FB923C55;border-radius:8px;padding:10px 12px;' },
       { label:'Com 15 acertos', value: Number(labResumo.acertos_15 || 0).toLocaleString('pt-BR'), style:'background:#FDF2F8;color:#BE123C;border:1px solid #EC489955;border-radius:8px;padding:10px 12px;' },
     ];
-    const laboratorioRanking = (labConferido?.estrategias || []).slice(0, 8).map(row => ({
+    const laboratorioRanking = (labEstrategiasAcumuladas.length ? labEstrategiasAcumuladas : (labConferido?.estrategias || [])).slice(0, 8).map(row => ({
       label: row.label,
       jogos: Number(row.jogos || 0).toLocaleString('pt-BR'),
       media: Number(row.media_acertos || 0).toFixed(4).replace('.', ','),
@@ -2738,9 +3022,106 @@ class Component extends DCLogic {
       melhor: `${row.melhor_acerto || 0} acertos`,
       rowStyle: acertoRowStyle(row.melhor_acerto || 0),
     }));
-    const laboratorioMelhor = labConferido?.melhor
-      ? `Ultimo laboratorio conferido C${labConferido.concurso}: melhor estrategia ${labConferido.melhor.estrategia || '--'} | ${labConferido.melhor.acertos || 0} acertos | ${labConferido.melhor.dezenas_texto || ''}`
+    const laboratorioMelhor = (labAcumulado?.melhor || labConferido?.melhor)
+      ? `Leitura acumulada: melhor estrategia ${labAcumulado?.melhor?.estrategia || labConferido?.melhor?.estrategia || '--'} | ${labAcumulado?.melhor?.acertos || labConferido?.melhor?.acertos || 0} acertos | ${(labAcumulado?.melhor?.dezenas_texto || labConferido?.melhor?.dezenas_texto || '')}`
       : 'O lote fica oculto; quando houver resultado, somente o resumo e o ranking entram no aprendizado.';
+
+    // ===================== Semana & Teses =====================
+    const semanaJanelaInfo = s.semanaJanela;
+    const semana = s.semanaAtual;
+    const semanaAgregado = semana?.agregado || null;
+    const semanaConcursos = semana?.concursos || [];
+    const semanaEstrategias = semanaAgregado?.estrategias || [];
+    const semanaTop = semanaEstrategias[0] || null;
+    const semanaEvitar = semanaEstrategias.slice().reverse().find(row => Number(row.jogos || 0) > 0) || null;
+    const semanaFinalEspecial = semanaConcursos.filter(c => c.final_0_5);
+    const semanaQtdJogos = Number(semanaAgregado?.resumo?.quantidade || 0);
+
+    const semanaCabecalho = semanaJanelaInfo
+      ? `Semana ${semanaJanelaInfo.semana_inicio} a ${semanaJanelaInfo.semana_fim} · hoje e ${semanaJanelaInfo.dia_semana} (${semanaJanelaInfo.hoje})`
+      : 'Aguardando dados da semana.';
+    const semanaEncerrada = Boolean(semanaJanelaInfo?.encerrada);
+    const semanaStatusBadge = {
+      label: semanaEncerrada ? 'Domingo — sem sorteio, nova semana comeca amanha' : 'Semana em andamento',
+      style: semanaEncerrada
+        ? 'background:#F3E8FF;color:#5B21B6;border:1px solid #C4B5FD66;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;white-space:nowrap;'
+        : 'background:#DCFCE7;color:#166534;border:1px solid #16A34A55;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;white-space:nowrap;'
+    };
+
+    const semanaTesesRows = [
+      {
+        titulo: semanaFinalEspecial.length ? 'Rodada(s) final 0/5 nesta semana' : 'Sem rodada especial nesta semana',
+        valor: semanaFinalEspecial.length ? semanaFinalEspecial.map(c => `C${c.concurso}`).join(', ') : '--',
+        detalhe: semanaFinalEspecial.length
+          ? 'Premio mais cobicado da semana: leitura mais seletiva, priorizando 13+ e o melhor acerto recente.'
+          : 'Semana comum — usar o ranking acumulado normal, sem leitura especial.',
+        style:'background:#FFF7ED;color:#9A3412;border:1px solid #FB923C66;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Estrategia prioritaria da semana',
+        valor: semanaTop ? semanaTop.label : '--',
+        detalhe: semanaTop
+          ? `${Number(semanaTop.taxa_11_mais || 0).toFixed(2)}% com 11+ | media ${Number(semanaTop.media_acertos || 0).toFixed(2)} | amostra ${Number(semanaTop.jogos || 0).toLocaleString('pt-BR')} jogos`
+          : 'Aguardando lotes conferidos desta semana.',
+        style:'background:#ECFDF5;color:#047857;border:1px solid #10B98166;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Estrategia para evitar/rebaixar',
+        valor: semanaEvitar ? semanaEvitar.label : '--',
+        detalhe: semanaEvitar
+          ? `${Number(semanaEvitar.taxa_11_mais || 0).toFixed(2)}% com 11+ | amostra ${Number(semanaEvitar.jogos || 0).toLocaleString('pt-BR')} jogos`
+          : 'Sem leitura ainda.',
+        style:'background:#FEE2E2;color:#991B1B;border:1px solid #EF444466;border-radius:10px;padding:12px;'
+      },
+      {
+        titulo: 'Tamanho da amostra desta semana',
+        valor: `${semanaQtdJogos.toLocaleString('pt-BR')} jogos`,
+        detalhe: `${semanaConcursos.length} concurso(s) conferido(s) na semana. Amostra pequena (poucos concursos) = leitura menos confiavel — nao e previsao.`,
+        style:'background:#EFF6FF;color:#1D4ED8;border:1px solid #60A5FA66;border-radius:10px;padding:12px;'
+      }
+    ];
+
+    const semanaRanking = semanaEstrategias.slice(0, 8).map(row => ({
+      label: row.label,
+      jogos: Number(row.jogos || 0).toLocaleString('pt-BR'),
+      media: Number(row.media_acertos || 0).toFixed(4).replace('.', ','),
+      taxa11Mais: `${Number(row.taxa_11_mais || 0).toFixed(2)}%`,
+      melhor: `${row.melhor_acerto || 0} acertos`,
+      rowStyle: acertoRowStyle(row.melhor_acerto || 0),
+    }));
+
+    const semanaConcursoRows = semanaConcursos.map(c => ({
+      concurso: `C${c.concurso}`,
+      data: c.data || '--',
+      media: Number(c.media_acertos || 0).toFixed(2).replace('.', ','),
+      melhor: `${c.melhor_acerto || 0} acertos`,
+      badge: c.final_0_5 ? 'Final 0/5' : '',
+      rowStyle: c.final_0_5
+        ? 'background:#FFF7ED;color:#7C2D12;font-weight:800;'
+        : 'color:#1F1235;'
+    }));
+
+    const semanaConcursoSet = new Set(semanaConcursos.map(c => c.concurso));
+    const semanaSorteios = (s.recentDraws || []).filter(sr => semanaConcursoSet.has(sr.concurso));
+    const semanaFreqMap = new Map(Array.from({length:25}, (_,i) => [i+1, 0]));
+    semanaSorteios.forEach(sr => (sr.dezenas || []).forEach(n => semanaFreqMap.set(n, (semanaFreqMap.get(n) || 0) + 1)));
+    const semanaFreqMax = Math.max(1, ...Array.from(semanaFreqMap.values()));
+    const semanaHeatCells = Array.from({length:25}, (_,i) => i+1).map(n => ({
+      num: pad(n),
+      freq: semanaFreqMap.get(n) || 0,
+      style: heatCellStyle(semanaFreqMap.get(n) || 0, semanaFreqMax, 38),
+    }));
+
+    const semanaHistoricoRows = (s.semanaHistorico || []).map(row => ({
+      periodo: `${row.semana_inicio} - ${row.semana_fim}`,
+      concursos: row.quantidade_concursos,
+      jogos: Number(row.quantidade_jogos || 0).toLocaleString('pt-BR'),
+      media: Number(row.media_acertos || 0).toFixed(3).replace('.', ','),
+      melhor: `${row.melhor_acerto || 0} acertos`,
+      taxa11Mais: `${Number(row.taxa_11_mais || 0).toFixed(2)}%`,
+    }));
+    const semanaTendenciaLabels = (s.semanaHistorico || []).slice().reverse().map(row => row.semana_inicio);
+    const semanaTendenciaMedias = (s.semanaHistorico || []).slice().reverse().map(row => Number(row.media_acertos || 0));
 
     // Radar de Saude: consolida cobertura, status da extensao e media recente M1-M8.
     s.extensaoTick; // Mantem o bloco reativo quando o localStorage muda.
@@ -2850,6 +3231,7 @@ class Component extends DCLogic {
       },
       registrarSugestaoDia: () => this.registrarSugestaoDia(),
       isJogos: tab === 'jogos',
+      isSemana: tab === 'semana',
       isMeusJogos: tab === 'meusjogos',
       isSequencias: tab === 'sequencias',
       isHistorico: tab === 'historico',
@@ -2871,6 +3253,10 @@ class Component extends DCLogic {
       saltoRows: sortRows(SALTO_DATA, s.saltoSort).map(r => ({ dezenas: r.dezenas, qtd: r.qtd, pctStr: r.pct.toFixed(2).replace('.', ',') + '%' })),
       molduraCells, mioloCells, posCols, desdobramento, conferidor,
       hasNoConferidor: conferidor.length === 0,
+      limparConferidor: () => this.apagarTodosJogosRegistrados(),
+      limparConferidorStyle: conferidor.length
+        ? 'background:#FEE2E2;border:1px solid #DC262655;color:#991B1B;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;'
+        : 'background:#F3F0FA;border:1px solid #E9DFFB;color:#B8A6DB;border-radius:8px;padding:7px 12px;cursor:not-allowed;font-size:12px;font-weight:700;white-space:nowrap;',
       desdobramentoTitle: `Desdobramento — ${sourceMethods.length} Métodos × 15 Dezenas`,
       concursoConferidor: ultimoResultado.concurso,
       concursoReferencia: ultimoResultado.concurso,
@@ -2949,9 +3335,24 @@ class Component extends DCLogic {
       inicioResumo,
       laboratorioStatus: labStatusLabel,
       laboratorioCards,
+      laboratorioTeses: labTesesRows,
       laboratorioRanking,
       hasLaboratorioRanking: laboratorioRanking.length > 0,
       laboratorioMelhor,
+      irParaSemana: () => this.setTab('semana'),
+      semanaCabecalho,
+      semanaStatusBadge,
+      semanaEncerrada,
+      semanaTeses: semanaTesesRows,
+      semanaRanking,
+      hasSemanaRanking: semanaRanking.length > 0,
+      hasNoSemanaRanking: semanaRanking.length === 0,
+      semanaConcursos: semanaConcursoRows,
+      hasSemanaConcursos: semanaConcursoRows.length > 0,
+      hasNoSemanaConcursos: semanaConcursoRows.length === 0,
+      semanaHeatCells,
+      semanaHistorico: semanaHistoricoRows,
+      hasSemanaHistorico: semanaHistoricoRows.length > 0,
       heatmap,
       historico: HISTORICO.map(h => ({
         ...h,

@@ -444,6 +444,230 @@ async function latestLaboratorioConferido(env) {
   return parseLaboratorioRow(row);
 }
 
+async function laboratoriosConferidosRecentes(env, limit = 10) {
+  await ensureLaboratorioTables(env);
+  const rows = await env.DB.prepare(`
+    SELECT *
+    FROM laboratorio_execucoes
+    WHERE status = 'conferido'
+    ORDER BY concurso DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return rows.results.map(parseLaboratorioRow).filter(Boolean);
+}
+
+function aggregateLaboratorios(labs) {
+  const valid = (labs || []).filter((lab) => lab?.resumo);
+  if (!valid.length) return null;
+
+  const resumo = {
+    quantidade: 0,
+    acertos_11: 0,
+    acertos_12: 0,
+    acertos_13: 0,
+    acertos_14: 0,
+    acertos_15: 0,
+    acertos_11_mais: 0,
+    melhor_acerto: 0,
+    media_acertos: 0
+  };
+  const estrategiasMap = new Map();
+  let melhor = null;
+
+  for (const lab of valid) {
+    const r = lab.resumo || {};
+    const qtd = Number(r.quantidade || lab.quantidade || 0);
+    resumo.quantidade += qtd;
+    resumo.acertos_11 += Number(r.acertos_11 || 0);
+    resumo.acertos_12 += Number(r.acertos_12 || 0);
+    resumo.acertos_13 += Number(r.acertos_13 || 0);
+    resumo.acertos_14 += Number(r.acertos_14 || 0);
+    resumo.acertos_15 += Number(r.acertos_15 || 0);
+    resumo.acertos_11_mais += Number(r.acertos_11_mais || 0);
+    resumo.media_acertos += Number(r.media_acertos || 0) * qtd;
+    resumo.melhor_acerto = Math.max(resumo.melhor_acerto, Number(r.melhor_acerto || 0));
+
+    if (!melhor || Number(lab.melhor?.acertos || 0) > Number(melhor.acertos || 0)) {
+      melhor = lab.melhor;
+    }
+
+    for (const item of lab.estrategias || []) {
+      const current = estrategiasMap.get(item.key) || {
+        key: item.key,
+        label: item.label,
+        jogos: 0,
+        soma_acertos: 0,
+        acertos_11: 0,
+        acertos_12: 0,
+        acertos_13: 0,
+        acertos_14: 0,
+        acertos_15: 0,
+        melhor_acerto: 0,
+        melhor_dezenas: []
+      };
+      current.jogos += Number(item.jogos || 0);
+      current.soma_acertos += Number(item.soma_acertos || 0);
+      current.acertos_11 += Number(item.acertos_11 || 0);
+      current.acertos_12 += Number(item.acertos_12 || 0);
+      current.acertos_13 += Number(item.acertos_13 || 0);
+      current.acertos_14 += Number(item.acertos_14 || 0);
+      current.acertos_15 += Number(item.acertos_15 || 0);
+      if (Number(item.melhor_acerto || 0) > current.melhor_acerto) {
+        current.melhor_acerto = Number(item.melhor_acerto || 0);
+        current.melhor_dezenas = item.melhor_dezenas || [];
+      }
+      estrategiasMap.set(item.key, current);
+    }
+  }
+
+  if (resumo.quantidade) {
+    resumo.media_acertos = Number((resumo.media_acertos / resumo.quantidade).toFixed(4));
+  }
+
+  const estrategias = Array.from(estrategiasMap.values()).map((item) => ({
+    ...item,
+    media_acertos: item.jogos ? Number((item.soma_acertos / item.jogos).toFixed(4)) : 0,
+    taxa_11_mais: item.jogos ? Number((((item.acertos_11 + item.acertos_12 + item.acertos_13 + item.acertos_14 + item.acertos_15) * 100) / item.jogos).toFixed(2)) : 0,
+    score: item.soma_acertos + item.acertos_11 * 25 + item.acertos_12 * 80 + item.acertos_13 * 450 + item.acertos_14 * 2500 + item.acertos_15 * 15000
+  })).sort((a, b) => b.score - a.score || b.media_acertos - a.media_acertos);
+
+  return {
+    concursos: valid.map((lab) => lab.concurso),
+    quantidade: resumo.quantidade,
+    resumo,
+    estrategias,
+    melhor
+  };
+}
+
+// data_sorteio e gravado como "DD/MM/AAAA" (ver parseApiResult/RECENT_RESULTS).
+function parseDataSorteioToDate(dataStr) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(dataStr || "").trim());
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  return new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)));
+}
+
+function formatDateBR(date) {
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = date.getUTCFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+// Brasilia = UTC-3 o ano todo desde 2019 (sem horario de verao). Aproximacao suficiente
+// para decidir "que dia da semana e hoje" sem depender de biblioteca de timezone.
+function nowBrasilia() {
+  return new Date(Date.now() - 3 * 60 * 60 * 1000);
+}
+
+// Semana da Lotofacil roda de segunda a sabado (sem sorteio no domingo). Devolve a
+// segunda-feira e o sabado da semana que contem `date`, mais uma chave estavel para agrupar.
+function weekBoundsForDate(date) {
+  const dayOfWeek = date.getUTCDay(); // 0=domingo ... 6=sabado
+  const diffToMonday = (dayOfWeek + 6) % 7; // segunda=0 ... domingo=6
+  const monday = new Date(date.getTime() - diffToMonday * 86400000);
+  const saturday = new Date(monday.getTime() + 5 * 86400000);
+  return {
+    key: monday.toISOString().slice(0, 10),
+    inicio: formatDateBR(monday),
+    fim: formatDateBR(saturday)
+  };
+}
+
+function weekBoundsForDataSorteio(dataStr) {
+  const date = parseDataSorteioToDate(dataStr);
+  return date ? weekBoundsForDate(date) : null;
+}
+
+function semanaJanela(referenceDate = nowBrasilia()) {
+  const bounds = weekBoundsForDate(referenceDate);
+  const dias = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
+  const diaSemana = referenceDate.getUTCDay();
+  return {
+    semana_inicio: bounds.inicio,
+    semana_fim: bounds.fim,
+    hoje: formatDateBR(referenceDate),
+    dia_semana: dias[diaSemana],
+    encerrada: diaSemana === 0
+  };
+}
+
+async function laboratoriosConferidosComData(env, limit = 80) {
+  await ensureLaboratorioTables(env);
+  const rows = await env.DB.prepare(`
+    SELECT laboratorio_execucoes.*, resultados.data_sorteio AS data_sorteio
+    FROM laboratorio_execucoes
+    LEFT JOIN resultados ON resultados.concurso = laboratorio_execucoes.concurso
+    WHERE laboratorio_execucoes.status = 'conferido'
+    ORDER BY laboratorio_execucoes.concurso DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return rows.results
+    .map((row) => {
+      const lab = parseLaboratorioRow(row);
+      return lab ? { ...lab, data_sorteio: row.data_sorteio } : null;
+    })
+    .filter(Boolean);
+}
+
+function agruparLaboratoriosPorSemana(labsComData) {
+  const grupos = new Map();
+  for (const lab of labsComData) {
+    const bounds = weekBoundsForDataSorteio(lab.data_sorteio);
+    if (!bounds) continue;
+    const grupo = grupos.get(bounds.key) || { key: bounds.key, inicio: bounds.inicio, fim: bounds.fim, labs: [] };
+    grupo.labs.push(lab);
+    grupos.set(bounds.key, grupo);
+  }
+  return Array.from(grupos.values()).sort((a, b) => b.key.localeCompare(a.key));
+}
+
+// Agrega o laboratorio de 20 mil jogos por semana (segunda-sabado), reaproveitando os
+// resumos ja calculados por concurso (aggregateLaboratorios) - nao reprocessa os jogos brutos.
+async function laboratorioSemanal(env, referenceDate = nowBrasilia()) {
+  const labsComData = await laboratoriosConferidosComData(env, 80);
+  const semanas = agruparLaboratoriosPorSemana(labsComData);
+  const boundsHoje = weekBoundsForDate(referenceDate);
+  const grupoAtual = semanas.find((g) => g.key === boundsHoje.key)
+    || { key: boundsHoje.key, inicio: boundsHoje.inicio, fim: boundsHoje.fim, labs: [] };
+
+  const concursos = grupoAtual.labs
+    .slice()
+    .sort((a, b) => a.concurso - b.concurso)
+    .map((lab) => ({
+      concurso: lab.concurso,
+      data: lab.data_sorteio,
+      final_0_5: Number(lab.concurso || 0) % 5 === 0,
+      melhor_acerto: lab.resumo?.melhor_acerto || 0,
+      media_acertos: lab.resumo?.media_acertos || 0,
+      quantidade: lab.resumo?.quantidade || lab.quantidade || 0
+    }));
+
+  const atual = {
+    semana_inicio: grupoAtual.inicio,
+    semana_fim: grupoAtual.fim,
+    concursos,
+    agregado: aggregateLaboratorios(grupoAtual.labs)
+  };
+
+  const historico = semanas.slice(0, 8).map((grupo) => {
+    const agregado = aggregateLaboratorios(grupo.labs);
+    const qtd = agregado?.resumo?.quantidade || 0;
+    return {
+      semana_inicio: grupo.inicio,
+      semana_fim: grupo.fim,
+      quantidade_concursos: grupo.labs.length,
+      quantidade_jogos: qtd,
+      media_acertos: agregado?.resumo?.media_acertos || 0,
+      melhor_acerto: agregado?.resumo?.melhor_acerto || 0,
+      taxa_11_mais: qtd ? Number((((agregado.resumo.acertos_11_mais || 0) * 100) / qtd).toFixed(3)) : 0
+    };
+  });
+
+  return { atual, historico };
+}
+
 async function latestCycle(env) {
   const row = await env.DB.prepare(`
     SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
@@ -562,15 +786,26 @@ function adjacentPairCoverage(dezenas, pairs) {
   return total;
 }
 
-function advancedScore(dezenas, pairs, previousResult) {
+function somaAlvoRecente(results) {
+  const somas = results
+    .slice(0, 3)
+    .map((result) => result.dezenas.reduce((acc, dezena) => acc + dezena, 0))
+    .filter((soma) => soma > 0);
+  if (!somas.length) return 190;
+  const pesoTotal = somas.reduce((acc, _soma, idx) => acc + (somas.length - idx), 0);
+  const mediaPonderada = somas.reduce((acc, soma, idx) => acc + soma * (somas.length - idx), 0) / pesoTotal;
+  return Math.max(178, Math.min(200, Math.round(mediaPonderada)));
+}
+
+function advancedScore(dezenas, pairs, previousResult, somaAlvo = 190) {
   const { soma, pares } = scoreSet(dezenas);
   const repeticoes = repeatedCount(dezenas, previousResult);
   const cobertura = adjacentPairCoverage(dezenas, pairs);
   let score = 0;
 
-  if (soma >= 185 && soma <= 215) {
+  if (soma >= 175 && soma <= 210) {
     score += 10;
-    score += 10 * (1 - Math.abs(soma - 200) / 30);
+    score += 10 * Math.max(0, 1 - Math.abs(soma - somaAlvo) / 35);
   }
   if (pares >= 7 && pares <= 9) score += 8;
   if (repeticoes >= 8 && repeticoes <= 11) {
@@ -584,7 +819,7 @@ function advancedScore(dezenas, pairs, previousResult) {
   return Math.max(0, score);
 }
 
-function bestAdvancedGame(results, concurso, salt, filterFn = null) {
+function bestAdvancedGame(results, concurso, salt, filterFn = null, somaAlvo = somaAlvoRecente(results)) {
   const previousResult = results[0]?.dezenas || [];
   const pairs = recentPairs(results);
   const randomFn = seededRandom(concurso * 1009 + salt * 7919);
@@ -603,7 +838,7 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null) {
       continue;
     }
 
-    const score = advancedScore(candidate, pairs, previousResult);
+    const score = advancedScore(candidate, pairs, previousResult, somaAlvo);
     if (score > bestScore) {
       best = candidate;
       bestScore = score;
@@ -659,6 +894,7 @@ function generatedGamesFromResults(results, concurso, learning = null) {
   const all = Array.from({ length: 25 }, (_, index) => index + 1);
   const freq = new Map(all.map((number) => [number, 0]));
   const lastSeen = new Map(all.map((number) => [number, 9999]));
+  const somaAlvo = somaAlvoRecente(results);
 
   results.forEach((result, idx) => {
     const set = new Set(result.dezenas);
@@ -694,11 +930,10 @@ function generatedGamesFromResults(results, concurso, learning = null) {
       dezenas.filter((dezena) => dezena >= 21 && dezena <= 25).length
     ];
     const miolo = dezenas.filter((dezena) => [7,8,9,12,13,14,17,18,19].includes(dezena)).length;
-    let penalty = Math.abs(stats.soma - 200);
-    if (stats.soma < 180) penalty += (180 - stats.soma) * 4;
-    if (stats.soma > 220) penalty += (stats.soma - 220) * 4;
-    if (stats.soma < 190) penalty += (190 - stats.soma) * 2;
-    if (stats.soma > 210) penalty += (stats.soma - 210) * 2;
+    let penalty = Math.abs(stats.soma - somaAlvo) * 3;
+    if (stats.soma < 175) penalty += (175 - stats.soma) * 4;
+    if (stats.soma > 210) penalty += (stats.soma - 210) * 4;
+    if (somaAlvo < 190 && stats.soma > 195) penalty += (stats.soma - 195) * 4;
     if (stats.pares < 6) penalty += (6 - stats.pares) * 8;
     if (stats.pares > 9) penalty += (stats.pares - 9) * 8;
     if (!inicioProvavel(dezenas)) penalty += 100;
@@ -757,11 +992,11 @@ function generatedGamesFromResults(results, concurso, learning = null) {
   };
   const makeSumRange = () => {
     let best = unique15(balanced, 5);
-    let bestDiff = Math.abs(scoreSet(best).soma - 200);
+    let bestDiff = Math.abs(scoreSet(best).soma - somaAlvo);
 
     for (let offset = 0; offset < 25; offset += 1) {
       const candidate = unique15([...balanced.slice(offset), ...balanced.slice(0, offset), ...byFreq, ...byLate], offset);
-      const diff = Math.abs(scoreSet(candidate).soma - 200);
+      const diff = Math.abs(scoreSet(candidate).soma - somaAlvo);
       if (diff < bestDiff) {
         best = candidate;
         bestDiff = diff;
@@ -780,7 +1015,7 @@ function generatedGamesFromResults(results, concurso, learning = null) {
         return candidate;
       }
     }
-    return bestAdvancedGame(results, concurso, salt);
+    return bestAdvancedGame(results, concurso, salt, null, somaAlvo);
   };
 
   const atrasoBase = weak.has("atrasadas_controladas")
@@ -808,15 +1043,15 @@ function generatedGamesFromResults(results, concurso, learning = null) {
     {
       metodo: "M6_filtros_combinados",
       dezenas: bestAdvancedGame(results, concurso, 6, (candidate, stats, repeticoes) => (
-        stats.soma >= 185 && stats.soma <= 215
+        stats.soma >= 175 && stats.soma <= 210
         && stats.pares >= 7 && stats.pares <= 9
         && repeticoes >= 8 && repeticoes <= 11
-      ))
+      ), somaAlvo)
     },
-    { metodo: "M7_cobertura_pares", dezenas: bestAdvancedGame(results, concurso, 7) },
+    { metodo: "M7_cobertura_pares", dezenas: bestAdvancedGame(results, concurso, 7, null, somaAlvo) },
     {
       metodo: "M8_repeticao_controlada",
-      dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11)
+      dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11, somaAlvo)
     },
     { metodo: "M9_tese_v2", dezenas: unique15(teseV2Base, 9) }
   ];
@@ -825,8 +1060,12 @@ function generatedGamesFromResults(results, concurso, learning = null) {
   return games.map((game, idx) => {
     let dezenas = optimizeGame(game.dezenas, (idx + 1) * 23);
     let key = dezenas.join("-");
-    if (seen.has(key)) {
+    if (seen.has(key) || qualityPenalty(dezenas) > 75) {
       dezenas = alternativeGame((idx + 1) * 17, seen);
+      key = dezenas.join("-");
+    }
+    if (qualityPenalty(dezenas) > 90) {
+      dezenas = makeSumRange();
       key = dezenas.join("-");
     }
     seen.add(key);
@@ -1083,8 +1322,8 @@ async function conferirLaboratoriosPendentes(env) {
     SELECT *
     FROM laboratorio_execucoes
     WHERE status = 'aguardando_resultado'
-    ORDER BY concurso ASC
-    LIMIT 3
+    ORDER BY concurso DESC
+    LIMIT 1
   `).all();
   const conferidos = [];
 
@@ -1096,6 +1335,27 @@ async function conferirLaboratoriosPendentes(env) {
   }
 
   return conferidos;
+}
+
+async function sincronizarLaboratorios(env, proximoConcurso) {
+  await ensureLaboratorioTables(env);
+  const recentes = await env.DB.prepare(`
+    SELECT concurso
+    FROM resultados
+    WHERE concurso >= ?
+      AND concurso < ?
+      AND concurso NOT IN (SELECT concurso FROM laboratorio_execucoes)
+    ORDER BY concurso ASC
+    LIMIT 8
+  `).bind(Math.max(1, Number(proximoConcurso || 1) - 7), proximoConcurso).all();
+
+  for (const row of recentes.results) {
+    await prepararLaboratorioAutomatico(env, row.concurso);
+  }
+
+  const conferidos = await conferirLaboratoriosPendentes(env);
+  const proximo = await prepararLaboratorioAutomatico(env, proximoConcurso);
+  return { conferidos, proximo };
 }
 
 async function prepararLaboratorioAutomatico(env, concurso, quantidade = LAB_QTD_PADRAO) {
@@ -1147,8 +1407,8 @@ async function rodarLaboratorio(request, env) {
 
 async function generateNextContestGames(env, concurso) {
   const results = await recentResultsForGeneration(env);
-  const laboratorioConferido = await latestLaboratorioConferido(env);
-  const learning = learnedGenerationContext(laboratorioConferido);
+  const labsRecentes = await laboratoriosConferidosRecentes(env, 8);
+  const learning = learnedGenerationContext(aggregateLaboratorios(labsRecentes) || labsRecentes[0]);
   const games = generatedGamesFromResults(results, concurso, learning);
 
   for (const game of games) {
@@ -2106,14 +2366,14 @@ async function runAutoCycle(env) {
     nextToFetch += 1;
   }
 
-  const pendentes = await conferirPendencias(env);
-  conferencias += pendentes.conferencias_novas + pendentes.conferencias_atualizadas;
-  const laboratoriosConferidos = await conferirLaboratoriosPendentes(env);
-
   const currentLatest = await latestResult(env);
   const proximoConcurso = currentLatest ? currentLatest.concurso + 1 : 1;
+  const pendentes = await conferirPendencias(env);
+  conferencias += pendentes.conferencias_novas + pendentes.conferencias_atualizadas;
+  const laboratorioSync = await sincronizarLaboratorios(env, proximoConcurso);
+  const laboratoriosConferidos = laboratorioSync.conferidos;
   const jogosGerados = await generateNextContestGames(env, proximoConcurso);
-  const laboratorioProximo = await prepararLaboratorioAutomatico(env, proximoConcurso);
+  const laboratorioProximo = laboratorioSync.proximo;
 
   const payload = {
     ok: true,
@@ -2168,14 +2428,18 @@ async function runAutoCycle(env) {
 async function systemStatus(env) {
   const latest = await latestResult(env);
   const proximoConcurso = latest ? latest.concurso + 1 : 1;
-  await conferirLaboratoriosPendentes(env);
+  const laboratorioSync = await sincronizarLaboratorios(env, proximoConcurso);
   await generateNextContestGames(env, proximoConcurso);
-  const laboratorio = await prepararLaboratorioAutomatico(env, proximoConcurso);
+  const laboratorio = laboratorioSync.proximo;
   const stats = await resultStats(env, 50);
   const frequencia = await numberStats(env);
   const inicio = await inicioStats(env);
   const ultimoCiclo = await latestCycle(env);
   const laboratorioConferido = await latestLaboratorioConferido(env);
+  const labsRecentes = await laboratoriosConferidosRecentes(env, 12);
+  const laboratorioAcumulado = aggregateLaboratorios(labsRecentes);
+  const laboratorioSemana = await laboratorioSemanal(env);
+  const semanaJanelaAtual = semanaJanela();
   const generated = await env.DB.prepare(`
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
     FROM jogos_sistema
@@ -2193,6 +2457,11 @@ async function systemStatus(env) {
     ultimo_ciclo: ultimoCiclo,
     laboratorio,
     laboratorio_ultimo_conferido: laboratorioConferido,
+    laboratorio_acumulado: laboratorioAcumulado,
+    laboratorio_historico: labsRecentes,
+    laboratorio_semana_atual: laboratorioSemana.atual,
+    laboratorio_semana_historico: laboratorioSemana.historico,
+    semana_janela: semanaJanelaAtual,
     jogos_gerados: generated.results.map((jogo) => ({
       ...jogo,
       dezenas: JSON.parse(jogo.dezenas)
