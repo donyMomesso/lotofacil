@@ -1319,10 +1319,11 @@ async function conferirLaboratorioExecucao(env, execucao) {
 async function conferirLaboratoriosPendentes(env) {
   await ensureLaboratorioTables(env);
   const rows = await env.DB.prepare(`
-    SELECT *
+    SELECT laboratorio_execucoes.*
     FROM laboratorio_execucoes
-    WHERE status = 'aguardando_resultado'
-    ORDER BY concurso DESC
+    JOIN resultados ON resultados.concurso = laboratorio_execucoes.concurso
+    WHERE laboratorio_execucoes.status = 'aguardando_resultado'
+    ORDER BY laboratorio_execucoes.concurso DESC
     LIMIT 1
   `).all();
   const conferidos = [];
