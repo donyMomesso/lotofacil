@@ -727,26 +727,43 @@ function sampleNumbers(randomFn, size = 15) {
 }
 
 const PRIMEIRA_DEZENA_MAX = 4;
+const INICIOS_FORTES = [1, 2];
+const INICIOS_RAROS = [3, 4];
+const SOMA_PRINCIPAL_MIN = 175;
+const SOMA_PRINCIPAL_MAX = 195;
+const SOMA_SECUNDARIA_MAX = 205;
 
 function inicioProvavel(dezenas) {
   return dezenas.length > 0 && Math.min(...dezenas) <= PRIMEIRA_DEZENA_MAX;
 }
 
-function aplicarRegraInicio(dezenas, salt = 0) {
+function inicioForte(dezenas) {
+  return dezenas.length > 0 && Math.min(...dezenas) <= 2;
+}
+
+function escolherInicioPreferencial(salt = 0, permitirRaro = false) {
+  if (permitirRaro && salt % 20 === 0) return 4;
+  if (permitirRaro && salt % 10 === 0) return 3;
+  return salt % 4 === 0 ? 2 : 1;
+}
+
+function aplicarRegraInicio(dezenas, salt = 0, permitirRaro = false) {
   const sorted = Array.from(new Set(dezenas)).sort((a, b) => a - b).slice(0, 15);
-  if (inicioProvavel(sorted)) {
+  if (inicioForte(sorted) || (permitirRaro && inicioProvavel(sorted))) {
     return sorted;
   }
 
-  const baixas = [1, 2, 3, 4].filter((dezena) => !sorted.includes(dezena));
-  const escolhida = baixas[salt % baixas.length] || 1;
+  const escolhida = escolherInicioPreferencial(salt, permitirRaro);
+  if (sorted.includes(escolhida)) {
+    return sorted;
+  }
   return [...sorted.slice(0, 14), escolhida].sort((a, b) => a - b);
 }
 
 function sampleNumbersComInicio(randomFn, size = 15) {
   for (let tentativa = 0; tentativa < 100; tentativa += 1) {
     const dezenas = sampleNumbers(randomFn, size);
-    if (inicioProvavel(dezenas)) {
+    if (inicioForte(dezenas)) {
       return dezenas;
     }
   }
@@ -794,7 +811,7 @@ function somaAlvoRecente(results) {
   if (!somas.length) return 190;
   const pesoTotal = somas.reduce((acc, _soma, idx) => acc + (somas.length - idx), 0);
   const mediaPonderada = somas.reduce((acc, soma, idx) => acc + soma * (somas.length - idx), 0) / pesoTotal;
-  return Math.max(178, Math.min(200, Math.round(mediaPonderada)));
+  return Math.max(SOMA_PRINCIPAL_MIN, Math.min(SOMA_PRINCIPAL_MAX, Math.round(mediaPonderada)));
 }
 
 function advancedScore(dezenas, pairs, previousResult, somaAlvo = 190) {
@@ -803,14 +820,18 @@ function advancedScore(dezenas, pairs, previousResult, somaAlvo = 190) {
   const cobertura = adjacentPairCoverage(dezenas, pairs);
   let score = 0;
 
-  if (soma >= 175 && soma <= 210) {
-    score += 10;
-    score += 10 * Math.max(0, 1 - Math.abs(soma - somaAlvo) / 35);
+  if (soma >= SOMA_PRINCIPAL_MIN && soma <= SOMA_PRINCIPAL_MAX) {
+    score += 18;
+    score += 14 * Math.max(0, 1 - Math.abs(soma - somaAlvo) / 25);
+  } else if (soma >= SOMA_PRINCIPAL_MAX + 1 && soma <= SOMA_SECUNDARIA_MAX) {
+    score += 5;
   }
+  if (inicioForte(dezenas)) score += 16;
+  else if (inicioProvavel(dezenas)) score += 3;
   if (pares >= 7 && pares <= 9) score += 8;
   if (repeticoes >= 8 && repeticoes <= 11) {
-    score += 12;
-    score += (repeticoes - 7) * 1.5;
+    score += 20;
+    score += (repeticoes - 7) * 2;
   }
   if (cobertura >= 8) score += 15 + (cobertura - 8) * 2;
   if (soma < 170 || soma > 230) score -= 20;
@@ -828,7 +849,7 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null, somaAlvo = s
 
   for (let i = 0; i < 1500; i += 1) {
     const candidate = sampleNumbers(randomFn);
-    if (!inicioProvavel(candidate)) {
+    if (!inicioForte(candidate)) {
       continue;
     }
     const repeticoes = repeatedCount(candidate, previousResult);
@@ -846,6 +867,45 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null, somaAlvo = s
   }
 
   return best || sampleNumbersComInicio(randomFn);
+}
+
+function enforceRecommendationRules(dezenas, salt = 0) {
+  let best = aplicarRegraInicio(dezenas, salt, false);
+  let bestPenalty = Number.POSITIVE_INFINITY;
+  const all = Array.from({ length: 25 }, (_, index) => index + 1);
+
+  const penalty = (candidate) => {
+    const stats = scoreSet(candidate);
+    let total = 0;
+    if (!inicioForte(candidate)) total += 10000;
+    if (stats.soma < SOMA_PRINCIPAL_MIN) total += (SOMA_PRINCIPAL_MIN - stats.soma) * 100;
+    if (stats.soma > SOMA_PRINCIPAL_MAX) total += (stats.soma - SOMA_PRINCIPAL_MAX) * 100;
+    if (stats.pares < 6) total += (6 - stats.pares) * 30;
+    if (stats.pares > 9) total += (stats.pares - 9) * 30;
+    return total + Math.abs(stats.soma - 185);
+  };
+
+  bestPenalty = penalty(best);
+  for (let round = 0; round < 14 && bestPenalty > 0; round += 1) {
+    let improved = false;
+    const selected = best.slice();
+    const outside = all.filter((number) => !selected.includes(number));
+    for (const inside of selected) {
+      if (inside <= 2) continue;
+      for (const out of outside) {
+        const candidate = aplicarRegraInicio([...selected.filter((number) => number !== inside), out], salt + round + out, false);
+        const currentPenalty = penalty(candidate);
+        if (currentPenalty < bestPenalty) {
+          best = candidate;
+          bestPenalty = currentPenalty;
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+
+  return best;
 }
 
 async function recentResultsForGeneration(env) {
@@ -930,13 +990,14 @@ function generatedGamesFromResults(results, concurso, learning = null) {
       dezenas.filter((dezena) => dezena >= 21 && dezena <= 25).length
     ];
     const miolo = dezenas.filter((dezena) => [7,8,9,12,13,14,17,18,19].includes(dezena)).length;
-    let penalty = Math.abs(stats.soma - somaAlvo) * 3;
-    if (stats.soma < 175) penalty += (175 - stats.soma) * 4;
-    if (stats.soma > 210) penalty += (stats.soma - 210) * 4;
-    if (somaAlvo < 190 && stats.soma > 195) penalty += (stats.soma - 195) * 4;
+    let penalty = Math.abs(stats.soma - somaAlvo) * 4;
+    if (stats.soma < SOMA_PRINCIPAL_MIN) penalty += (SOMA_PRINCIPAL_MIN - stats.soma) * 8;
+    if (stats.soma > SOMA_PRINCIPAL_MAX) penalty += (stats.soma - SOMA_PRINCIPAL_MAX) * 8;
+    if (stats.soma > SOMA_SECUNDARIA_MAX) penalty += (stats.soma - SOMA_SECUNDARIA_MAX) * 12;
     if (stats.pares < 6) penalty += (6 - stats.pares) * 8;
     if (stats.pares > 9) penalty += (stats.pares - 9) * 8;
-    if (!inicioProvavel(dezenas)) penalty += 100;
+    if (!inicioProvavel(dezenas)) penalty += 500;
+    else if (!inicioForte(dezenas)) penalty += 80;
     for (const count of rows) {
       if (count === 0) penalty += 40;
       if (count > 5) penalty += (count - 5) * 10;
@@ -1043,7 +1104,7 @@ function generatedGamesFromResults(results, concurso, learning = null) {
     {
       metodo: "M6_filtros_combinados",
       dezenas: bestAdvancedGame(results, concurso, 6, (candidate, stats, repeticoes) => (
-        stats.soma >= 175 && stats.soma <= 210
+        stats.soma >= SOMA_PRINCIPAL_MIN && stats.soma <= SOMA_PRINCIPAL_MAX
         && stats.pares >= 7 && stats.pares <= 9
         && repeticoes >= 8 && repeticoes <= 11
       ), somaAlvo)
@@ -1051,21 +1112,24 @@ function generatedGamesFromResults(results, concurso, learning = null) {
     { metodo: "M7_cobertura_pares", dezenas: bestAdvancedGame(results, concurso, 7, null, somaAlvo) },
     {
       metodo: "M8_repeticao_controlada",
-      dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => repeticoes >= 9 && repeticoes <= 11, somaAlvo)
+      dezenas: bestAdvancedGame(results, concurso, 8, (candidate, stats, repeticoes) => (
+        repeticoes >= 8 && repeticoes <= 11
+        && stats.soma >= SOMA_PRINCIPAL_MIN && stats.soma <= SOMA_PRINCIPAL_MAX
+      ), somaAlvo)
     },
     { metodo: "M9_tese_v2", dezenas: unique15(teseV2Base, 9) }
   ];
 
   const seen = new Set();
   return games.map((game, idx) => {
-    let dezenas = optimizeGame(game.dezenas, (idx + 1) * 23);
+    let dezenas = enforceRecommendationRules(optimizeGame(game.dezenas, (idx + 1) * 23), (idx + 1) * 31);
     let key = dezenas.join("-");
     if (seen.has(key) || qualityPenalty(dezenas) > 75) {
-      dezenas = alternativeGame((idx + 1) * 17, seen);
+      dezenas = enforceRecommendationRules(alternativeGame((idx + 1) * 17, seen), (idx + 1) * 37);
       key = dezenas.join("-");
     }
     if (qualityPenalty(dezenas) > 90) {
-      dezenas = makeSumRange();
+      dezenas = enforceRecommendationRules(makeSumRange(), (idx + 1) * 41);
       key = dezenas.join("-");
     }
     seen.add(key);
@@ -1081,7 +1145,7 @@ const LAB_ESTRATEGIAS = [
   { key: "inicio_03_04", label: "Inicio 03/04" },
   { key: "quentes_balanceadas", label: "Quentes balanceadas" },
   { key: "atrasadas_controladas", label: "Atrasadas controladas" },
-  { key: "soma_190_210", label: "Soma 190-210" },
+  { key: "soma_190_210", label: "Soma 175-195" },
   { key: "repeticao_8_11", label: "Repeticao 8-11" },
   { key: "miolo_moldura", label: "Miolo/Moldura" }
 ];
@@ -1095,7 +1159,7 @@ function shuffledNumbers(randomFn, numbers = Array.from({ length: 25 }, (_, inde
   return copy;
 }
 
-function fillCandidate(base, randomFn, salt = 0) {
+function fillCandidate(base, randomFn, salt = 0, permitirRaro = false) {
   const all = shuffledNumbers(randomFn);
   const dezenas = [];
   for (const dezena of [...base, ...all]) {
@@ -1106,16 +1170,17 @@ function fillCandidate(base, randomFn, salt = 0) {
       break;
     }
   }
-  return aplicarRegraInicio(dezenas, salt);
+  return aplicarRegraInicio(dezenas, salt, permitirRaro);
 }
 
 function passesLaboratorioBasico(dezenas, perfil = "comum") {
   const { soma, pares } = scoreSet(dezenas);
   const inicio = Math.min(...dezenas);
   if (inicio > 4) return false;
+  if (perfil !== "inicio_raro" && inicio > 2) return false;
   if (pares < 6 || pares > 9) return false;
-  if (perfil === "soma") return soma >= 190 && soma <= 210;
-  return soma >= 180 && soma <= 220;
+  if (perfil === "soma") return soma >= SOMA_PRINCIPAL_MIN && soma <= SOMA_PRINCIPAL_MAX;
+  return soma >= SOMA_PRINCIPAL_MIN && soma <= SOMA_SECUNDARIA_MAX;
 }
 
 function laboratorioContext(results) {
@@ -1155,7 +1220,7 @@ function laboratorioCandidate(context, concurso, index, seed) {
     if (estrategia.key === "inicio_01_02") {
       dezenas = fillCandidate([randomFn() < 0.65 ? 1 : 2], randomFn, index + tentativa);
     } else if (estrategia.key === "inicio_03_04") {
-      dezenas = fillCandidate([randomFn() < 0.7 ? 3 : 4, ...context.byFreq.slice(0, 4)], randomFn, index + tentativa);
+      dezenas = fillCandidate([randomFn() < 0.75 ? 3 : 4, ...context.byFreq.slice(0, 4)], randomFn, index + tentativa, true);
     } else if (estrategia.key === "quentes_balanceadas") {
       dezenas = fillCandidate([...context.byFreq.slice(0, 8), ...context.byLate.slice(0, 3)], randomFn, index + tentativa);
     } else if (estrategia.key === "atrasadas_controladas") {
@@ -1174,7 +1239,10 @@ function laboratorioCandidate(context, concurso, index, seed) {
       dezenas = sampleNumbersComInicio(randomFn);
     }
 
-    if (passesLaboratorioBasico(dezenas, estrategia.key === "soma_190_210" ? "soma" : "comum")) {
+    const perfil = estrategia.key === "soma_190_210"
+      ? "soma"
+      : (estrategia.key === "inicio_03_04" ? "inicio_raro" : "comum");
+    if (passesLaboratorioBasico(dezenas, perfil)) {
       return { estrategia, dezenas };
     }
   }
