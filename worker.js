@@ -869,10 +869,12 @@ function bestAdvancedGame(results, concurso, salt, filterFn = null, somaAlvo = s
   return best || sampleNumbersComInicio(randomFn);
 }
 
-function enforceRecommendationRules(dezenas, salt = 0) {
+function enforceRecommendationRules(dezenas, slot = 0) {
+  const salt = (slot + 1) * 37;
   let best = aplicarRegraInicio(dezenas, salt, false);
   let bestPenalty = Number.POSITIVE_INFINITY;
   const all = Array.from({ length: 25 }, (_, index) => index + 1);
+  const alvoDiverso = [176, 179, 182, 186, 190, 194, 178, 192, 184][slot % 9];
 
   const penalty = (candidate) => {
     const stats = scoreSet(candidate);
@@ -882,7 +884,7 @@ function enforceRecommendationRules(dezenas, salt = 0) {
     if (stats.soma > SOMA_PRINCIPAL_MAX) total += (stats.soma - SOMA_PRINCIPAL_MAX) * 100;
     if (stats.pares < 6) total += (6 - stats.pares) * 30;
     if (stats.pares > 9) total += (stats.pares - 9) * 30;
-    return total + Math.abs(stats.soma - 185);
+    return total + Math.abs(stats.soma - alvoDiverso) * 40;
   };
 
   bestPenalty = penalty(best);
@@ -1122,14 +1124,14 @@ function generatedGamesFromResults(results, concurso, learning = null) {
 
   const seen = new Set();
   return games.map((game, idx) => {
-    let dezenas = enforceRecommendationRules(optimizeGame(game.dezenas, (idx + 1) * 23), (idx + 1) * 31);
+    let dezenas = enforceRecommendationRules(optimizeGame(game.dezenas, (idx + 1) * 23), idx);
     let key = dezenas.join("-");
     if (seen.has(key) || qualityPenalty(dezenas) > 75) {
-      dezenas = enforceRecommendationRules(alternativeGame((idx + 1) * 17, seen), (idx + 1) * 37);
+      dezenas = enforceRecommendationRules(alternativeGame((idx + 1) * 17, seen), idx);
       key = dezenas.join("-");
     }
     if (qualityPenalty(dezenas) > 90) {
-      dezenas = enforceRecommendationRules(makeSumRange(), (idx + 1) * 41);
+      dezenas = enforceRecommendationRules(makeSumRange(), idx);
       key = dezenas.join("-");
     }
     seen.add(key);
