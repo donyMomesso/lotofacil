@@ -1,48 +1,83 @@
-# Motor de aprendizado — avaliação histórica
+# Robustez Histórica do Motor de Aprendizado
 
-Este módulo mede modelos estatísticos apenas em concursos já encerrados.
+## Escopo
 
-## Fluxo
+O módulo avalia somente concursos encerrados. Para cada concurso `N`, o cálculo usa exclusivamente resultados com número menor que `N`. A condição obrigatória é:
 
-1. O Worker lê resultados armazenados no D1.
-2. Para cada concurso-alvo encerrado, usa somente concursos anteriores.
-3. Os modelos Estável e Adaptativo produzem pontuações probabilísticas para fins de avaliação.
-4. O resultado real é comparado com a pontuação produzida pelo histórico anterior.
-5. Métricas e hash SHA-256 são gravados em `aprendizado_historico`.
-6. O painel exibe somente desempenho histórico agregado e por concurso.
+```text
+treino_ate < concurso
+```
 
-## Métricas
+O painel não publica ranking futuro, seleção de dezenas ou combinações.
 
-- Brier Score, com referência neutra de 0,2400.
-- Log Loss.
-- Acertos dentro das faixas top 15, 18, 19, 20 e 21.
-- Média top 21, com referência neutra de 12,60.
-- Alerta de possível sobreajuste quando a janela recente piora de modo relevante.
+## Versão atual
 
-## Proteção temporal
+`historical-audit-v1.1.0`
 
-Cada registro exige `treino_ate < concurso`. O Worker interrompe o processamento caso detecte vazamento temporal.
+Cada alteração do algoritmo cria uma nova versão. A chave única dos registros históricos continua sendo concurso, modelo e versão, preservando comparações antigas.
 
-## Persistência
+## Camadas de avaliação
 
-A tabela é criada de forma idempotente pelo Worker. A migração SQL equivalente está em `migrations/0002_aprendizado_historico.sql`.
+### Walk-forward
 
-A chave única é composta por:
+Reconstitui cada concurso como se o resultado ainda não fosse conhecido. Os modelos Estável e Adaptativo recebem exatamente o mesmo histórico disponível naquele ponto.
 
-- concurso;
-- modelo;
-- versão do modelo.
+### Intervalos de confiança
 
-Isso permite comparar versões sem sobrescrever avaliações anteriores.
+O sistema usa bootstrap determinístico para calcular IC de 95% da média do Brier e do top 21. A semente inclui modelo, versão, amostra e último concurso, permitindo reprodução.
 
-## Integração com o ciclo
+### Teste por permutação
 
-O arquivo histórico é atualizado:
+O top 21 observado é comparado com rankings neutros simulados pela distribuição hipergeométrica da Lotofácil. O valor-p é unilateral: mede a frequência com que a referência neutra alcança média igual ou maior.
 
-- depois do ciclo agendado do Cloudflare;
-- depois de uma execução manual bem-sucedida do ciclo;
-- ao abrir `/api/aprendizado/historico`, caso existam concursos encerrados ainda não registrados.
+### Calibração
 
-## Limite de uso
+Cada registro calcula:
 
-O módulo não publica ranking para concurso futuro, não seleciona bases e não exporta combinações. Seu objetivo é auditar se os métodos apresentam sinal estatístico fora da amostra.
+- erro esperado de calibração (ECE);
+- sharpness, medida da dispersão das probabilidades.
+
+Probabilidades mais separadas não são automaticamente melhores; precisam permanecer calibradas.
+
+### Janelas móveis
+
+São mostradas as janelas mais recentes de 8, 16 e 24 concursos para detectar dependência de período.
+
+### Drift
+
+A janela recente de oito concursos é comparada com os oito anteriores. O alerta considera piora no Brier e queda no top 21.
+
+## Força da evidência
+
+- **Amostra insuficiente:** menos de 20 concursos.
+- **Sem evidência de vantagem:** intervalos ainda incluem as referências neutras.
+- **Sinal exploratório:** uma métrica supera a referência.
+- **Sinal histórico moderado:** Brier e top 21 superam as referências com IC de 95%, valor-p menor que 0,05 e pelo menos 50 concursos.
+
+Esses rótulos descrevem apenas dados históricos e não garantem repetição.
+
+## Persistência D1
+
+### `aprendizado_historico`
+
+Guarda cada avaliação fora da amostra e seu hash SHA-256.
+
+### `aprendizado_resumos`
+
+Guarda snapshots de robustez por modelo, versão, tamanho de amostra e último concurso. O resumo inclui intervalos, permutação, calibração, janelas, drift e classificação da evidência.
+
+## Integridade
+
+Ao carregar a API, a versão atual é verificada em três pontos:
+
+1. ausência de vazamento temporal;
+2. soma das probabilidades igual a 15;
+3. reconstrução do hash SHA-256.
+
+A rota pública é:
+
+```text
+GET /api/aprendizado/historico
+```
+
+A resposta contém apenas métricas históricas e registros já avaliados.
