@@ -1,13 +1,16 @@
-name: Testes do Motor de Aprendizado
+name: Testes da Avaliação Histórica
 
 on:
   pull_request:
     paths:
-      - "learning_core.js"
+      - "learning_audit_core.mjs"
+      - "worker_learning.js"
       - "aprendizado.html"
       - "index.html"
-      - "tests/test_learning_core.js"
-      - "tests/test_learning_ui.js"
+      - "wrangler.jsonc"
+      - "migrations/0002_aprendizado_historico.sql"
+      - "tests/test_learning_audit_core.mjs"
+      - "tests/test_learning_server.mjs"
       - "tests/test_learning_index.js"
       - ".github/workflows/testes-aprendizado.yml"
   workflow_dispatch:
@@ -25,11 +28,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validar sintaxe do núcleo
-        run: node --check learning_core.js
-      - name: Testar modelo e walk-forward
-        run: node tests/test_learning_core.js
-      - name: Testar painel e livro
-        run: node tests/test_learning_ui.js
+      - name: Validar núcleo histórico
+        run: node --check learning_audit_core.mjs
+      - name: Validar Worker envoltório
+        run: node --input-type=module --check < worker_learning.js
+      - name: Testar walk-forward histórico
+        run: node tests/test_learning_audit_core.mjs
+      - name: Testar D1 e painel histórico
+        run: node tests/test_learning_server.mjs
       - name: Testar acesso inicial
         run: node tests/test_learning_index.js

@@ -1,60 +1,48 @@
-# Motor de Aprendizado Probabilístico
+# Motor de aprendizado — avaliação histórica
 
-## Objetivo
+Este módulo mede modelos estatísticos apenas em concursos já encerrados.
 
-Unificar os dados já produzidos pelo ecossistema do Lotofácil Lab em um ciclo auditável:
+## Fluxo
 
-1. resultados históricos;
-2. laboratório automático de 20 mil jogos;
-3. agregado semanal;
-4. jogos atuais dos métodos M1–M9;
-5. ranking probabilístico das 25 dezenas;
-6. seleção de uma base de 21 dezenas;
-7. congelamento da previsão antes do resultado;
-8. avaliação automática quando o resultado aparece.
+1. O Worker lê resultados armazenados no D1.
+2. Para cada concurso-alvo encerrado, usa somente concursos anteriores.
+3. Os modelos Estável e Adaptativo produzem pontuações probabilísticas para fins de avaliação.
+4. O resultado real é comparado com a pontuação produzida pelo histórico anterior.
+5. Métricas e hash SHA-256 são gravados em `aprendizado_historico`.
+6. O painel exibe somente desempenho histórico agregado e por concurso.
 
-O sistema não pressupõe que sorteios sejam previsíveis. A hipótese só ganha força quando supera referências neutras em dados futuros.
+## Métricas
 
-## Modelos
+- Brier Score, com referência neutra de 0,2400.
+- Log Loss.
+- Acertos dentro das faixas top 15, 18, 19, 20 e 21.
+- Média top 21, com referência neutra de 12,60.
+- Alerta de possível sobreajuste quando a janela recente piora de modo relevante.
 
-A primeira versão compara dois modelos:
+## Proteção temporal
 
-- **Estável:** distribui mais peso entre janelas de 5, 10, 20 e 50 concursos;
-- **Adaptativo:** reage mais à janela curta, aos votos M1–M9 e ao laboratório recente.
+Cada registro exige `treino_ate < concurso`. O Worker interrompe o processamento caso detecte vazamento temporal.
 
-O Champion é escolhido por walk-forward, priorizando menor Brier Score e maior média de acertos no top 21.
+## Persistência
 
-## Calibração
+A tabela é criada de forma idempotente pelo Worker. A migração SQL equivalente está em `migrations/0002_aprendizado_historico.sql`.
 
-Cada uma das 25 dezenas recebe uma probabilidade. Um ajuste de intercepto garante que a soma das probabilidades seja 15, preservando a restrição estrutural do sorteio.
+A chave única é composta por:
 
-A referência neutra por dezena é 60%. Para uma base de 21 dezenas, a referência de acertos esperados é 12,60.
+- concurso;
+- modelo;
+- versão do modelo.
 
-## Walk-forward
+Isso permite comparar versões sem sobrescrever avaliações anteriores.
 
-Para prever o concurso `N`, o modelo usa apenas concursos anteriores a `N`. O concurso alvo nunca participa da construção de suas próprias características.
+## Integração com o ciclo
 
-Métricas:
+O arquivo histórico é atualizado:
 
-- Brier Score;
-- Log Loss;
-- acertos no top 15, 18, 19, 20 e 21;
-- diferença do top 21 contra a referência 12,60.
+- depois do ciclo agendado do Cloudflare;
+- depois de uma execução manual bem-sucedida do ciclo;
+- ao abrir `/api/aprendizado/historico`, caso existam concursos encerrados ainda não registrados.
 
-## Livro de Previsões
+## Limite de uso
 
-O painel `aprendizado.html` congela no navegador:
-
-- concurso-alvo;
-- último concurso usado;
-- versão e modelo Champion;
-- probabilidades e ranking das 25 dezenas;
-- top 15, 18, 19, 20 e 21;
-- tamanho do laboratório utilizado;
-- hash SHA-256 do conteúdo congelado.
-
-Quando o resultado entra em `/api/sistema/status`, previsões pendentes são avaliadas automaticamente.
-
-## Limitação da primeira etapa
-
-O livro está no `localStorage` do navegador. Isso permite uso imediato e exportação JSON, mas não substitui uma assinatura no servidor. A próxima etapa deve persistir previsões no D1 durante o ciclo agendado do Cloudflare.
+O módulo não publica ranking para concurso futuro, não seleciona bases e não exporta combinações. Seu objetivo é auditar se os métodos apresentam sinal estatístico fora da amostra.
