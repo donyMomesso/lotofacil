@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motor de Aprendizado — Lotofácil Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--purple:#6d28d9;--purple2:#4c1d95;--pink:#db2777;--teal:#0f766e;--green:#16a34a;--amber:#d97706;--red:#be123c;--ink:#21153a;--muted:#74658d;--line:#e9dffb;--bg:#f8f5ff}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif} button{font:inherit}
+    .wrap{max-width:1320px;margin:auto;padding:22px}.hero{background:radial-gradient(circle at 90% 10%,rgba(245,158,11,.28),transparent 28%),linear-gradient(135deg,var(--purple2),var(--purple) 55%,var(--pink));color:#fff;padding:25px;border-radius:22px;box-shadow:0 18px 55px rgba(76,29,149,.24)}
+    .hero-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#fde68a}.hero h1{font:800 clamp(26px,4vw,42px)/1.08 Sora,sans-serif;margin:7px 0 10px}.hero p{max-width:880px;line-height:1.65;color:rgba(255,255,255,.86);margin:0}.back{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:9px 12px;border-radius:10px;font-weight:800;font-size:12px}
+    .notice{margin-top:15px;padding:12px 14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.11);border-radius:12px;font-size:12px;line-height:1.55}.status{margin:15px 0;color:var(--purple);font-size:12px;font-weight:800;min-height:18px}
+    .cards{display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:11px}.metric,.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 7px 24px rgba(43,10,77,.06)}.metric{padding:14px}.metric .label{font-size:10px;text-transform:uppercase;font-weight:900;color:#826fa1}.metric .value{font:800 21px Sora,sans-serif;margin-top:5px}.metric .detail{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+    .layout{display:grid;grid-template-columns:1.12fr .88fr;gap:16px;margin-top:16px}.card{padding:18px}.card h2{font:800 16px Sora,sans-serif;margin:0 0 5px}.muted{font-size:12px;color:var(--muted);line-height:1.55}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:900;cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}.btn.teal{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff}.btn.soft{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}.btn.dark{background:#21153a;color:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}
+    .balls{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0}.ball{width:37px;height:37px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#ede9fe;border:2px solid #c4b5fd;color:#5b21b6;font-weight:900;font-size:12px}.ball.top15{background:#6d28d9;color:#fff;border-color:#4c1d95}.ball.extra{background:#ecfdf5;color:#0f766e;border-color:#5eead4}
+    .model-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px 0;border-bottom:1px solid #f1ecfb}.model-row:last-child{border-bottom:0}.model-title{font-weight:900;font-size:13px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900}.badge.champion{background:#dcfce7;color:#166534}.badge.challenger{background:#f3e8ff;color:#5b21b6}.badge.pending{background:#fff7ed;color:#9a3412}.badge.done{background:#dcfce7;color:#166534}.badge.invalid{background:#ffe4e6;color:#be123c}
+    .table-wrap{overflow:auto;max-height:620px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{position:sticky;top:0;background:#fff;text-align:left;padding:8px;color:#806f9c;text-transform:uppercase;font-size:9.5px;border-bottom:1px solid var(--line);z-index:1}.table td{padding:8px;border-bottom:1px solid #f1ecfb;vertical-align:middle}.rank{font-weight:900;color:var(--purple)}.prob{font-weight:900;color:var(--teal)}.bar{width:110px;height:7px;border-radius:999px;background:#eee7f8;overflow:hidden}.bar>div{height:100%;background:linear-gradient(90deg,var(--purple),#14b8a6)}
+    .good{color:#047857;font-weight:900}.bad{color:#be123c;font-weight:900}.neutral{color:#6b5b8a;font-weight:900}.wide{margin-top:16px}.ledger-empty{padding:20px;text-align:center;color:var(--muted);font-size:12px}.hash{font:10px monospace;color:#6b5b8a;word-break:break-all}.footer{margin:16px 0 4px;padding:13px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:12px;font-size:12px;line-height:1.6}
+    @media(max-width:1050px){.cards{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:620px){.wrap{padding:11px}.cards{grid-template-columns:repeat(2,1fr)}.bar{width:75px}.hero{padding:19px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-top">
+        <div><div class="eyebrow">Ciclo auditável de aprendizagem</div><h1>Motor de Aprendizado</h1><p>Une resultados históricos, laboratório de 20 mil jogos, desempenho semanal e votos dos métodos M1–M9. O modelo gera probabilidades para as 25 dezenas, mede Champion e Challenger em walk-forward e congela a previsão antes do resultado.</p></div>
+        <a class="back" href="index.html">← Início</a>
+      </div>
+      <div class="notice"><b>Leitura correta:</b> isto é previsão probabilística experimental. O sistema só será considerado melhor se superar referências neutras em concursos futuros. Frequência, atraso e padrões passados não garantem repetição.</div>
+    </section>
+
+    <div id="status" class="status">Carregando todo o ecossistema...</div>
+
+    <section class="cards">
+      <div class="metric"><div class="label">Concurso-alvo</div><div id="targetMetric" class="value">—</div><div class="detail">Previsão congelável</div></div>
+      <div class="metric"><div class="label">Champion</div><div id="championMetric" class="value">—</div><div id="confidenceMetric" class="detail">—</div></div>
+      <div class="metric"><div class="label">Brier walk-forward</div><div id="brierMetric" class="value">—</div><div class="detail">Neutro: 0,2400 · menor é melhor</div></div>
+      <div class="metric"><div class="label">Média top 21</div><div id="top21Metric" class="value">—</div><div class="detail">Referência teórica: 12,60</div></div>
+      <div class="metric"><div class="label">Amostra futura simulada</div><div id="samplesMetric" class="value">—</div><div class="detail">Walk-forward sem olhar o alvo</div></div>
+      <div class="metric"><div class="label">Jogos do laboratório</div><div id="labMetric" class="value">—</div><div id="labDetail" class="detail">—</div></div>
+    </section>
+
+    <section class="layout">
+      <div class="card">
+        <h2>Base probabilística de 21 dezenas</h2>
+        <div class="muted">As 15 primeiras formam o núcleo do ranking. As seis seguintes ampliam a cobertura para o Laboratório 21. A média neutra dentro de uma base de 21 é 12,60 sorteadas.</div>
+        <div id="top21Balls" class="balls"></div>
+        <div id="baseText" class="muted"></div>
+        <div class="actions">
+          <button id="freezeBtn" class="btn primary" disabled>🔒 Congelar previsão</button>
+          <button id="copyBtn" class="btn soft" disabled>📋 Copiar base 21</button>
+          <button id="labBtn" class="btn teal" disabled>Abrir Laboratório 21</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Champion × Challenger</h2>
+        <div class="muted">A escolha é feita somente pelo desempenho walk-forward disponível, priorizando Brier e acertos dentro do top 21.</div>
+        <div id="models"></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="card">
+        <h2>Ranking probabilístico das 25 dezenas</h2>
+        <div class="muted">As probabilidades são calibradas para somarem 15. Diferenças pequenas devem ser lidas como baixa separação, não como certeza.</div>
+        <div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Dezena</th><th>Prob.</th><th>Barra</th><th>Freq. 5</th><th>Freq. 20</th><th>Atraso</th><th>Voto M1–M9</th><th>Laboratório</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>Walk-forward do Champion</h2>
+        <div class="muted">Para cada linha, o modelo foi treinado apenas até o concurso anterior. Isso impede vazamento do resultado usado na avaliação.</div>
+        <div class="table-wrap"><table class="table"><thead><tr><th>Concurso</th><th>Treino até</th><th>Brier</th><th>Top 15</th><th>Top 21</th><th>Δ 12,60</th></tr></thead><tbody id="backtestBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><h2>Livro de Previsões</h2><div class="muted">Cada previsão congelada guarda concurso-alvo, último concurso usado, ranking, probabilidades, versão do modelo e hash. Quando o resultado entra na API, a avaliação é preenchida automaticamente.</div></div>
+        <button id="exportBtn" class="btn dark">Exportar livro JSON</button>
+      </div>
+      <div class="table-wrap" style="margin-top:10px"><table class="table"><thead><tr><th>Concurso</th><th>Congelada em</th><th>Modelo</th><th>Status</th><th>Brier</th><th>Top 15</th><th>Top 21</th><th>Integridade</th><th>Hash</th></tr></thead><tbody id="ledgerBody"></tbody></table></div>
+      <div id="ledgerEmpty" class="ledger-empty">Nenhuma previsão congelada neste navegador.</div>
+    </section>
+
+    <div class="footer"><b>Limite atual:</b> o Livro de Previsões desta primeira etapa fica no navegador deste aparelho. O hash detecta alterações acidentais, mas a assinatura definitiva no servidor e o treinamento automático agendado serão a próxima etapa.</div>
+  </main>
+
+  <script src="learning_core.js"></script>
+  <script>
+    const core = window.LotofacilLearningCore;
+    const LEDGER_KEY = 'lotofacil_prediction_ledger_v1';
+    let systemStatus = null;
+    let forecast = null;
+    let ledger = [];
+
+    const el = (id) => document.getElementById(id);
+    const formatNumber = (value, digits = 4) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const formatInteger = (value) => Number(value || 0).toLocaleString('pt-BR');
+    const dateTimeBR = (iso) => iso ? new Date(iso).toLocaleString('pt-BR') : '—';
+
+    function setStatus(message, isError = false) {
+      el('status').textContent = message;
+      el('status').style.color = isError ? '#be123c' : '#6d28d9';
+    }
+
+    function loadLedger() {
+      try { ledger = JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); }
+      catch { ledger = []; }
+      if (!Array.isArray(ledger)) ledger = [];
+    }
+
+    function saveLedger() {
+      ledger = ledger.slice().sort((a,b) => b.frozen.targetContest - a.frozen.targetContest).slice(0, 200);
+      localStorage.setItem(LEDGER_KEY, JSON.stringify(ledger));
+    }
+
+    async function sha256(text) {
+      const bytes = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function frozenHash(frozen) {
+      return sha256(core.stableStringify(frozen));
+    }
+
+    async function verifyEntry(entry) {
+      try { return await frozenHash(entry.frozen) === entry.frozenHash; }
+      catch { return false; }
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(text); return true; } catch (_err) {}
+      }
+      const area = document.createElement('textarea');
+      area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+      document.body.appendChild(area); area.focus(); area.select();
+      const ok = document.execCommand && document.execCommand('copy');
+      document.body.removeChild(area);
+      return Boolean(ok);
+    }
+
+    function renderTop21() {
+      el('top21Balls').innerHTML = forecast.top21.map((number, index) => `<span class="ball ${index < 15 ? 'top15' : 'extra'}" title="Ranking ${index + 1}">${core.pad(number)}</span>`).join('');
+      el('baseText').innerHTML = `<b>Base:</b> ${forecast.top21.map(core.pad).join(' · ')}<br><b>Soma das probabilidades das 21:</b> ${formatNumber(forecast.ranking.slice(0,21).reduce((s,r)=>s+r.probability,0),2)} dezenas esperadas dentro da base.`;
+    }
+
+    function renderMetrics() {
+      el('targetMetric').textContent = `#${forecast.targetContest}`;
+      el('championMetric').textContent = forecast.champion.modelName.replace('Champion ', '').replace('Challenger ', '');
+      el('confidenceMetric').textContent = `Confiança ${forecast.confidence} · versão ${forecast.modelVersion}`;
+      el('brierMetric').textContent = formatNumber(forecast.champion.brier,4);
+      el('top21Metric').textContent = formatNumber(forecast.champion.avgTop21,2);
+      el('top21Metric').style.color = forecast.champion.deltaTop21 >= 0 ? '#047857' : '#be123c';
+      el('samplesMetric').textContent = forecast.champion.samples;
+      el('labMetric').textContent = formatInteger(forecast.ecosystem.laboratoryGames);
+      el('labDetail').textContent = `${forecast.ecosystem.laboratoryContests} concurso(s) acumulados · ${forecast.ecosystem.systemMethods} métodos atuais`;
+    }
+
+    function modelHtml(report, type) {
+      const deltaClass = report.deltaTop21 >= 0 ? 'good' : 'bad';
+      return `<div class="model-row"><div><div class="model-title">${report.modelName} <span class="badge ${type}">${type === 'champion' ? 'CHAMPION' : 'CHALLENGER'}</span></div><div class="muted">${core.MODELS[report.model].description}</div></div><div style="text-align:right;white-space:nowrap"><div><b>Brier ${formatNumber(report.brier,4)}</b></div><div class="${deltaClass}" style="font-size:11px">Top 21 ${formatNumber(report.avgTop21,2)} · Δ ${report.deltaTop21 >= 0 ? '+' : ''}${formatNumber(report.deltaTop21,2)}</div></div></div>`;
+    }
+
+    function renderModels() {
+      el('models').innerHTML = modelHtml(forecast.champion, 'champion') + modelHtml(forecast.challenger, 'challenger');
+    }
+
+    function renderRanking() {
+      el('rankingBody').innerHTML = forecast.ranking.map((row) => {
+        const f = row.features;
+        const topClass = row.rank <= 15 ? 'good' : row.rank <= 21 ? 'neutral' : '';
+        return `<tr><td class="rank">${row.rank}</td><td class="${topClass}" style="font-size:14px">${core.pad(row.number)}</td><td class="prob">${formatNumber(row.probabilityPct,2)}%</td><td><div class="bar"><div style="width:${Math.min(100,row.probabilityPct)}%"></div></div></td><td>${formatNumber(f.f5*100,0)}%</td><td>${formatNumber(f.f20*100,0)}%</td><td>${f.delay}</td><td>${formatNumber(f.methodVote*100,0)}%</td><td>${formatNumber(f.labVote*100,0)}%</td></tr>`;
+      }).join('');
+    }
+
+    function renderBacktest() {
+      el('backtestBody').innerHTML = forecast.backtest.slice().reverse().map((row) => {
+        const delta = row.top21 - core.THEORETICAL_TOP21;
+        return `<tr><td><b>#${row.concurso}</b></td><td>${row.trainingThrough}</td><td>${formatNumber(row.brier,4)}</td><td>${row.top15}</td><td><b>${row.top21}</b></td><td class="${delta >= 0 ? 'good' : 'bad'}">${delta >= 0 ? '+' : ''}${formatNumber(delta,2)}</td></tr>`;
+      }).join('');
+    }
+
+    async function evaluatePendingLedger() {
+      const draws = core.normalizeDraws(systemStatus?.resultados_recentes || []);
+      let changed = false;
+      for (const entry of ledger) {
+        if (entry.result) continue;
+        const draw = draws.find(item => item.concurso === entry.frozen.targetContest);
+        if (!draw) continue;
+        const prediction = { ranking: entry.frozen.ranking };
+        entry.result = { concurso: draw.concurso, data: draw.data, dezenas: draw.dezenas };
+        entry.evaluation = core.evaluatePrediction(prediction, draw.dezenas);
+        entry.evaluatedAt = new Date().toISOString();
+        entry.evaluationHash = await sha256(core.stableStringify({ result: entry.result, evaluation: entry.evaluation, frozenHash: entry.frozenHash }));
+        changed = true;
+      }
+      if (changed) saveLedger();
+    }
+
+    async function renderLedger() {
+      el('ledgerEmpty').style.display = ledger.length ? 'none' : 'block';
+      const rows = [];
+      for (const entry of ledger) {
+        const valid = await verifyEntry(entry);
+        const evaluation = entry.evaluation;
+        rows.push(`<tr><td><b>#${entry.frozen.targetContest}</b><div class="muted">treino até ${entry.frozen.trainingThrough}</div></td><td>${dateTimeBR(entry.frozen.generatedAt)}</td><td>${entry.frozen.champion.modelName}<div class="muted">${entry.frozen.modelVersion}</div></td><td><span class="badge ${evaluation ? 'done' : 'pending'}">${evaluation ? 'AVALIADA' : 'AGUARDANDO'}</span></td><td>${evaluation ? formatNumber(evaluation.brier,4) : '—'}</td><td>${evaluation ? evaluation.top15 : '—'}</td><td>${evaluation ? evaluation.top21 : '—'}</td><td><span class="badge ${valid ? 'done' : 'invalid'}">${valid ? 'ÍNTEGRA' : 'ALTERADA'}</span></td><td><div class="hash">${entry.frozenHash.slice(0,16)}…</div></td></tr>`);
+      }
+      el('ledgerBody').innerHTML = rows.join('');
+    }
+
+    async function freezeForecast() {
+      if (!forecast) return;
+      const existing = ledger.find(entry => entry.frozen.targetContest === forecast.targetContest);
+      if (existing) { setStatus(`O concurso #${forecast.targetContest} já possui previsão congelada neste navegador.`); return; }
+      const frozen = core.compactForecastForLedger(forecast);
+      const entry = {
+        id: `${frozen.targetContest}-${frozen.modelVersion}-${Date.now()}`,
+        frozen,
+        frozenHash: await frozenHash(frozen),
+        result: null,
+        evaluation: null,
+        evaluatedAt: null,
+        evaluationHash: null
+      };
+      ledger.push(entry); saveLedger(); await renderLedger();
+      setStatus(`Previsão do concurso #${frozen.targetContest} congelada com hash ${entry.frozenHash.slice(0,16)}…`);
+    }
+
+    async function exportLedger() {
+      const payload = { exportedAt: new Date().toISOString(), schema: 1, entries: ledger };
+      const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url; link.download = `livro-previsoes-lotofacil-${new Date().toISOString().slice(0,10)}.json`; link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function init() {
+      loadLedger();
+      try {
+        const response = await fetch('/api/sistema/status', { headers:{ accept:'application/json' }, cache:'no-store' });
+        const data = await response.json();
+        if (!response.ok || data.ok === false) throw new Error(data.message || 'Falha ao carregar o sistema.');
+        systemStatus = data;
+        forecast = core.buildForecast(data, { minTraining:12, maxTests:36 });
+        await evaluatePendingLedger();
+        renderMetrics(); renderTop21(); renderModels(); renderRanking(); renderBacktest(); await renderLedger();
+        el('freezeBtn').disabled = false; el('copyBtn').disabled = false; el('labBtn').disabled = false;
+        setStatus(`Ecossistema carregado. Previsão #${forecast.targetContest} usa resultados até #${forecast.trainingThrough}, ${formatInteger(forecast.ecosystem.laboratoryGames)} jogos laboratoriais e ${forecast.ecosystem.systemMethods} votos M1–M9.`);
+      } catch (error) {
+        console.error(error); setStatus(error.message || 'Falha ao iniciar o aprendizado.', true); await renderLedger();
+      }
+    }
+
+    el('freezeBtn').onclick = freezeForecast;
+    el('copyBtn').onclick = async () => {
+      const text = forecast.top21.map(core.pad).join(' ');
+      const ok = await copyText(text); setStatus(ok ? `Base de 21 copiada: ${text}` : `Cópia bloqueada. Selecione manualmente: ${text}`, !ok);
+    };
+    el('labBtn').onclick = async () => {
+      const text = forecast.top21.map(core.pad).join(' ');
+      await copyText(text);
+      window.open(`laboratorio_21.html?base=${forecast.top21.join('-')}`, '_blank', 'noopener');
+      setStatus('Base de 21 copiada e Laboratório 21 aberto em nova aba.');
+    };
+    el('exportBtn').onclick = exportLedger;
+    init();
+  </script>
+</body>
+</html>
