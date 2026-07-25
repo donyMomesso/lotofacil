@@ -6,6 +6,7 @@ on:
       - "lab21_core.js"
       - "laboratorio_21.html"
       - "tests/test_lab21_core.js"
+      - "tests/test_lab21_ui.js"
       - ".github/workflows/testes-laboratorio-21.yml"
   workflow_dispatch:
 
@@ -26,3 +27,5 @@ jobs:
         run: node --check lab21_core.js
       - name: Executar testes combinatórios
         run: node tests/test_lab21_core.js
+      - name: Testar interface e cópia
+        run: node tests/test_lab21_ui.js
