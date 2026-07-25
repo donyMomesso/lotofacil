@@ -1,0 +1,31 @@
+name: Testes do Motor de Aprendizado
+
+on:
+  pull_request:
+    paths:
+      - "learning_core.js"
+      - "aprendizado.html"
+      - "tests/test_learning_core.js"
+      - "tests/test_learning_ui.js"
+      - ".github/workflows/testes-aprendizado.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validar sintaxe do núcleo
+        run: node --check learning_core.js
+      - name: Testar modelo e walk-forward
+        run: node tests/test_learning_core.js
+      - name: Testar painel e livro
+        run: node tests/test_learning_ui.js
