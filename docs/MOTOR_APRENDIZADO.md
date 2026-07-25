@@ -1,8 +1,8 @@
-# Robustez Histórica do Motor de Aprendizado
+# Governança Champion × Challenger
 
 ## Escopo
 
-O módulo avalia somente concursos encerrados. Para cada concurso `N`, o cálculo usa exclusivamente resultados com número menor que `N`. A condição obrigatória é:
+O módulo avalia somente concursos encerrados. Para cada concurso `N`, o cálculo usa exclusivamente resultados com número menor que `N`.
 
 ```text
 treino_ate < concurso
@@ -10,51 +10,63 @@ treino_ate < concurso
 
 O painel não publica ranking futuro, seleção de dezenas ou combinações.
 
-## Versão atual
+## Versões
 
-`historical-audit-v1.1.0`
+Modelo estatístico atual:
 
-Cada alteração do algoritmo cria uma nova versão. A chave única dos registros históricos continua sendo concurso, modelo e versão, preservando comparações antigas.
+```text
+historical-audit-v1.1.0
+```
 
-## Camadas de avaliação
+Governança atual:
 
-### Walk-forward
+```text
+champion-governance-v1.0.0
+```
 
-Reconstitui cada concurso como se o resultado ainda não fosse conhecido. Os modelos Estável e Adaptativo recebem exatamente o mesmo histórico disponível naquele ponto.
+A versão do modelo identifica como as pontuações históricas foram produzidas. A versão da governança identifica as regras usadas para comparar modelos e decidir uma promoção.
 
-### Intervalos de confiança
+## Champion e Challenger
 
-O sistema usa bootstrap determinístico para calcular IC de 95% da média do Brier e do top 21. A semente inclui modelo, versão, amostra e último concurso, permitindo reprodução.
+O Champion é o modelo ativo persistido no D1. O Challenger é comparado com ele usando exatamente os mesmos concursos encerrados.
 
-### Teste por permutação
+A comparação é pareada por concurso:
 
-O top 21 observado é comparado com rankings neutros simulados pela distribuição hipergeométrica da Lotofácil. O valor-p é unilateral: mede a frequência com que a referência neutra alcança média igual ou maior.
+- ganho de Brier = Brier do Champion menos Brier do Challenger;
+- ganho de top 21 = top 21 do Challenger menos top 21 do Champion.
 
-### Calibração
+Valores positivos favorecem o Challenger.
 
-Cada registro calcula:
+## Correção de múltiplos testes
 
-- erro esperado de calibração (ECE);
-- sharpness, medida da dispersão das probabilidades.
+Os testes pareados de Brier e top 21 recebem correção Benjamini–Hochberg. A promoção exige valor-q do Brier menor ou igual a `0,05`.
 
-Probabilidades mais separadas não são automaticamente melhores; precisam permanecer calibradas.
+Isso reduz o risco de promover um modelo apenas porque várias métricas foram testadas ao mesmo tempo.
 
-### Janelas móveis
+## Regras obrigatórias para promoção
 
-São mostradas as janelas mais recentes de 8, 16 e 24 concursos para detectar dependência de período.
+O Challenger só é promovido quando todas as regras abaixo passam simultaneamente:
 
-### Drift
+1. pelo menos 30 concursos pareados;
+2. integridade temporal, probabilística e de hashes sem falhas;
+3. intervalo mínimo de 12 concursos desde a última promoção;
+4. ausência de drift moderado ou alto no Challenger;
+5. ganho médio de Brier positivo;
+6. limite inferior do IC de 95% do ganho de Brier acima de zero;
+7. valor-q Benjamini–Hochberg do Brier menor ou igual a `0,05`;
+8. limite inferior do IC de 95% do ganho de top 21 não inferior a `-0,15`;
+9. estabilidade nas janelas de 8, 16 e 24 concursos.
 
-A janela recente de oito concursos é comparada com os oito anteriores. O alerta considera piora no Brier e queda no top 21.
+Uma falha de integridade bloqueia a decisão. As demais falhas mantêm o Champion atual.
 
-## Força da evidência
+## Janelas móveis
 
-- **Amostra insuficiente:** menos de 20 concursos.
-- **Sem evidência de vantagem:** intervalos ainda incluem as referências neutras.
-- **Sinal exploratório:** uma métrica supera a referência.
-- **Sinal histórico moderado:** Brier e top 21 superam as referências com IC de 95%, valor-p menor que 0,05 e pelo menos 50 concursos.
+As janelas de 8, 16 e 24 concursos precisam mostrar:
 
-Esses rótulos descrevem apenas dados históricos e não garantem repetição.
+- ganho de Brier positivo;
+- ganho de top 21 não inferior a `-0,125`.
+
+Essa regra impede promoção baseada apenas na média completa quando o desempenho recente é inconsistente.
 
 ## Persistência D1
 
@@ -64,20 +76,37 @@ Guarda cada avaliação fora da amostra e seu hash SHA-256.
 
 ### `aprendizado_resumos`
 
-Guarda snapshots de robustez por modelo, versão, tamanho de amostra e último concurso. O resumo inclui intervalos, permutação, calibração, janelas, drift e classificação da evidência.
+Guarda snapshots de robustez por modelo, versão, amostra e último concurso.
 
-## Integridade
+### `aprendizado_campeoes`
 
-Ao carregar a API, a versão atual é verificada em três pontos:
+Guarda o Champion ativo por versão do modelo e versão da governança, o concurso desde o qual está ativo e o último concurso já avaliado pela governança.
 
-1. ausência de vazamento temporal;
-2. soma das probabilidades igual a 15;
-3. reconstrução do hash SHA-256.
+### `aprendizado_decisoes`
 
-A rota pública é:
+Guarda cada decisão Champion × Challenger, incluindo:
 
-```text
-GET /api/aprendizado/historico
-```
+- concurso mais recente incluído;
+- Champion anterior;
+- Challenger;
+- decisão `promote`, `hold` ou `blocked`;
+- modelo promovido, quando aplicável;
+- comparação completa;
+- regras aprovadas e reprovadas;
+- hash SHA-256.
 
-A resposta contém apenas métricas históricas e registros já avaliados.
+A chave única impede que a mesma decisão seja recriada para o mesmo concurso, Champion e Challenger.
+
+## Ciclo automático
+
+A governança é atualizada:
+
+- ao abrir `GET /api/aprendizado/historico`;
+- depois de uma execução manual bem-sucedida do ciclo;
+- depois do ciclo agendado do Cloudflare.
+
+Sem concurso novo, a decisão anterior é reutilizada. O sistema não troca o Champion repetidamente com os mesmos dados.
+
+## Interpretação
+
+A promoção indica apenas que, dentro das avaliações históricas disponíveis, o Challenger cumpriu regras estatísticas mais rígidas que o Champion. Isso não elimina a aleatoriedade dos sorteios nem garante desempenho futuro.
