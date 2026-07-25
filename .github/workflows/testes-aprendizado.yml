@@ -1,4 +1,4 @@
-name: Testes da Avaliação Histórica
+name: Testes da Robustez Histórica
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
       - "index.html"
       - "wrangler.jsonc"
       - "migrations/0002_aprendizado_historico.sql"
+      - "migrations/0003_aprendizado_robustez.sql"
       - "tests/test_learning_audit_core.mjs"
       - "tests/test_learning_server.mjs"
       - "tests/test_learning_index.js"
@@ -32,9 +33,9 @@ jobs:
         run: node --check learning_audit_core.mjs
       - name: Validar Worker envoltório
         run: node --input-type=module --check < worker_learning.js
-      - name: Testar walk-forward histórico
+      - name: Testar robustez estatística
         run: node tests/test_learning_audit_core.mjs
-      - name: Testar D1 e painel histórico
+      - name: Testar D1 e painel robusto
         run: node tests/test_learning_server.mjs
       - name: Testar acesso inicial
         run: node tests/test_learning_index.js
