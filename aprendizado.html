@@ -3,82 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avaliação Histórica — Lotofácil Lab</title>
+  <title>Robustez Histórica — Lotofácil Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{--purple:#6d28d9;--purple2:#4c1d95;--pink:#db2777;--teal:#0f766e;--green:#15803d;--amber:#b45309;--red:#be123c;--ink:#21153a;--muted:#74658d;--line:#e9dffb;--bg:#f8f5ff}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif}button{font:inherit}
-    .wrap{max-width:1280px;margin:auto;padding:22px}.hero{background:radial-gradient(circle at 90% 10%,rgba(245,158,11,.28),transparent 28%),linear-gradient(135deg,var(--purple2),var(--purple) 55%,var(--pink));color:#fff;padding:25px;border-radius:22px;box-shadow:0 18px 55px rgba(76,29,149,.24)}
-    .hero-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#fde68a}.hero h1{font:800 clamp(26px,4vw,42px)/1.08 Sora,sans-serif;margin:7px 0 10px}.hero p{max-width:880px;line-height:1.65;color:rgba(255,255,255,.86);margin:0}.back{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:9px 12px;border-radius:10px;font-weight:800;font-size:12px}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif}button{font:inherit}.wrap{max-width:1360px;margin:auto;padding:22px}
+    .hero{background:radial-gradient(circle at 90% 10%,rgba(245,158,11,.28),transparent 28%),linear-gradient(135deg,var(--purple2),var(--purple) 55%,var(--pink));color:#fff;padding:25px;border-radius:22px;box-shadow:0 18px 55px rgba(76,29,149,.24)}
+    .hero-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#fde68a}.hero h1{font:800 clamp(26px,4vw,42px)/1.08 Sora,sans-serif;margin:7px 0 10px}.hero p{max-width:920px;line-height:1.65;color:rgba(255,255,255,.86);margin:0}.back{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:9px 12px;border-radius:10px;font-weight:800;font-size:12px}
     .notice{margin-top:15px;padding:12px 14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.11);border-radius:12px;font-size:12px;line-height:1.55}.status{margin:15px 0;color:var(--purple);font-size:12px;font-weight:800;min-height:18px}
-    .cards{display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:11px}.metric,.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 7px 24px rgba(43,10,77,.06)}.metric{padding:14px}.metric .label{font-size:10px;text-transform:uppercase;font-weight:900;color:#826fa1}.metric .value{font:800 21px Sora,sans-serif;margin-top:5px}.metric .detail{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.4}
-    .layout{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px;margin-top:16px}.card{padding:18px}.card h2{font:800 16px Sora,sans-serif;margin:0 0 5px}.muted{font-size:12px;color:var(--muted);line-height:1.55}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:900;cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}.btn.soft{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}.btn:disabled{opacity:.5;cursor:not-allowed}
-    .model{padding:14px;border:1px solid var(--line);border-radius:13px;margin-top:10px}.model.best{border-color:#86efac;background:#f0fdf4}.model.alert{border-color:#fdba74;background:#fff7ed}.model-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.model-title{font-weight:900}.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900}.badge.best{background:#dcfce7;color:#166534}.badge.alert{background:#ffedd5;color:#9a3412}.badge.neutral{background:#ede9fe;color:#5b21b6}
-    .model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}.mini{background:rgba(255,255,255,.7);border:1px solid rgba(124,58,237,.12);border-radius:9px;padding:9px}.mini span{display:block;font-size:9px;text-transform:uppercase;color:#826fa1;font-weight:900}.mini b{display:block;margin-top:4px;font-size:13px}
-    .table-wrap{overflow:auto;max-height:680px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{position:sticky;top:0;background:#fff;text-align:left;padding:8px;color:#806f9c;text-transform:uppercase;font-size:9.5px;border-bottom:1px solid var(--line);z-index:1}.table td{padding:8px;border-bottom:1px solid #f1ecfb;vertical-align:middle}.good{color:#047857;font-weight:900}.bad{color:#be123c;font-weight:900}.neutral{color:#6b5b8a;font-weight:900}.hash{font:10px monospace;color:#6b5b8a;word-break:break-all;max-width:180px}.footer{margin:16px 0 4px;padding:13px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;border-radius:12px;font-size:12px;line-height:1.6}
-    @media(max-width:1050px){.cards{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:620px){.wrap{padding:11px}.cards{grid-template-columns:repeat(2,1fr)}.model-grid{grid-template-columns:1fr 1fr}.hero{padding:19px}}
+    .cards{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:10px}.metric,.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 7px 24px rgba(43,10,77,.06)}.metric{padding:13px}.metric .label{font-size:9.5px;text-transform:uppercase;font-weight:900;color:#826fa1}.metric .value{font:800 19px Sora,sans-serif;margin-top:5px}.metric .detail{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4}
+    .layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.card{padding:18px}.card h2{font:800 16px Sora,sans-serif;margin:0 0 5px}.muted{font-size:12px;color:var(--muted);line-height:1.55}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:900;cursor:pointer}.btn.primary{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}.btn.soft{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}.btn:disabled{opacity:.5;cursor:not-allowed}
+    .model{padding:15px;border:1px solid var(--line);border-radius:14px;margin-top:11px}.model.best{border-color:#86efac;background:#f0fdf4}.model.drift{border-color:#fdba74;background:#fff7ed}.model-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.model-title{font-weight:900}.badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:9.5px;font-weight:900}.badge.best,.badge.moderate{background:#dcfce7;color:#166534}.badge.exploratory{background:#dbeafe;color:#1e40af}.badge.none{background:#ede9fe;color:#5b21b6}.badge.insufficient,.badge.drift{background:#ffedd5;color:#9a3412}
+    .model-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.mini{background:rgba(255,255,255,.75);border:1px solid rgba(124,58,237,.12);border-radius:9px;padding:9px}.mini span{display:block;font-size:8.7px;text-transform:uppercase;color:#826fa1;font-weight:900}.mini b{display:block;margin-top:4px;font-size:12.5px}.reason{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5}
+    .table-wrap{overflow:auto;max-height:650px}.table{width:100%;border-collapse:collapse;font-size:11.5px}.table th{position:sticky;top:0;background:#fff;text-align:left;padding:8px;color:#806f9c;text-transform:uppercase;font-size:9px;border-bottom:1px solid var(--line);z-index:1}.table td{padding:8px;border-bottom:1px solid #f1ecfb;vertical-align:middle}.good{color:#047857;font-weight:900}.bad{color:#be123c;font-weight:900}.neutral{color:#6b5b8a;font-weight:900}.hash{font:9.5px monospace;color:#6b5b8a;word-break:break-all;max-width:160px}
+    .integrity{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.check{border:1px solid var(--line);border-radius:10px;padding:10px}.check span{display:block;font-size:9px;text-transform:uppercase;color:#826fa1;font-weight:900}.check b{display:block;margin-top:5px}.footer{margin:16px 0 4px;padding:13px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;border-radius:12px;font-size:12px;line-height:1.6}
+    @media(max-width:1150px){.cards{grid-template-columns:repeat(4,1fr)}.model-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:850px){.layout{grid-template-columns:1fr}}@media(max-width:620px){.wrap{padding:11px}.cards{grid-template-columns:repeat(2,1fr)}.integrity{grid-template-columns:1fr 1fr}.hero{padding:19px}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="hero">
       <div class="hero-top">
-        <div>
-          <div class="eyebrow">Auditoria estatística fora da amostra</div>
-          <h1>Avaliação histórica</h1>
-          <p>O sistema reconstitui cada concurso já encerrado usando somente resultados anteriores, grava as métricas no D1 e compara os modelos Estável e Adaptativo com referências neutras.</p>
-        </div>
+        <div><div class="eyebrow">Evidência, estabilidade e auditoria</div><h1>Robustez histórica</h1><p>Além do walk-forward, o sistema mede intervalos de confiança, valor-p contra ranking neutro, calibração, janelas móveis e drift. Todos os cálculos usam somente concursos já encerrados.</p></div>
         <a class="back" href="index.html">← Início</a>
       </div>
-      <div class="notice"><b>Proteção temporal:</b> não há ranking para concurso futuro nesta página. Cada linha exige que o último concurso usado no treinamento seja menor que o concurso avaliado.</div>
+      <div class="notice"><b>Regra inviolável:</b> cada registro exige <code>treino_ate &lt; concurso</code>. Esta página não publica ranking futuro, seleção de dezenas ou combinações.</div>
     </section>
 
-    <div id="status" class="status">Carregando arquivo histórico do D1...</div>
+    <div id="status" class="status">Carregando auditoria robusta do D1...</div>
 
     <section class="cards">
-      <div class="metric"><div class="label">Concursos avaliados</div><div id="contestMetric" class="value">—</div><div class="detail">Somente resultados encerrados</div></div>
-      <div class="metric"><div class="label">Registros imutáveis</div><div id="recordMetric" class="value">—</div><div class="detail">Concurso × modelo × versão</div></div>
-      <div class="metric"><div class="label">Melhor histórico</div><div id="bestMetric" class="value">—</div><div class="detail">Comparação fora da amostra</div></div>
-      <div class="metric"><div class="label">Brier</div><div id="brierMetric" class="value">—</div><div class="detail">Referência neutra: 0,2400</div></div>
-      <div class="metric"><div class="label">Média top 21</div><div id="top21Metric" class="value">—</div><div class="detail">Referência neutra: 12,60</div></div>
-      <div class="metric"><div class="label">Alertas</div><div id="alertMetric" class="value">—</div><div class="detail">Possível piora recente</div></div>
+      <div class="metric"><div class="label">Concursos</div><div id="contestMetric" class="value">—</div><div class="detail">Todas as versões</div></div>
+      <div class="metric"><div class="label">Versão atual</div><div id="versionMetric" class="value">—</div><div class="detail">Registro do modelo</div></div>
+      <div class="metric"><div class="label">Evidência</div><div id="evidenceMetric" class="value">—</div><div class="detail">Com IC de 95%</div></div>
+      <div class="metric"><div class="label">Brier 95%</div><div id="brierMetric" class="value">—</div><div class="detail">Neutro: 0,2400</div></div>
+      <div class="metric"><div class="label">Top 21 95%</div><div id="top21Metric" class="value">—</div><div class="detail">Neutro: 12,60</div></div>
+      <div class="metric"><div class="label">Valor-p</div><div id="pMetric" class="value">—</div><div class="detail">Teste por permutação</div></div>
+      <div class="metric"><div class="label">Integridade</div><div id="integrityMetric" class="value">—</div><div class="detail">Tempo, soma e hash</div></div>
     </section>
 
     <section class="layout">
       <div class="card">
-        <h2>Modelos auditados</h2>
-        <div class="muted">O destaque é histórico e não representa indicação para concurso futuro. Menor Brier e maior média top 21 são melhores, desde que a amostra seja suficiente.</div>
+        <h2>Modelos e força da evidência</h2>
+        <div class="muted">O destaque é exclusivamente histórico. Um bom valor médio sem intervalo estreito ou estabilidade não é tratado como vantagem.</div>
         <div id="models"></div>
-        <div class="actions">
-          <button id="refreshBtn" class="btn primary">Atualizar arquivo histórico</button>
-          <button id="exportBtn" class="btn soft" disabled>Exportar métricas JSON</button>
-        </div>
+        <div class="actions"><button id="refreshBtn" class="btn primary">Atualizar auditoria</button><button id="exportBtn" class="btn soft" disabled>Exportar métricas JSON</button></div>
       </div>
-
       <div class="card">
-        <h2>Como interpretar</h2>
-        <div class="muted">
-          <p><b>Brier abaixo de 0,2400:</b> melhor calibração histórica que atribuir 60% a todas as dezenas.</p>
-          <p><b>Top 21 acima de 12,60:</b> mais dezenas do resultado dentro das 21 primeiras posições do ranking histórico que a média neutra.</p>
-          <p><b>Alerta de sobreajuste:</b> a janela dos oito concursos mais recentes piorou de forma relevante em relação à média total.</p>
-          <p><b>Hash:</b> identifica o registro exato armazenado para auditoria e reprodução.</p>
-        </div>
+        <h2>Janelas móveis 8 / 16 / 24</h2>
+        <div class="muted">As janelas mostram se o desempenho é persistente ou depende de um período específico.</div>
+        <div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>Modelo</th><th>Janela</th><th>Concursos</th><th>Brier</th><th>Top 21</th><th>Calibração</th></tr></thead><tbody id="rollingBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="card">
+        <h2>Integridade do arquivo</h2>
+        <div class="muted">Os registros da versão atual são revalidados ao carregar a API.</div>
+        <div id="integrityChecks" class="integrity"></div>
+      </div>
+      <div class="card">
+        <h2>Registro de versões</h2>
+        <div class="muted">Cada alteração do algoritmo cria uma nova versão, sem sobrescrever os resultados anteriores.</div>
+        <div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>Versão</th><th>Concursos</th><th>Registros</th><th>Faixa</th><th>Status</th></tr></thead><tbody id="versionBody"></tbody></table></div>
       </div>
     </section>
 
     <section class="card" style="margin-top:16px">
-      <h2>Registros históricos no D1</h2>
-      <div class="muted">Cada concurso aparece uma vez por modelo e versão. O resultado já era conhecido apenas no momento da avaliação; o treinamento usa exclusivamente concursos anteriores.</div>
-      <div class="table-wrap" style="margin-top:12px">
-        <table class="table">
-          <thead><tr><th>Concurso</th><th>Data</th><th>Modelo</th><th>Treino até</th><th>Amostra</th><th>Brier</th><th>Log Loss</th><th>Top 15</th><th>Top 21</th><th>Hash</th></tr></thead>
-          <tbody id="historyBody"></tbody>
-        </table>
-      </div>
+      <h2>Registros fora da amostra</h2>
+      <div class="muted">Cada linha foi calculada com resultados anteriores ao concurso avaliado.</div>
+      <div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>Concurso</th><th>Modelo</th><th>Treino até</th><th>Amostra</th><th>Brier</th><th>Log Loss</th><th>Top 15</th><th>Top 21</th><th>Hash</th></tr></thead><tbody id="historyBody"></tbody></table></div>
     </section>
 
-    <div class="footer"><b>Objetivo científico:</b> verificar se existe sinal estatístico persistente fora da amostra. O módulo não publica seleção de dezenas, não cria combinações e não transforma desempenho histórico em garantia futura.</div>
+    <div class="footer"><b>Critério científico:</b> uma hipótese só ganha força quando supera referências neutras com intervalo de confiança, valor-p adequado, integridade preservada e estabilidade em várias janelas. Resultado histórico não garante repetição.</div>
   </main>
 
   <script>
@@ -86,113 +84,104 @@
     const numberBR = (value, digits = 4) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
     const integerBR = (value) => Number(value || 0).toLocaleString('pt-BR');
     let payload = null;
-
-    function setStatus(message, error = false) {
-      el('status').textContent = message;
-      el('status').style.color = error ? '#be123c' : '#6d28d9';
-    }
-
+    function setStatus(message, error = false) { el('status').textContent = message; el('status').style.color = error ? '#be123c' : '#6d28d9'; }
     function metricClass(value, baseline, lowerIsBetter = false) {
       const good = lowerIsBetter ? value < baseline : value > baseline;
       const bad = lowerIsBetter ? value > baseline : value < baseline;
       return good ? 'good' : bad ? 'bad' : 'neutral';
     }
-
+    function intervalText(ci, digits = 4) { return ci ? `${numberBR(ci.low, digits)}–${numberBR(ci.high, digits)}` : '—'; }
+    function evidenceBadge(evidence) {
+      const level = evidence?.level || 'insufficient';
+      return `<span class="badge ${level}">${evidence?.label || 'Sem avaliação'}</span>`;
+    }
+    function driftBadge(drift) {
+      if (!drift || ['none', 'insufficient'].includes(drift.level)) return '';
+      return `<span class="badge drift">Drift ${drift.level === 'high' ? 'alto' : 'moderado'}</span>`;
+    }
     function renderModels(data) {
       const bestKey = data.bestHistoricalModel?.key;
       el('models').innerHTML = data.models.map((model) => {
-        const classes = [model.key === bestKey ? 'best' : '', model.overfitAlert ? 'alert' : ''].filter(Boolean).join(' ');
-        const badge = model.overfitAlert
-          ? '<span class="badge alert">Atenção recente</span>'
-          : model.key === bestKey
-            ? '<span class="badge best">Melhor histórico</span>'
-            : '<span class="badge neutral">Comparação</span>';
+        const classes = [model.key === bestKey ? 'best' : '', ['moderate','high'].includes(model.drift?.level) ? 'drift' : ''].filter(Boolean).join(' ');
         return `<div class="model ${classes}">
-          <div class="model-head"><div class="model-title">${model.name}</div>${badge}</div>
+          <div class="model-head"><div class="model-title">${model.name}</div><div class="badges">${model.key === bestKey ? '<span class="badge best">Melhor histórico</span>' : ''}${evidenceBadge(model.evidence)}${driftBadge(model.drift)}</div></div>
           <div class="model-grid">
             <div class="mini"><span>Amostra</span><b>${integerBR(model.samples)}</b></div>
-            <div class="mini"><span>Brier</span><b class="${metricClass(model.brier, data.baselines.brier, true)}">${numberBR(model.brier)}</b></div>
-            <div class="mini"><span>Top 21</span><b class="${metricClass(model.avgTop21, data.baselines.top21)}">${numberBR(model.avgTop21, 2)}</b></div>
-            <div class="mini"><span>Log Loss</span><b>${numberBR(model.logLoss)}</b></div>
-            <div class="mini"><span>Brier recente</span><b>${numberBR(model.recentBrier)}</b></div>
-            <div class="mini"><span>Top 21 recente</span><b>${numberBR(model.recentTop21, 2)}</b></div>
+            <div class="mini"><span>Brier médio</span><b class="${metricClass(model.brier, data.baselines.brier, true)}">${numberBR(model.brier)}</b></div>
+            <div class="mini"><span>Brier IC 95%</span><b>${intervalText(model.brierCI)}</b></div>
+            <div class="mini"><span>Top 21 médio</span><b class="${metricClass(model.avgTop21, data.baselines.top21)}">${numberBR(model.avgTop21, 2)}</b></div>
+            <div class="mini"><span>Top 21 IC 95%</span><b>${intervalText(model.top21CI, 2)}</b></div>
+            <div class="mini"><span>Valor-p</span><b>${numberBR(model.permutation?.pValue, 4)}</b></div>
+            <div class="mini"><span>Erro calibração</span><b>${numberBR(model.calibrationError)}</b></div>
+            <div class="mini"><span>Sharpness</span><b>${numberBR(model.sharpness)}</b></div>
           </div>
+          <div class="reason"><b>${model.evidence?.reason || ''}</b><br>${model.drift?.reason || ''}</div>
         </div>`;
       }).join('');
     }
-
-    function renderHistory(data) {
-      el('historyBody').innerHTML = data.recent.map((row) => `
-        <tr>
-          <td><b>${row.concurso}</b></td>
-          <td>${row.data || '—'}</td>
-          <td>${row.modelName}</td>
-          <td class="${row.trainingThrough < row.concurso ? 'good' : 'bad'}">${row.trainingThrough}</td>
-          <td>${integerBR(row.trainingCount)}</td>
-          <td class="${metricClass(row.brier, data.baselines.brier, true)}">${numberBR(row.brier)}</td>
-          <td>${numberBR(row.logLoss)}</td>
-          <td>${row.top15}</td>
-          <td class="${metricClass(row.top21, data.baselines.top21)}">${row.top21}</td>
-          <td class="hash" title="${row.hash}">${row.hash.slice(0, 16)}…</td>
-        </tr>`).join('');
+    function renderRolling(data) {
+      el('rollingBody').innerHTML = data.models.flatMap((model) => model.rolling.map((window) => `<tr>
+        <td><b>${model.name}</b></td><td>${window.size}</td><td>${window.firstContest || '—'}–${window.lastContest || '—'}</td>
+        <td class="${metricClass(window.brier, data.baselines.brier, true)}">${numberBR(window.brier)}</td>
+        <td class="${metricClass(window.avgTop21, data.baselines.top21)}">${numberBR(window.avgTop21, 2)}</td>
+        <td>${numberBR(window.calibrationError)}</td></tr>`)).join('');
     }
-
+    function renderIntegrity(data) {
+      const checks = [
+        ['Registros checados', data.integrity.checkedRecords, 'neutral'],
+        ['Vazamento temporal', data.integrity.temporalViolations, data.integrity.temporalViolations ? 'bad' : 'good'],
+        ['Soma inválida', data.integrity.probabilitySumViolations, data.integrity.probabilitySumViolations ? 'bad' : 'good'],
+        ['Hash divergente', data.integrity.hashViolations, data.integrity.hashViolations ? 'bad' : 'good']
+      ];
+      el('integrityChecks').innerHTML = checks.map(([label, value, css]) => `<div class="check"><span>${label}</span><b class="${css}">${integerBR(value)}</b></div>`).join('');
+    }
+    function renderVersions(data) {
+      el('versionBody').innerHTML = data.versions.map((version) => `<tr><td><b>${version.version}</b></td><td>${integerBR(version.contests)}</td><td>${integerBR(version.records)}</td><td>${version.firstContest}–${version.lastContest}</td><td>${version.current ? '<span class="badge moderate">Atual</span>' : '<span class="badge none">Arquivo</span>'}</td></tr>`).join('');
+    }
+    function renderHistory(data) {
+      el('historyBody').innerHTML = data.recent.map((row) => `<tr>
+        <td><b>${row.concurso}</b></td><td>${row.modelName}</td><td class="${row.trainingThrough < row.concurso ? 'good' : 'bad'}">${row.trainingThrough}</td><td>${integerBR(row.trainingCount)}</td>
+        <td class="${metricClass(row.brier, data.baselines.brier, true)}">${numberBR(row.brier)}</td><td>${numberBR(row.logLoss)}</td><td>${row.top15}</td><td class="${metricClass(row.top21, data.baselines.top21)}">${row.top21}</td><td class="hash" title="${row.hash}">${row.hash.slice(0,16)}…</td></tr>`).join('');
+    }
     function render(data) {
       const best = data.bestHistoricalModel;
       el('contestMetric').textContent = integerBR(data.totalContests);
-      el('recordMetric').textContent = integerBR(data.totalRecords);
-      el('bestMetric').textContent = best?.name || '—';
-      el('brierMetric').textContent = best ? numberBR(best.brier) : '—';
-      el('brierMetric').className = `value ${best ? metricClass(best.brier, data.baselines.brier, true) : ''}`;
-      el('top21Metric').textContent = best ? numberBR(best.avgTop21, 2) : '—';
-      el('top21Metric').className = `value ${best ? metricClass(best.avgTop21, data.baselines.top21) : ''}`;
-      el('alertMetric').textContent = integerBR(data.overfitAlerts.length);
-      el('alertMetric').className = `value ${data.overfitAlerts.length ? 'bad' : 'good'}`;
-      renderModels(data);
-      renderHistory(data);
+      el('versionMetric').textContent = data.modelVersion.replace('historical-audit-', 'v');
+      el('evidenceMetric').textContent = best?.evidence?.label || '—';
+      el('evidenceMetric').className = `value ${['moderate','exploratory'].includes(best?.evidence?.level) ? 'good' : 'neutral'}`;
+      el('brierMetric').textContent = best ? intervalText(best.brierCI) : '—';
+      el('top21Metric').textContent = best ? intervalText(best.top21CI, 2) : '—';
+      el('pMetric').textContent = best ? numberBR(best.permutation?.pValue, 4) : '—';
+      el('integrityMetric').textContent = data.integrity.ok ? 'OK' : 'Falha';
+      el('integrityMetric').className = `value ${data.integrity.ok ? 'good' : 'bad'}`;
+      renderModels(data); renderRolling(data); renderIntegrity(data); renderVersions(data); renderHistory(data);
       el('exportBtn').disabled = false;
       const inserted = Number(data.sync?.inserted || 0);
-      setStatus(inserted ? `${inserted} novos registros históricos gravados no D1.` : 'Arquivo histórico atualizado. Nenhum registro novo necessário.');
+      setStatus(inserted ? `${inserted} novos registros fora da amostra gravados no D1.` : 'Auditoria robusta atualizada. Nenhum registro novo necessário.');
     }
-
     async function load() {
-      el('refreshBtn').disabled = true;
-      setStatus('Atualizando avaliações históricas no D1...');
+      el('refreshBtn').disabled = true; setStatus('Atualizando robustez histórica no D1...');
       try {
         const response = await fetch(`/api/aprendizado/historico?t=${Date.now()}`, { cache: 'no-store' });
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.message || 'Falha na API histórica.');
-        payload = data;
-        render(data);
-      } catch (error) {
-        setStatus(error.message || 'Não foi possível carregar a avaliação histórica.', true);
-      } finally {
-        el('refreshBtn').disabled = false;
-      }
+        payload = data; render(data);
+      } catch (error) { setStatus(error.message || 'Não foi possível carregar a auditoria histórica.', true); }
+      finally { el('refreshBtn').disabled = false; }
     }
-
     el('refreshBtn').addEventListener('click', load);
     el('exportBtn').addEventListener('click', () => {
       if (!payload) return;
       const safeExport = {
-        exportedAt: new Date().toISOString(),
-        purpose: payload.purpose,
-        modelVersion: payload.modelVersion,
-        baselines: payload.baselines,
-        totalRecords: payload.totalRecords,
-        totalContests: payload.totalContests,
-        models: payload.models,
-        recent: payload.recent
+        exportedAt: new Date().toISOString(), purpose: payload.purpose, modelVersion: payload.modelVersion,
+        baselines: payload.baselines, totalRecords: payload.totalRecords, totalContests: payload.totalContests,
+        totalVersions: payload.totalVersions, integrity: payload.integrity, versions: payload.versions,
+        models: payload.models, recent: payload.recent
       };
       const blob = new Blob([JSON.stringify(safeExport, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `avaliacao-historica-${new Date().toISOString().slice(0,10)}.json`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = `robustez-historica-${new Date().toISOString().slice(0,10)}.json`; anchor.click(); URL.revokeObjectURL(url);
     });
-
     load();
   </script>
 </body>
