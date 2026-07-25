@@ -5,8 +5,10 @@ on:
     paths:
       - "learning_core.js"
       - "aprendizado.html"
+      - "index.html"
       - "tests/test_learning_core.js"
       - "tests/test_learning_ui.js"
+      - "tests/test_learning_index.js"
       - ".github/workflows/testes-aprendizado.yml"
   workflow_dispatch:
 
@@ -29,3 +31,5 @@ jobs:
         run: node tests/test_learning_core.js
       - name: Testar painel e livro
         run: node tests/test_learning_ui.js
+      - name: Testar acesso inicial
+        run: node tests/test_learning_index.js
