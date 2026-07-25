@@ -597,6 +597,15 @@
                     <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.taxa11Mais }}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid #F1ECFB;">{{ sr.melhor }}</td>
                   </tr>
+                  <sc-if value="{{ sr.temDestaque }}" hint-placeholder-val="{{ false }}">
+                    <tr>
+                      <td colspan="5" style="padding:8px 8px 12px; border-bottom:1px solid #F1ECFB; background:#FFF7ED;">
+                        <div style="font-size:10px; font-weight:900; color:#C2410C; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">🎯 Jogo que bateu {{ sr.destaqueAcertos }} — estratégia {{ sr.label }}</div>
+                        <div style="font-family:monospace; font-size:12px; font-weight:700; color:#7C2D12;">{{ sr.destaqueDezenas }}</div>
+                        <div style="font-size:11px; color:#9A3412; margin-top:3px;">{{ sr.destaqueResumo }}</div>
+                      </td>
+                    </tr>
+                  </sc-if>
                 </sc-for>
               </tbody>
             </table>
@@ -3226,14 +3235,26 @@ class Component extends DCLogic {
       }
     ];
 
-    const semanaRanking = semanaEstrategias.slice(0, 8).map(row => ({
-      label: row.label,
-      jogos: Number(row.jogos || 0).toLocaleString('pt-BR'),
-      media: Number(row.media_acertos || 0).toFixed(4).replace('.', ','),
-      taxa11Mais: `${Number(row.taxa_11_mais || 0).toFixed(2)}%`,
-      melhor: `${row.melhor_acerto || 0} acertos`,
-      rowStyle: acertoRowStyle(row.melhor_acerto || 0),
-    }));
+    const semanaRanking = semanaEstrategias.slice(0, 8).map(row => {
+      const melhorAcerto = Number(row.melhor_acerto || 0);
+      const melhorDezenas = Array.isArray(row.melhor_dezenas) ? row.melhor_dezenas : [];
+      const temDestaque = melhorAcerto >= 14 && melhorDezenas.length === 15;
+      const analise = temDestaque ? analisarJogo(melhorDezenas, this.analysisContext()) : null;
+      return {
+        label: row.label,
+        jogos: Number(row.jogos || 0).toLocaleString('pt-BR'),
+        media: Number(row.media_acertos || 0).toFixed(4).replace('.', ','),
+        taxa11Mais: `${Number(row.taxa_11_mais || 0).toFixed(2)}%`,
+        melhor: `${melhorAcerto} acertos`,
+        rowStyle: acertoRowStyle(melhorAcerto),
+        temDestaque,
+        destaqueDezenas: melhorDezenas.slice().sort((a,b) => a-b).map(pad).join('-'),
+        destaqueResumo: analise
+          ? `soma ${analise.soma} · ${analise.pares} pares/${15 - analise.pares} ímpares · ${analise.quentes} quente(s) · ${analise.atrasadas} atrasada(s) · início ${pad(analise.menorDezena)}`
+          : '',
+        destaqueAcertos: `${melhorAcerto} de 15 pontos`,
+      };
+    });
 
     const semanaConcursoRows = semanaConcursos.map(c => ({
       concurso: `C${c.concurso}`,
