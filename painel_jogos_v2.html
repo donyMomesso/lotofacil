@@ -712,7 +712,7 @@
               </sc-for>
             </div>
             <button onClick="{{ copiarTodosJogos }}" style="background:#7c3aed; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:20px;">📋 Copiar todos os jogos para a Extensão</button>
-            <button onClick="{{ salvarFechamentoJogos }}" style="background:#16A34A; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:20px; margin-left:10px;">Salvar para conferir</button>
+            <button onClick="{{ salvarFechamentoJogos }}" disabled="{{ savingFechamento }}" data-style-template="background:#16A34A; color:#fff; border:none; padding:15px; border-radius:8px; font-weight:bold; margin-top:20px; margin-left:10px; cursor:{{ savingFechamentoCursor }};">{{ salvarFechamentoLabel }}</button>
           </div>
         </sc-if>
         <sc-if value="{{ hasFechamentoBloqueado }}" hint-placeholder-val="{{ false }}">
@@ -1663,6 +1663,7 @@ class Component extends DCLogic {
     keepSaved: false,
     fechamentoN: 16,
     fechamentoSelected: [],
+    savingFechamento: false,
     qtdHistorico: 10,
     seqSort: { col: 'dezenas', dir: 'asc' },
     saltoSort: { col: 'dezenas', dir: 'asc' },
@@ -1886,6 +1887,7 @@ class Component extends DCLogic {
   }
 
   async salvarFechamentoJogos() {
+    if (this.state.savingFechamento) return;
     if (!getAuthToken()) {
       this.setState({ authStatus: 'Entre para salvar jogos no banco.' });
       return;
@@ -1905,7 +1907,7 @@ class Component extends DCLogic {
       this.setState({ panelStatus: 'Todos os jogos deste fechamento ja estao em Jogos registrados.' });
       return;
     }
-    this.setState({ panelStatus: `Salvando ${novos.length} jogo(s) do fechamento para conferencia...` });
+    this.setState({ savingFechamento: true, panelStatus: `Salvando ${novos.length} jogo(s) do fechamento para conferencia...` });
     let salvos = 0;
     try {
       for (const dezenas of novos) {
@@ -1924,11 +1926,11 @@ class Component extends DCLogic {
         });
         salvos++;
       }
-      this.setState({ panelStatus: `${salvos} jogo(s) do fechamento foram salvos em Jogos registrados para conferencia.` });
       await this.loadSavedGames();
+      this.setState({ savingFechamento: false, panelStatus: `${salvos} jogo(s) do fechamento foram salvos em Jogos registrados para conferencia.` });
     } catch (err) {
-      this.setState({ panelStatus: `${salvos} jogo(s) salvo(s). Erro no restante: ${err.message || 'falha ao salvar fechamento.'}` });
       await this.loadSavedGames();
+      this.setState({ savingFechamento: false, panelStatus: `${salvos} jogo(s) salvo(s). Erro no restante: ${err.message || 'falha ao salvar fechamento.'}` });
     }
   }
 
@@ -3413,6 +3415,9 @@ class Component extends DCLogic {
       autoFechamento: () => this.autoFechamento(),
       copiarTodosJogos: () => copiarTodosJogos(),
       salvarFechamentoJogos: () => this.salvarFechamentoJogos(),
+      savingFechamento: s.savingFechamento,
+      savingFechamentoCursor: s.savingFechamento ? 'not-allowed' : 'pointer',
+      salvarFechamentoLabel: s.savingFechamento ? 'Salvando...' : 'Salvar para conferir',
       totalCombos,
       totalCombosFull: totalCombosFull.toLocaleString('pt-BR'),
       custoAproximado: `R$ ${(totalCombos * 3.5).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
