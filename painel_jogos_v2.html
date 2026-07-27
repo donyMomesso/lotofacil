@@ -946,7 +946,7 @@
         </div>
       </div>
 
-      <div style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
+      <div id="jogosRegistrados" style="background:#fff; border:1px solid #E9DFFB; border-radius:14px; padding:18px; box-shadow:0 2px 10px rgba(43,10,77,.06); overflow:auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em;">📋 Jogos registrados</div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -1786,14 +1786,18 @@ class Component extends DCLogic {
     this.setState({ panelStatus: 'Carregando jogos do banco...' });
     try {
       const data = await painelApi('/api/jogos');
-      const fechamentosData = await painelApi('/api/fechamentos');
       this.setState({
         savedGames: data.jogos.map(j => this.localGameFromApi(j)),
-        fechamentosSalvos: fechamentosData.fechamentos || [],
         indicadoresConferencia: data.indicadores_rodada || null,
         aprendizadoOrigens: data.aprendizado_origens || null,
         panelStatus: 'Jogos carregados do banco.'
       });
+      try {
+        const fechamentosData = await painelApi('/api/fechamentos');
+        this.setState({ fechamentosSalvos: fechamentosData.fechamentos || [] });
+      } catch (fechamentoErr) {
+        this.setState({ panelStatus: 'Jogos carregados. O histórico dos grupos será atualizado novamente depois.' });
+      }
     } catch (err) {
       this.setState({ panelStatus: err.message || 'Falha ao carregar jogos.' });
     }
@@ -2059,6 +2063,7 @@ class Component extends DCLogic {
       }
       await this.loadSavedGames();
       this.setState({ savingFechamento: false, panelStatus: `${salvos} jogo(s) do fechamento foram salvos em Jogos registrados para conferencia.` });
+      setTimeout(() => document.getElementById('jogosRegistrados')?.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
     } catch (err) {
       await this.loadSavedGames();
       this.setState({ savingFechamento: false, panelStatus: `${salvos} jogo(s) salvo(s). Erro no restante: ${err.message || 'falha ao salvar fechamento.'}` });

@@ -1607,7 +1607,7 @@ async function listJogos(user, env) {
     FROM jogos
     WHERE usuario_id = ?
     ORDER BY datetime(criado_em) DESC
-    LIMIT 200
+    LIMIT 1000
   `).bind(user.id).all();
 
   const jogos = result.results.map((jogo) => ({
