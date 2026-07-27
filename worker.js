@@ -1722,6 +1722,109 @@ async function createJogo(request, user, env) {
   }, 201);
 }
 
+async function createFechamento(request, user, env) {
+  const body = await readJson(request);
+  let dezenas;
+  try {
+    dezenas = normalizeDezenas(body.dezenas);
+  } catch (err) {
+    return error(err.message);
+  }
+  if (dezenas.length < 16 || dezenas.length > 20) {
+    return error("O grupo do fechamento precisa ter entre 16 e 20 dezenas.");
+  }
+  const jogos = Array.isArray(body.jogos) ? body.jogos.map(normalizeDezenas) : [];
+  if (!jogos.length || jogos.some((jogo) => jogo.length !== 15)) {
+    return error("Informe os jogos de 15 dezenas gerados para o fechamento.");
+  }
+  const concurso = Number(body.concurso || 0);
+  if (!concurso) return error("Informe o concurso alvo do fechamento.");
+  const texto = dezenasTexto(dezenas);
+  const existente = await env.DB.prepare(`
+    SELECT id FROM fechamentos
+    WHERE usuario_id = ? AND concurso = ? AND dezenas_texto = ?
+  `).bind(user.id, concurso, texto).first();
+  if (existente) return json({ ok: true, fechamento_id: existente.id, existente: true });
+  const result = await env.DB.prepare(`
+    INSERT INTO fechamentos (
+      usuario_id, concurso, tamanho_grupo, dezenas, dezenas_texto, jogos, quantidade_jogos
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    user.id, concurso, dezenas.length, JSON.stringify(dezenas), texto,
+    JSON.stringify(jogos), jogos.length
+  ).run();
+  return json({ ok: true, fechamento_id: result.meta.last_row_id, existente: false }, 201);
+}
+
+async function listFechamentos(user, env) {
+  const rows = await env.DB.prepare(`
+    SELECT id, concurso, tamanho_grupo, dezenas, dezenas_texto, quantidade_jogos, criado_em
+    FROM fechamentos WHERE usuario_id = ?
+    ORDER BY concurso DESC, id DESC LIMIT 50
+  `).bind(user.id).all();
+  const itens = [];
+  for (const row of rows.results) {
+    const conf = await env.DB.prepare(`
+      SELECT concurso, dezenas_sorteadas, dezenas_acertadas_grupo, acertos_grupo,
+             melhor_acerto_jogos, garantia_14_ativada, conferido_em
+      FROM fechamento_conferencias WHERE fechamento_id = ?
+      ORDER BY concurso DESC
+    `).bind(row.id).all();
+    itens.push({
+      ...row,
+      dezenas: JSON.parse(row.dezenas),
+      conferencias: conf.results.map((item) => ({
+        ...item,
+        garantia_14_ativada: Boolean(item.garantia_14_ativada)
+      }))
+    });
+  }
+  return json({ ok: true, fechamentos: itens });
+}
+
+async function conferirFechamentos(env, userId = null, concursoEspecifico = null) {
+  const filtroUsuario = userId ? "AND fechamentos.usuario_id = ?" : "";
+  const filtroConcurso = concursoEspecifico ? "AND resultados.concurso = ?" : "";
+  const params = [];
+  if (userId) params.push(userId);
+  if (concursoEspecifico) params.push(concursoEspecifico);
+  const rows = await env.DB.prepare(`
+    SELECT fechamentos.id, fechamentos.dezenas, fechamentos.jogos,
+           resultados.concurso, resultados.dezenas AS sorteadas, resultados.dezenas_texto
+    FROM fechamentos
+    JOIN resultados ON resultados.concurso >= fechamentos.concurso
+    LEFT JOIN fechamento_conferencias
+      ON fechamento_conferencias.fechamento_id = fechamentos.id
+     AND fechamento_conferencias.concurso = resultados.concurso
+    WHERE fechamento_conferencias.id IS NULL
+      ${filtroUsuario}
+      ${filtroConcurso}
+    ORDER BY resultados.concurso ASC
+  `).bind(...params).all();
+  let novas = 0;
+  for (const row of rows.results) {
+    const grupo = new Set(JSON.parse(row.dezenas));
+    const jogos = JSON.parse(row.jogos);
+    const sorteadas = JSON.parse(row.sorteadas);
+    const sorteadasSet = new Set(sorteadas);
+    const acertadas = sorteadas.filter((dezena) => grupo.has(dezena)).sort((a, b) => a - b);
+    const melhor = jogos.reduce((maximo, jogo) => (
+      Math.max(maximo, jogo.reduce((total, dezena) => total + (sorteadasSet.has(dezena) ? 1 : 0), 0))
+    ), 0);
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO fechamento_conferencias (
+        fechamento_id, concurso, dezenas_sorteadas, dezenas_acertadas_grupo,
+        acertos_grupo, melhor_acerto_jogos, garantia_14_ativada
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      row.id, row.concurso, row.dezenas_texto, dezenasTexto(acertadas),
+      acertadas.length, melhor, acertadas.length === 15 && melhor >= 14 ? 1 : 0
+    ).run();
+    novas += 1;
+  }
+  return novas;
+}
+
 async function updateJogo(request, user, env, id) {
   const body = await readJson(request);
   const status = String(body.status || "").trim();
@@ -2117,6 +2220,7 @@ async function cleanupExpiredGames(env, userId = null) {
 
 async function conferirDuasRodadas(user, env) {
   await seedInitialResults(env);
+  await conferirFechamentos(env, user.id);
   const latestRows = await env.DB.prepare(`
     SELECT concurso, data_sorteio, dezenas, dezenas_texto
     FROM resultados
@@ -2286,6 +2390,7 @@ async function salvarConferencia(env, jogo, resultado) {
 
 async function conferirPendencias(env, userId = null) {
   await seedInitialResults(env);
+  await conferirFechamentos(env, userId);
   const userFilter = userId ? "AND usuario_id = ?" : "";
   const pageSize = 500;
   let lastId = 0;
@@ -2378,6 +2483,7 @@ async function conferirPendencias(env, userId = null) {
 }
 
 async function conferirResultadoParaJogos(env, resultado) {
+  await conferirFechamentos(env, null, resultado.concurso);
   const jogos = await env.DB.prepare(`
     SELECT jogos.id, jogos.metodo, jogos.dezenas, jogos.dezenas_texto
     FROM jogos
@@ -2615,6 +2721,14 @@ async function handleApi(request, env, url) {
 
   if (path === "/api/jogos" && method === "POST") {
     return createJogo(request, user, env);
+  }
+
+  if (path === "/api/fechamentos" && method === "GET") {
+    return listFechamentos(user, env);
+  }
+
+  if (path === "/api/fechamentos" && method === "POST") {
+    return createFechamento(request, user, env);
   }
 
   if (path === "/api/jogos/conferir-duas-rodadas" && method === "POST") {

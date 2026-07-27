@@ -679,6 +679,32 @@
           Em vez de escolher 15 dezenas, você escolhe um grupo maior. O sistema consulta uma <b>matriz de cobertura reduzida</b> (pré-calculada e verificada por computação, não a combinação total) para esse tamanho de grupo — garantindo que, se as 15 dezenas sorteadas estiverem todas no seu grupo, pelo menos um jogo acerta <b>14 das 15</b> dezenas. Isso é bem mais barato que a combinação total (que chegaria a 15.504 jogos para um grupo de 20 dezenas), ao custo de trocar a garantia de 15 pontos por 14.
           Cada jogo final também passa pela trava de início: <b>01 ou 02 são prioritários</b>, 03/04 são fallback e nenhum jogo pode começar em 05 ou acima.
         </div>
+        <sc-if value="{{ hasFechamentoConferido }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#ECFDF5; border:1px solid #6EE7B7; border-radius:9px; padding:11px 13px; margin-bottom:14px; color:#065F46; font-size:12px; line-height:1.55;">
+            <b>Último grupo conferido:</b> {{ fechamentoConferidoResumo }}
+            <div style="font-size:11px; margin-top:3px;">{{ fechamentoConferidoDetalhe }}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasHistoricoFechamentos }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:8px; margin-bottom:12px;">
+            <sc-for list="{{ fechamentoIndicadores }}" as="fi" hint-placeholder-count="4">
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:9px 11px;">
+                <div style="font-size:9.5px; color:#64748B; text-transform:uppercase;">{{ fi.label }}</div>
+                <div style="font-size:16px; font-weight:900; color:#0F172A; margin-top:2px;">{{ fi.valor }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="overflow:auto; max-height:220px; margin-bottom:14px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+              <thead><tr style="color:#64748B; text-transform:uppercase;"><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Concurso</th><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Grupo</th><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Dentro</th><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Melhor jogo</th><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Garantia</th><th style="text-align:left;padding:6px;border-bottom:1px solid #E2E8F0;">Jogos/custo</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ fechamentoHistoricoRows }}" as="fh" hint-placeholder-count="5">
+                  <tr><td style="padding:6px;border-bottom:1px solid #F1F5F9;">{{ fh.concurso }}</td><td style="padding:6px;border-bottom:1px solid #F1F5F9;">{{ fh.grupo }}</td><td style="padding:6px;border-bottom:1px solid #F1F5F9;font-weight:800;">{{ fh.dentro }}</td><td style="padding:6px;border-bottom:1px solid #F1F5F9;font-weight:800;">{{ fh.melhor }}</td><td style="padding:6px;border-bottom:1px solid #F1F5F9;">{{ fh.garantia }}</td><td style="padding:6px;border-bottom:1px solid #F1F5F9;">{{ fh.custo }}</td></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
           <span style="font-size:11px; color:#8B76B0;">Tamanho do grupo:</span>
           <sc-for list="{{ fechamentoOptions }}" as="fo" hint-placeholder-count="5">
@@ -686,6 +712,12 @@
           </sc-for>
           <button onClick="{{ autoFechamento }}" style="background:linear-gradient(135deg,#7C3AED,#EC4899); border:none; color:#fff; border-radius:8px; padding:7px 14px; cursor:pointer; font-size:12px; font-weight:700; margin-left:auto;">✨ Preencher automaticamente</button>
         </div>
+        <div style="font-size:10.5px; color:#64748B; margin-top:-7px; margin-bottom:14px;">
+          Critérios automáticos: compara 600 grupos e equilibra linhas, colunas, pares/ímpares, soma, miolo e repetição do último concurso. Também considera 01/02, frequentes e atrasadas atuais, sequências longas e o histórico dos grupos já conferidos.
+        </div>
+        <sc-if value="{{ hasFechamentoAutoResumo }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:11px; color:#0F766E; background:#F0FDFA; border:1px solid #99F6E4; border-radius:8px; padding:9px 11px; margin-bottom:14px;">{{ fechamentoAutoResumo }}</div>
+        </sc-if>
         <div style="display:grid; grid-template-columns:1fr auto; gap:20px; align-items:start;">
           <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px; max-width:250px;">
             <sc-for list="{{ fechamentoGrid }}" as="c" hint-placeholder-count="25">
@@ -711,6 +743,7 @@
         <sc-if value="{{ hasFechamentoJogos }}" hint-placeholder-val="{{ false }}">
           <div style="margin-top:16px; border-top:1px solid #F1ECFB; padding-top:14px;">
             <div style="font-size:11px; font-weight:700; color:#5B21B6; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">{{ totalCombos }} jogo(s) gerado(s) — matriz de cobertura reduzida, garantia de 14 pontos (pode ser dividido entre apostadores)</div>
+            <div style="font-size:11px; color:#0F766E; font-weight:800; margin-bottom:6px;">{{ fechamentoComposicaoResumo }}</div>
             <div style="font-size:11px; color:#6B5B8A; margin-bottom:10px;">{{ fechamentoSomaResumo }}</div>
             <div id="fechamentoJogosContainer" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; max-height:220px; overflow:auto;">
               <sc-for list="{{ fechamentoJogos }}" as="fj" hint-placeholder-count="16">
@@ -1672,6 +1705,8 @@ class Component extends DCLogic {
     keepSaved: false,
     fechamentoN: 16,
     fechamentoSelected: [],
+    fechamentosSalvos: [],
+    fechamentoAutoResumo: '',
     savingFechamento: false,
     qtdHistorico: 10,
     seqSort: { col: 'dezenas', dir: 'asc' },
@@ -1751,8 +1786,10 @@ class Component extends DCLogic {
     this.setState({ panelStatus: 'Carregando jogos do banco...' });
     try {
       const data = await painelApi('/api/jogos');
+      const fechamentosData = await painelApi('/api/fechamentos');
       this.setState({
         savedGames: data.jogos.map(j => this.localGameFromApi(j)),
+        fechamentosSalvos: fechamentosData.fechamentos || [],
         indicadoresConferencia: data.indicadores_rodada || null,
         aprendizadoOrigens: data.aprendizado_origens || null,
         panelStatus: 'Jogos carregados do banco.'
@@ -1851,39 +1888,120 @@ class Component extends DCLogic {
   }
 
   setFechamentoN(n) {
-    this.setState(s => ({ fechamentoN: n, fechamentoSelected: s.fechamentoSelected.slice(0, n) }));
+    this.setState(s => ({ fechamentoN: n, fechamentoSelected: s.fechamentoSelected.slice(0, n), fechamentoAutoResumo: '' }));
   }
 
   toggleFechamentoNum(n) {
     this.setState(s => {
       const has = s.fechamentoSelected.includes(n);
-      if (has) return { fechamentoSelected: s.fechamentoSelected.filter(x => x !== n) };
+      if (has) return { fechamentoSelected: s.fechamentoSelected.filter(x => x !== n), fechamentoAutoResumo: '' };
       if (s.fechamentoSelected.length >= s.fechamentoN) return {};
-      return { fechamentoSelected: [...s.fechamentoSelected, n] };
+      return { fechamentoSelected: [...s.fechamentoSelected, n], fechamentoAutoResumo: '' };
     });
   }
 
   autoFechamento() {
     const targetN = this.state.fechamentoN;
-    // Trava: distribui a escolha pelas 5 faixas do volante (1-5, 6-10, ... 21-25) em vez de só puxar
-    // dezenas "quentes" — evita pools enviesados que geram jogos sem dezenas baixas, algo raríssimo em sorteios reais.
-    const base = Math.floor(targetN / 5);
-    let resto = targetN - base * 5;
-    const quotas = ROWS.map(() => base);
-    // distribui o resto entre faixas aleatórias
-    const ordem = shuffle([0,1,2,3,4]);
-    for (let i = 0; i < resto; i++) quotas[ordem[i]]++;
-    let escolhidas = [];
-    ROWS.forEach((faixa, idx) => {
-      const ranked = faixa
-        .map(n => ({ n, score: (n <= 2 ? 100 : 0) + (HOT.includes(n)?2:0) + (LATE.includes(n)?1.5:0) + (INNER_CORE.includes(n)?1:0) + Math.random() }))
-        .sort((a,b) => b.score - a.score)
-        .slice(0, quotas[idx])
-        .map(x => x.n);
-      escolhidas.push(...ranked);
+    const stats = this.state.numberStats || [];
+    const quentesAtuais = stats.length
+      ? stats.slice().sort((a,b) => Number(b.frequencia_pct || 0) - Number(a.frequencia_pct || 0)).slice(0,5).map(x => Number(x.dezena))
+      : HOT;
+    const atrasadasAtuais = stats.length
+      ? stats.slice().sort((a,b) => Number(b.atraso || 0) - Number(a.atraso || 0)).slice(0,5).map(x => Number(x.dezena))
+      : LATE;
+    const ultimoSorteio = this.state.latestResult?.dezenas || SORTEADAS_3726;
+    const gruposFortes = (this.state.fechamentosSalvos || [])
+      .filter(item => Number(item.conferencias?.[0]?.acertos_grupo || 0) >= 13)
+      .slice(0, 12)
+      .map(item => new Set(item.dezenas || []));
+    const contarFaixas = (grupo, faixas) => faixas.map(faixa => faixa.filter(n => grupo.includes(n)).length);
+    const desvioDistribuicao = contagens => {
+      const alvo = targetN / 5;
+      return contagens.reduce((total, qtd) => total + Math.abs(qtd - alvo), 0);
+    };
+    const maxSequencia = grupo => {
+      let maior = 1, atual = 1;
+      for (let i = 1; i < grupo.length; i++) {
+        atual = grupo[i] === grupo[i - 1] + 1 ? atual + 1 : 1;
+        maior = Math.max(maior, atual);
+      }
+      return maior;
+    };
+    const medirGrupo = grupo => {
+      const pares = grupo.filter(n => n % 2 === 0).length;
+      const soma = grupo.reduce((a,b) => a+b, 0);
+      const miolo = grupo.filter(n => INNER_CORE.includes(n)).length;
+      const repetidas = grupo.filter(n => ultimoSorteio.includes(n)).length;
+      const linhas = contarFaixas(grupo, ROWS);
+      const colunas = contarFaixas(grupo, COLS);
+      const quentes = grupo.filter(n => quentesAtuais.includes(n)).length;
+      const atrasadas = grupo.filter(n => atrasadasAtuais.includes(n)).length;
+      const historico = gruposFortes.length
+        ? gruposFortes.reduce((total, antigo) => total + grupo.filter(n => antigo.has(n)).length, 0) / gruposFortes.length
+        : 0;
+      const alvoPares = targetN * 12 / 25;
+      const alvoSoma = targetN * 13;
+      const alvoMiolo = targetN * 9 / 25;
+      const alvoRepetidas = targetN * 15 / 25;
+      const sequencia = maxSequencia(grupo);
+      const score =
+        120
+        - desvioDistribuicao(linhas) * 7
+        - desvioDistribuicao(colunas) * 5
+        - Math.abs(pares - alvoPares) * 4
+        - Math.abs(soma - alvoSoma) * 0.22
+        - Math.abs(miolo - alvoMiolo) * 3
+        - Math.abs(repetidas - alvoRepetidas) * 3
+        - Math.max(0, sequencia - 5) * 5
+        + quentes * 1.4
+        + atrasadas * 0.9
+        + historico * 0.15
+        + (grupo.includes(1) ? 4 : 0)
+        + (grupo.includes(2) ? 4 : 0);
+      return { score, pares, soma, miolo, repetidas, linhas, colunas, quentes, atrasadas, sequencia };
+    };
+    const criarCandidato = () => {
+      const base = Math.floor(targetN / 5);
+      const quotas = ROWS.map(() => base);
+      const ordem = shuffle([0,1,2,3,4]);
+      for (let i = 0; i < targetN - base * 5; i++) quotas[ordem[i]]++;
+      const grupo = [];
+      ROWS.forEach((faixa, idx) => {
+        const ranked = faixa
+          .map(n => ({
+            n,
+            score: (n <= 2 ? 8 : 0)
+              + (quentesAtuais.includes(n) ? 2 : 0)
+              + (atrasadasAtuais.includes(n) ? 1.5 : 0)
+              + (INNER_CORE.includes(n) ? 1 : 0)
+              + Math.random() * 5
+          }))
+          .sort((a,b) => b.score - a.score)
+          .slice(0, quotas[idx])
+          .map(item => item.n);
+        grupo.push(...ranked);
+      });
+      return grupo.sort((a,b) => a-b);
+    };
+    const candidatos = [];
+    for (let tentativa = 0; tentativa < 600; tentativa++) {
+      const grupo = criarCandidato();
+      const medidas = medirGrupo(grupo);
+      candidatos.push({ grupo, medidas });
+    }
+    candidatos.sort((a,b) => b.medidas.score - a.medidas.score);
+    const matriz = MATRIZES_COBERTURA[targetN]?.matriz || [];
+    const limiteFinalistas = targetN <= 18 ? 8 : targetN === 19 ? 4 : 2;
+    const finalistas = candidatos.slice(0, limiteFinalistas).map(item => {
+      const jogosAjustados = ajustarCoberturaComTravaInicio(matriz, item.grupo).jogos || [];
+      const reparos = Math.max(0, jogosAjustados.length - matriz.length);
+      return { ...item, reparos, totalJogos: jogosAjustados.length };
     });
-    escolhidas.sort((a,b) => a-b);
-    this.setState({ fechamentoSelected: escolhidas });
+    finalistas.sort((a,b) => a.reparos - b.reparos || b.medidas.score - a.medidas.score);
+    const melhor = finalistas[0] || candidatos[0];
+    const m = melhor.medidas;
+    const resumo = `Grupo otimizado entre 600 candidatos e ${finalistas.length} finalistas conferidos na matriz · ${melhor.reparos || 0} reparo(s) · ${melhor.totalJogos || matriz.length} jogos finais · soma ${m.soma} · ${m.pares} pares/${targetN-m.pares} ímpares · miolo ${m.miolo} · repetidas ${m.repetidas} · quentes ${m.quentes} · atrasadas ${m.atrasadas} · linhas ${m.linhas.join('/')} · colunas ${m.colunas.join('/')}.`;
+    this.setState({ fechamentoSelected: melhor.grupo, fechamentoAutoResumo: resumo });
   }
 
   jogosFechamentoAtuais() {
@@ -1912,13 +2030,17 @@ class Component extends DCLogic {
       && this.isJogoAtivoDoDia(g, concursoAlvo)
       && mesmaCombinacao(g.dezenas, dezenas)
     )));
-    if (!novos.length) {
-      this.setState({ panelStatus: 'Todos os jogos deste fechamento ja estao em Jogos registrados.' });
-      return;
-    }
     this.setState({ savingFechamento: true, panelStatus: `Salvando ${novos.length} jogo(s) do fechamento para conferencia...` });
     let salvos = 0;
     try {
+      await painelApi('/api/fechamentos', {
+        method:'POST',
+        body: JSON.stringify({
+          concurso: concursoAlvo,
+          dezenas: [...this.state.fechamentoSelected].sort((a,b) => a-b),
+          jogos
+        })
+      });
       for (const dezenas of novos) {
         await painelApi('/api/jogos', {
           method:'POST',
@@ -2645,6 +2767,46 @@ class Component extends DCLogic {
     const fechamentoSomaResumo = fechamentoSomas.length
       ? `Soma dos jogos: varia de ${Math.min(...fechamentoSomas)} a ${Math.max(...fechamentoSomas)} · ${fechamentoJogos.filter(j => j.somaFaixaComum).length}/${fechamentoJogos.length} dentro da faixa comum (180-220).`
       : '';
+    const jogosBaseFechamento = matrizCobertura?.matriz?.length || 0;
+    const jogosReparoFechamento = Math.max(0, fechamentoJogos.length - jogosBaseFechamento);
+    const fechamentoComposicaoResumo = fechamentoJogos.length
+      ? `Matriz-base: ${jogosBaseFechamento} jogo(s) · reparos após trava 01–04: ${jogosReparoFechamento} · total final: ${fechamentoJogos.length}.`
+      : '';
+    const ultimoFechamentoSalvo = (s.fechamentosSalvos || [])[0] || null;
+    const ultimaConferenciaGrupo = ultimoFechamentoSalvo?.conferencias?.[0] || null;
+    const fechamentoConferidoResumo = ultimaConferenciaGrupo
+      ? `${ultimoFechamentoSalvo.tamanho_grupo} dezenas · concurso ${ultimaConferenciaGrupo.concurso} · ${ultimaConferenciaGrupo.acertos_grupo}/15 sorteadas dentro do grupo · melhor jogo ${ultimaConferenciaGrupo.melhor_acerto_jogos} pontos.`
+      : '';
+    const fechamentoConferidoDetalhe = ultimaConferenciaGrupo
+      ? (ultimaConferenciaGrupo.garantia_14_ativada
+          ? 'Garantia ativada e confirmada: as 15 estavam no grupo e pelo menos um bilhete fez 14+.'
+          : `Garantia não ativada: faltaram ${15 - Number(ultimaConferenciaGrupo.acertos_grupo || 0)} dezena(s) sorteada(s) dentro do grupo.`)
+      : '';
+    const conferenciasGrupos = (s.fechamentosSalvos || []).flatMap(fechamento =>
+      (fechamento.conferencias || []).map(conf => ({ fechamento, conf }))
+    );
+    const fechamentoHistoricoRows = conferenciasGrupos.slice(0, 30).map(({ fechamento, conf }) => ({
+      concurso: conf.concurso,
+      grupo: `${fechamento.tamanho_grupo} dezenas`,
+      dentro: `${conf.acertos_grupo}/15`,
+      melhor: `${conf.melhor_acerto_jogos} pontos`,
+      garantia: conf.garantia_14_ativada ? 'Ativada' : 'Não ativada',
+      custo: `${fechamento.quantidade_jogos} · ${brMoney(Number(fechamento.quantidade_jogos || 0) * 3.5)}`
+    }));
+    const totalConferenciasGrupo = conferenciasGrupos.length;
+    const mediaDentroGrupo = totalConferenciasGrupo
+      ? conferenciasGrupos.reduce((soma, item) => soma + Number(item.conf.acertos_grupo || 0), 0) / totalConferenciasGrupo
+      : 0;
+    const mediaMelhorJogoGrupo = totalConferenciasGrupo
+      ? conferenciasGrupos.reduce((soma, item) => soma + Number(item.conf.melhor_acerto_jogos || 0), 0) / totalConferenciasGrupo
+      : 0;
+    const garantiasAtivadas = conferenciasGrupos.filter(item => item.conf.garantia_14_ativada).length;
+    const fechamentoIndicadores = [
+      { label:'Grupos conferidos', valor:String(totalConferenciasGrupo) },
+      { label:'Média dentro do grupo', valor:mediaDentroGrupo.toFixed(2).replace('.', ',') },
+      { label:'Média do melhor jogo', valor:mediaMelhorJogoGrupo.toFixed(2).replace('.', ',') },
+      { label:'Garantia ativada', valor:`${garantiasAtivadas}/${totalConferenciasGrupo}` },
+    ];
 
     const systemColors = [
       { bg:'#DBEAFE', color:'#1D4ED8' },
@@ -3445,8 +3607,17 @@ class Component extends DCLogic {
       fechamentoJogos,
       hasFechamentoJogos: fechamentoJogos.length > 0,
       fechamentoSomaResumo,
+      fechamentoComposicaoResumo,
       hasFechamentoBloqueado: Boolean(fechamentoAviso),
       fechamentoAviso,
+      hasFechamentoAutoResumo: Boolean(s.fechamentoAutoResumo),
+      fechamentoAutoResumo: s.fechamentoAutoResumo,
+      hasFechamentoConferido: Boolean(ultimaConferenciaGrupo),
+      fechamentoConferidoResumo,
+      fechamentoConferidoDetalhe,
+      hasHistoricoFechamentos: fechamentoHistoricoRows.length > 0,
+      fechamentoHistoricoRows,
+      fechamentoIndicadores,
       fechamentoPronto: fSelCount === fN,
       sorteadasView: sorteadasConferidor.map(pad),
       selCount, selSoma, selParImpar,
