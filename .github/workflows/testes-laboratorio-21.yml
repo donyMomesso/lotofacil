@@ -1,0 +1,31 @@
+name: Testes do Laboratório 21
+
+on:
+  pull_request:
+    paths:
+      - "lab21_core.js"
+      - "laboratorio_21.html"
+      - "tests/test_lab21_core.js"
+      - "tests/test_lab21_ui.js"
+      - ".github/workflows/testes-laboratorio-21.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validar sintaxe do motor
+        run: node --check lab21_core.js
+      - name: Executar testes combinatórios
+        run: node tests/test_lab21_core.js
+      - name: Testar interface e cópia
+        run: node tests/test_lab21_ui.js
