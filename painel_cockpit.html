@@ -40,6 +40,8 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .badge{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900}.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#ffedd5;color:#9a3412}.badge.bad{background:#ffe4e6;color:#be123c}.badge.neu{background:#ede9fe;color:#5b21b6}
 .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}.bar-label{width:28px;font-weight:800;color:var(--muted)}.bar-track{flex:1;height:10px;background:#f1ecfb;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:999px}
 .notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
+.honest{margin-top:12px;padding:14px;border-radius:14px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.55}
+.honest table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}.honest th,.honest td{padding:6px 8px;border-bottom:1px solid #fde68a;text-align:left}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
 .game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800;align-items:center}
@@ -58,7 +60,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div>
         <div class="eyebrow">Cérebro Python · Worker · D1</div>
         <h1>Cockpit Lotofácil Lab</h1>
-        <p>Jogos do sistema, aprendizado, laboratório, frequência e seus jogos salvos — numa tela. Todo o histórico de governança permanece no D1.</p>
+        <p>Carga rápida no essencial. Lab completo e aprendizado sob demanda. Números do sistema são estudo — não previsão de 15 pontos.</p>
         <div class="user-chip" id="userChip" style="margin-top:10px">Não logado</div>
       </div>
       <div class="nav">
@@ -68,7 +70,8 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       </div>
     </div>
     <div class="actions" style="margin-top:12px">
-      <button class="btn primary" id="btnRefresh">Atualizar tudo</button>
+      <button class="btn primary" id="btnRefresh">Atualizar rápido</button>
+      <button class="btn" id="btnFull">Lab completo (lento)</button>
       <button class="btn" id="btnCiclo">Rodar ciclo</button>
       <button class="btn" id="btnAprend">Sync aprendizado</button>
     </div>
@@ -86,10 +89,25 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
 
   <section id="panel-hoje" class="panel active">
     <div class="grid" id="metricsHoje"></div>
+    <div class="honest">
+      <b>Honestidade (não é previsão de prêmio)</b>
+      <div style="margin-top:6px">Um jogo de 15 dezenas tem probabilidade fixa por faixa de acertos. Método (M1–M9, frequência, atraso) <b>não garante</b> 11+ nem 15. Os jogos abaixo são perfis de estudo para o próximo concurso.</div>
+      <table>
+        <thead><tr><th>Acertos</th><th>Ordem de grandeza (1 jogo)</th><th>Leitura</th></tr></thead>
+        <tbody>
+          <tr><td>11+</td><td>baixa, mas possível</td><td>sobe com <b>volume</b> de jogos, e o custo também</td></tr>
+          <tr><td>13–14</td><td>muito rara</td><td>não é meta de método estável</td></tr>
+          <tr><td>15</td><td>extremamente rara</td><td>não use o lab como se fosse “achar o 15”</td></tr>
+        </tbody>
+      </table>
+    </div>
     <div class="layout">
       <div class="card">
         <h2>Jogos do sistema (próximo concurso)</h2>
-        <p class="muted">Checkpoint do Cérebro quando disponível. Clique em <b>Salvar</b> (precisa estar logado na aba Meus jogos).</p>
+        <p class="muted">Leitura do D1 (modo rápido). Gere com o ciclo se a lista estiver vazia.</p>
+        <div class="actions" style="margin-top:0;margin-bottom:8px">
+          <button class="btn soft" type="button" id="btnSaveAll">Salvar todos M1–M9</button>
+        </div>
         <div id="jogosSistema"></div>
       </div>
       <div class="card">
@@ -105,7 +123,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
     <div class="layout">
       <div class="card" id="authCard">
         <h2>Acesso</h2>
-        <p class="muted">Mesma conta da área do usuário. Token compartilhado com <code>usuario.html</code>.</p>
+        <p class="muted">Token compartilhado com <code>usuario.html</code>.</p>
         <div class="form-row">
           <div><label class="field" for="nome">Nome (cadastro)</label><input id="nome" autocomplete="name"></div>
           <div><label class="field" for="email">Email</label><input id="email" type="email" autocomplete="email"></div>
@@ -117,7 +135,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
         </div>
         <div id="authStatus" class="muted" style="margin-top:10px"></div>
       </div>
-      <div class="card" id="userPanelCard" style="display:none">
+      <div class="card" id="userSessionCard" style="display:none">
         <h2>Sessão</h2>
         <div id="userLabel" class="muted"></div>
         <div class="actions">
@@ -152,7 +170,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
     <div class="layout">
       <div class="card">
         <h2>Champion × Challenger</h2>
-        <p class="muted">Promoção só com melhora pareada, IC95%, BH e sem vazamento temporal.</p>
+        <p class="muted">Carrega sob demanda (pode demorar na 1ª vez por sync histórico).</p>
         <div id="govBox"></div>
         <div class="actions"><a class="btn soft" href="aprendizado.html" style="color:#5b21b6;text-decoration:none">Auditoria completa →</a></div>
       </div>
@@ -168,17 +186,18 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
   </section>
 
   <section id="panel-lab" class="panel">
+    <p class="muted">Lab completo usa <code>/api/sistema/status</code> (mais lento: regenera jogos + agrega laboratório). Clique em <b>Lab completo</b> no topo.</p>
     <div class="grid" id="metricsLab"></div>
     <div class="layout">
       <div class="card"><h2>Laboratório semanal</h2><div id="labSemana"></div></div>
-      <div class="card"><h2>Estratégias (acumulado recente)</h2><div id="labEstrat"></div></div>
+      <div class="card"><h2>Estratégias</h2><div id="labEstrat"></div></div>
     </div>
   </section>
 
   <section id="panel-freq" class="panel">
     <div class="card">
-      <h2>Frequência das dezenas</h2>
-      <p class="muted">Histórico no D1 — não prediz o próximo sorteio.</p>
+      <h2>Frequência (últimos ~120 no modo rápido)</h2>
+      <p class="muted">Descreve o passado — não escolhe o próximo sorteio.</p>
       <div id="freqBars"></div>
     </div>
     <div class="card">
@@ -187,14 +206,14 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
     </div>
   </section>
 
-  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade permanece. Aprendizado usa só concursos encerrados (<code>treino_ate < concurso</code>).</div>
+  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade permanece. Aprendizado: <code>treino_ate < concurso</code>.</div>
 </main>
 <script>
 const TOKEN_KEY = 'lotofacil_mobile_token';
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const int = (n) => Number(n||0).toLocaleString('pt-BR');
-let state = { sistema: null, aprend: null };
+let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false };
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
 
@@ -218,6 +237,8 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     $('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'aprend' && !state.aprendLoaded) loadAprend();
+    if (btn.dataset.tab === 'lab' && !state.fullLoaded) loadFull();
   });
 });
 
@@ -301,25 +322,48 @@ async function saveSystemGame(metodo, dezenas) {
   if (!token) {
     setStatus('Faça login na aba Meus jogos para salvar.', true);
     document.querySelector('.tab[data-tab="meus"]').click();
-    return;
+    return false;
   }
   const concurso = state.sistema?.proximo_concurso || null;
-  try {
-    await api('/api/jogos', {
-      method: 'POST',
-      body: JSON.stringify({
-        concurso,
-        metodo: 'Sistema ' + metodo,
-        dezenas,
-        manter_salvo: false,
-        descartar_apos_rodadas: 2
-      })
-    });
-    setStatus('Salvo: ' + metodo);
-    await loadMyGames();
-  } catch (e) {
-    setStatus(e.message, true);
+  await api('/api/jogos', {
+    method: 'POST',
+    body: JSON.stringify({
+      concurso,
+      metodo: 'Sistema ' + metodo,
+      dezenas,
+      manter_salvo: false,
+      descartar_apos_rodadas: 2
+    })
+  });
+  return true;
+}
+
+async function saveAllSystemGames() {
+  const jogos = state.sistema?.jogos_gerados || [];
+  if (!jogos.length) {
+    setStatus('Não há jogos do sistema para salvar.', true);
+    return;
   }
+  if (!token) {
+    setStatus('Faça login na aba Meus jogos.', true);
+    document.querySelector('.tab[data-tab="meus"]').click();
+    return;
+  }
+  $('btnSaveAll').disabled = true;
+  let ok = 0, fail = 0;
+  setStatus('Salvando ' + jogos.length + ' jogos…');
+  for (const j of jogos) {
+    try {
+      await saveSystemGame(j.metodo, j.dezenas);
+      ok += 1;
+    } catch (e) {
+      fail += 1;
+      console.warn(j.metodo, e);
+    }
+  }
+  $('btnSaveAll').disabled = false;
+  setStatus('Salvos: ' + ok + (fail ? ' · falhas: ' + fail : ''));
+  await loadMyGames();
 }
 
 function renderHoje(s) {
@@ -330,7 +374,7 @@ function renderHoje(s) {
     ['Próximo', s.proximo_concurso ?? '—', 'alvo do sistema'],
     ['Histórico D1', int(s.total_concursos), 'concursos'],
     ['Jogos gerados', int((s.jogos_gerados||[]).length), 'métodos M1–M9'],
-    ['Lab status', s.laboratorio?.status || '—', s.laboratorio ? `c. ${s.laboratorio.concurso}` : ''],
+    ['Modo', s.mode === 'rapido' ? 'rápido' : 'completo', s.mode === 'rapido' ? 'só leitura D1' : 'lab+regen'],
     ['Ciclo', ciclo?.status || '—', ciclo?.iniciado_em ? String(ciclo.iniciado_em).slice(0,16) : '']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
 
@@ -343,7 +387,7 @@ function renderHoje(s) {
         const payload = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
         return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span>soma ${j.soma ?? '—'} · P${j.pares ?? '—'}/I${j.impares ?? '—'} <button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px;margin-left:6px">Salvar</button></span></div>${balls(dez)}</div>`;
       }).join('')
-    : '<p class="muted">Nenhum jogo em jogos_sistema. Rode o ciclo ou exporte o checkpoint do Cérebro.</p>';
+    : '<p class="muted">Lista vazia. Rode o <b>ciclo</b> (gera jogos) ou exporte o checkpoint do Cérebro.</p>';
 
   if (u) {
     $('ultimoResultado').innerHTML = `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`;
@@ -357,7 +401,7 @@ function renderHoje(s) {
 
 function renderAprend(a) {
   if (!a || !a.ok) {
-    $('metricsAprend').innerHTML = '<div class="metric"><div class="label">Aprendizado</div><div class="value">—</div><div class="detail">API indisponível</div></div>';
+    $('metricsAprend').innerHTML = '<div class="metric"><div class="label">Aprendizado</div><div class="value">—</div><div class="detail">Ainda não carregado</div></div>';
     return;
   }
   const g = a.governance;
@@ -403,6 +447,12 @@ function renderLab(s) {
   const ac = s.laboratorio_acumulado;
   const sem = s.laboratorio_semana_atual;
   const res = ac?.resumo;
+  if (!ac && s.mode === 'rapido') {
+    $('metricsLab').innerHTML = '<div class="metric"><div class="label">Lab</div><div class="value">—</div><div class="detail">Use “Lab completo”</div></div>';
+    $('labSemana').innerHTML = '<p class="muted">Ainda não carregado (evita atraso na abertura).</p>';
+    $('labEstrat').innerHTML = '';
+    return;
+  }
   $('metricsLab').innerHTML = [
     ['Jogos (acum.)', int(res?.quantidade), 'recentes conferidos'],
     ['Média acertos', res ? fmt(res.media_acertos,3) : '—', ''],
@@ -442,44 +492,74 @@ function renderFreq(s) {
     <span style="width:48px;text-align:right;color:var(--muted);font-size:10px">atr ${f.atraso}</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
 
   const ini = s.inicio_dezena || [];
+  if (!ini.length) {
+    $('inicioBars').innerHTML = '<p class="muted">Disponível no lab completo (modo rápido não calcula início global).</p>';
+    return;
+  }
   const maxI = Math.max(...ini.map(i => i.quantidade||0), 1);
   $('inicioBars').innerHTML = ini.map(i => `
     <div class="bar-row"><span class="bar-label">${i.inicio_texto||i.inicio}</span>
     <div class="bar-track"><div class="bar-fill" style="width:${(i.quantidade/maxI)*100}%;background:linear-gradient(90deg,#0f766e,#14b8a6)"></div></div>
-    <span style="width:70px;text-align:right;font-size:11px;font-weight:700">${i.quantidade} (${fmt(i.percentual,2)}%)</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
+    <span style="width:70px;text-align:right;font-size:11px;font-weight:700">${i.quantidade} (${fmt(i.percentual,2)}%)</span></div>`).join('');
 }
 
-async function loadSistema() {
-  const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
+async function loadRapido() {
+  const t0 = performance.now();
+  const r = await fetch('/api/sistema/rapido?t=' + Date.now(), { cache: 'no-store' });
   const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data.message || 'Falha /api/sistema/status');
+  if (!r.ok || !data.ok) throw new Error(data.message || 'Falha /api/sistema/rapido');
   state.sistema = data;
   renderHoje(data);
   renderLab(data);
   renderFreq(data);
+  return Math.round(performance.now() - t0);
+}
+
+async function loadFull() {
+  setStatus('Carregando lab completo (pode levar vários segundos)…');
+  $('btnFull').disabled = true;
+  try {
+    const t0 = performance.now();
+    const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha /api/sistema/status');
+    data.mode = 'completo';
+    state.sistema = data;
+    state.fullLoaded = true;
+    renderHoje(data);
+    renderLab(data);
+    renderFreq(data);
+    setStatus('Lab completo · ' + Math.round(performance.now() - t0) + ' ms');
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  } finally {
+    $('btnFull').disabled = false;
+  }
 }
 
 async function loadAprend() {
+  setStatus('Carregando aprendizado (1ª vez pode demorar)…');
   try {
     const r = await fetch('/api/aprendizado/historico?t=' + Date.now(), { cache: 'no-store' });
     const data = await r.json();
     if (!r.ok || !data.ok) throw new Error(data.message || 'Falha aprendizado');
     state.aprend = data;
+    state.aprendLoaded = true;
     renderAprend(data);
+    setStatus('Aprendizado ok');
   } catch (e) {
     renderAprend(null);
-    console.warn(e);
+    setStatus(e.message || String(e), true);
   }
 }
 
-async function refreshAll() {
-  setStatus('Atualizando cockpit…');
+async function refreshRapido() {
+  setStatus('Atualizando (rápido)…');
   $('btnRefresh').disabled = true;
   try {
-    await loadSistema();
-    await loadAprend();
+    const ms = await loadRapido();
     if (token) await loadMyGames();
-    setStatus('Cockpit atualizado · ' + new Date().toLocaleTimeString('pt-BR'));
+    setStatus('Rápido · ' + ms + ' ms · ' + new Date().toLocaleTimeString('pt-BR'));
   } catch (e) {
     setStatus(e.message || String(e), true);
   } finally {
@@ -487,16 +567,20 @@ async function refreshAll() {
   }
 }
 
-$('jogosSistema').addEventListener('click', (ev) => {
+$('jogosSistema').addEventListener('click', async (ev) => {
   const btn = ev.target.closest('[data-save]');
   if (!btn) return;
   try {
     const { metodo, dezenas } = JSON.parse(decodeURIComponent(btn.dataset.save));
-    saveSystemGame(metodo, dezenas);
+    await saveSystemGame(metodo, dezenas);
+    setStatus('Salvo: ' + metodo);
+    await loadMyGames();
   } catch (e) {
     setStatus(e.message, true);
   }
 });
+
+$('btnSaveAll').addEventListener('click', () => saveAllSystemGames());
 
 $('loginBtn').addEventListener('click', async () => {
   setAuthStatus('Entrando…');
@@ -585,27 +669,25 @@ $('gamesList').addEventListener('click', async (ev) => {
   }
 });
 
-$('btnRefresh').addEventListener('click', refreshAll);
+$('btnRefresh').addEventListener('click', refreshRapido);
+$('btnFull').addEventListener('click', loadFull);
 $('btnCiclo').addEventListener('click', async () => {
   $('btnCiclo').disabled = true;
-  setStatus('Rodando ciclo…');
+  setStatus('Rodando ciclo (lento: gera jogos + confere)…');
   try {
     const data = await api('/api/ciclo/rodar', { method: 'POST', body: '{}' });
     setStatus('Ciclo ok · gerados ' + (data.jogos_gerados ?? '—'));
-    await refreshAll();
+    state.fullLoaded = false;
+    await refreshRapido();
   } catch (e) {
     setStatus(e.message || String(e), true);
   } finally {
     $('btnCiclo').disabled = false;
   }
 });
-$('btnAprend').addEventListener('click', async () => {
-  setStatus('Sincronizando aprendizado…');
-  await loadAprend();
-  setStatus('Aprendizado sincronizado');
-});
+$('btnAprend').addEventListener('click', () => loadAprend());
 
-bootstrapAuth().then(refreshAll);
+bootstrapAuth().then(refreshRapido);
 </script>
 </body>
 </html>
