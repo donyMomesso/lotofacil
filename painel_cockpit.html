@@ -19,6 +19,8 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .nav a,.btn{text-decoration:none;border-radius:10px;padding:9px 12px;font-weight:800;font-size:12px;border:1px solid rgba(255,255,255,.35);color:#fff;background:rgba(255,255,255,.1)}
 .btn.primary{background:linear-gradient(135deg,#fff,#fde68a);color:#4c1d95;border:0}
 .btn.soft{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}
+.btn.ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.btn.danger{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .status{margin:12px 0 4px;font-size:12px;font-weight:800;color:var(--p);min-height:18px}
 .status.err{color:var(--bad)}
@@ -40,8 +42,13 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
-.game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800}
+.game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800;align-items:center}
 .spark{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px}.spark span{flex:1;background:linear-gradient(180deg,#c4b5fd,#7c3aed);border-radius:3px 3px 0 0;min-width:4px}
+label.field{display:block;font-size:11px;font-weight:800;color:var(--muted);margin:0 0 4px}
+input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:14px Inter,sans-serif;color:var(--ink);background:#fff}
+textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:640px){.form-row{grid-template-columns:1fr}}
+.user-chip{font-size:12px;font-weight:700;opacity:.95}
 </style>
 </head>
 <body>
@@ -51,13 +58,13 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
       <div>
         <div class="eyebrow">Cérebro Python · Worker · D1</div>
         <h1>Cockpit Lotofácil Lab</h1>
-        <p>Uma tela para jogos do sistema, governança Champion×Challenger, laboratório e frequência. Todo o aprendizado histórico continua no D1 — só a interface ficou enxuta.</p>
+        <p>Jogos do sistema, aprendizado, laboratório, frequência e seus jogos salvos — numa tela. Todo o histórico de governança permanece no D1.</p>
+        <div class="user-chip" id="userChip" style="margin-top:10px">Não logado</div>
       </div>
       <div class="nav">
         <a href="index.html">Início</a>
         <a href="laboratorio_21.html">Lab 21</a>
-        <a href="usuario.html">Conta</a>
-        <a href="aprendizado.html">Governança completa</a>
+        <a href="aprendizado.html">Governança</a>
       </div>
     </div>
     <div class="actions" style="margin-top:12px">
@@ -71,18 +78,18 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="hoje">Hoje</button>
+    <button class="tab" data-tab="meus">Meus jogos</button>
     <button class="tab" data-tab="aprend">Aprendizado</button>
     <button class="tab" data-tab="lab">Laboratório</button>
     <button class="tab" data-tab="freq">Frequência</button>
   </div>
 
-  <!-- HOJE -->
   <section id="panel-hoje" class="panel active">
     <div class="grid" id="metricsHoje"></div>
     <div class="layout">
       <div class="card">
         <h2>Jogos do sistema (próximo concurso)</h2>
-        <p class="muted">Preferência: checkpoint do Cérebro Python. Fallback: motor JS do Worker.</p>
+        <p class="muted">Checkpoint do Cérebro quando disponível. Clique em <b>Salvar</b> (precisa estar logado na aba Meus jogos).</p>
         <div id="jogosSistema"></div>
       </div>
       <div class="card">
@@ -94,7 +101,52 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
     </div>
   </section>
 
-  <!-- APRENDIZADO -->
+  <section id="panel-meus" class="panel">
+    <div class="layout">
+      <div class="card" id="authCard">
+        <h2>Acesso</h2>
+        <p class="muted">Mesma conta da área do usuário. Token compartilhado com <code>usuario.html</code>.</p>
+        <div class="form-row">
+          <div><label class="field" for="nome">Nome (cadastro)</label><input id="nome" autocomplete="name"></div>
+          <div><label class="field" for="email">Email</label><input id="email" type="email" autocomplete="email"></div>
+        </div>
+        <div style="margin-top:10px"><label class="field" for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password"></div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="loginBtn" style="color:#4c1d95">Entrar</button>
+          <button class="btn soft" type="button" id="registerBtn">Criar conta</button>
+        </div>
+        <div id="authStatus" class="muted" style="margin-top:10px"></div>
+      </div>
+      <div class="card" id="userPanelCard" style="display:none">
+        <h2>Sessão</h2>
+        <div id="userLabel" class="muted"></div>
+        <div class="actions">
+          <button class="btn soft" type="button" id="logoutBtn">Sair</button>
+          <button class="btn ok" type="button" id="checkBtn">Conferir pendentes</button>
+          <button class="btn soft" type="button" id="reloadGamesBtn">Atualizar lista</button>
+        </div>
+        <div id="appStatus" class="muted" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Salvar manual</h2>
+      <div class="form-row">
+        <div><label class="field" for="concurso">Concurso</label><input id="concurso" inputmode="numeric"></div>
+        <div><label class="field" for="metodo">Método</label><input id="metodo" placeholder="Manual / M1…"></div>
+      </div>
+      <div style="margin-top:10px"><label class="field" for="dezenas">Dezenas</label><textarea id="dezenas" placeholder="01-02-03-…-15"></textarea></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:var(--muted)">
+        <input id="manterSalvo" type="checkbox" style="width:auto;margin-top:2px">
+        <span>Manter até excluir (senão descarta após 2 conferências)</span>
+      </label>
+      <div class="actions"><button class="btn primary" type="button" id="saveBtn" style="color:#4c1d95">Salvar jogo</button></div>
+    </div>
+    <div class="card">
+      <h2>Jogos salvos</h2>
+      <div id="gamesList" class="muted">Faça login para ver seus jogos.</div>
+    </div>
+  </section>
+
   <section id="panel-aprend" class="panel">
     <div class="grid" id="metricsAprend"></div>
     <div class="layout">
@@ -102,7 +154,7 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
         <h2>Champion × Challenger</h2>
         <p class="muted">Promoção só com melhora pareada, IC95%, BH e sem vazamento temporal.</p>
         <div id="govBox"></div>
-        <div class="actions"><a class="btn soft" href="aprendizado.html" style="color:#5b21b6;border:1px solid #d8b4fe;background:#f3e8ff;text-decoration:none">Abrir auditoria completa →</a></div>
+        <div class="actions"><a class="btn soft" href="aprendizado.html" style="color:#5b21b6;text-decoration:none">Auditoria completa →</a></div>
       </div>
       <div class="card">
         <h2>Modelos (resumo)</h2>
@@ -115,46 +167,49 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
     </div>
   </section>
 
-  <!-- LAB -->
   <section id="panel-lab" class="panel">
     <div class="grid" id="metricsLab"></div>
     <div class="layout">
-      <div class="card">
-        <h2>Laboratório semanal</h2>
-        <div id="labSemana"></div>
-      </div>
-      <div class="card">
-        <h2>Estratégias (acumulado recente)</h2>
-        <div id="labEstrat"></div>
-      </div>
+      <div class="card"><h2>Laboratório semanal</h2><div id="labSemana"></div></div>
+      <div class="card"><h2>Estratégias (acumulado recente)</h2><div id="labEstrat"></div></div>
     </div>
   </section>
 
-  <!-- FREQ -->
   <section id="panel-freq" class="panel">
     <div class="card">
       <h2>Frequência das dezenas</h2>
-      <p class="muted">Contagem no histórico carregado no D1 (não prediz o próximo sorteio).</p>
+      <p class="muted">Histórico no D1 — não prediz o próximo sorteio.</p>
       <div id="freqBars"></div>
     </div>
     <div class="card">
-      <h2>Início da dezena (menor número do jogo)</h2>
+      <h2>Início da dezena</h2>
       <div id="inicioBars"></div>
     </div>
   </section>
 
-  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade dos sorteios permanece. Aprendizado e governança usam só concursos já encerrados (<code>treino_ate < concurso</code>).</div>
+  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade permanece. Aprendizado usa só concursos encerrados (<code>treino_ate < concurso</code>).</div>
 </main>
 <script>
+const TOKEN_KEY = 'lotofacil_mobile_token';
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const int = (n) => Number(n||0).toLocaleString('pt-BR');
 let state = { sistema: null, aprend: null };
+let token = localStorage.getItem(TOKEN_KEY) || '';
+let currentUser = null;
 
 function setStatus(msg, err=false) {
   const el = $('status');
   el.textContent = msg;
   el.className = 'status' + (err ? ' err' : '');
+}
+function setAuthStatus(msg, err=false) {
+  $('authStatus').textContent = msg || '';
+  $('authStatus').style.color = err ? 'var(--bad)' : 'var(--muted)';
+}
+function setAppStatus(msg, err=false) {
+  $('appStatus').textContent = msg || '';
+  $('appStatus').style.color = err ? 'var(--bad)' : 'var(--ok)';
 }
 
 document.querySelectorAll('.tab').forEach(btn => {
@@ -169,6 +224,103 @@ document.querySelectorAll('.tab').forEach(btn => {
 function balls(dezenas) {
   return `<div class="dezenas">${(dezenas||[]).map(d => `<span class="ball">${String(d).padStart(2,'0')}</span>`).join('')}</div>`;
 }
+function dezenasTexto(dezenas) {
+  return (dezenas||[]).map(d => String(d).padStart(2,'0')).join('-');
+}
+
+async function api(path, options = {}) {
+  const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
+  if (token) headers.authorization = 'Bearer ' + token;
+  const response = await fetch(path, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.message || 'Falha na requisição');
+  return data;
+}
+
+function showLoggedIn(user) {
+  currentUser = user;
+  $('authCard').style.display = 'none';
+  $('userSessionCard').style.display = 'block';
+  $('userLabel').textContent = user.nome + ' · ' + user.email;
+  $('userChip').textContent = 'Logado: ' + user.nome;
+  loadMyGames();
+}
+function showLoggedOut() {
+  currentUser = null;
+  token = '';
+  localStorage.removeItem(TOKEN_KEY);
+  $('authCard').style.display = 'block';
+  $('userSessionCard').style.display = 'none';
+  $('userChip').textContent = 'Não logado';
+  $('gamesList').innerHTML = '<span class="muted">Faça login para ver seus jogos.</span>';
+}
+
+async function bootstrapAuth() {
+  if (!token) { showLoggedOut(); return; }
+  try {
+    const data = await api('/api/me');
+    showLoggedIn(data.user);
+  } catch {
+    showLoggedOut();
+  }
+}
+
+async function loadMyGames() {
+  if (!token) return;
+  setAppStatus('Carregando jogos…');
+  try {
+    const data = await api('/api/jogos');
+    const jogos = data.jogos || [];
+    if (!jogos.length) {
+      $('gamesList').innerHTML = '<p class="muted">Nenhum jogo salvo.</p>';
+    } else {
+      $('gamesList').innerHTML = jogos.map(j => `
+        <div class="game-card">
+          <div class="meta">
+            <span>${j.dezenas_texto || dezenasTexto(j.dezenas)}</span>
+            <span>
+              ${j.concurso ? `<span class="badge neu">#${j.concurso}</span>` : ''}
+              ${j.metodo ? `<span class="badge neu">${j.metodo}</span>` : ''}
+              <span class="badge ${j.status==='conferido'?'ok':'neu'}">${j.status}</span>
+            </span>
+          </div>
+          ${j.conferencias && j.conferencias.length ? `<div class="muted" style="margin-bottom:8px">${j.conferencias.map(c => `#${c.concurso}: ${c.acertos} acertos`).join(' · ')}</div>` : ''}
+          <div class="actions">
+            <button class="btn ok" type="button" data-status="jogado" data-id="${j.id}">Marcar jogado</button>
+            <button class="btn danger" type="button" data-delete="${j.id}">Excluir</button>
+          </div>
+        </div>`).join('');
+    }
+    setAppStatus('Lista atualizada');
+  } catch (e) {
+    setAppStatus(e.message, true);
+  }
+}
+
+async function saveSystemGame(metodo, dezenas) {
+  if (!token) {
+    setStatus('Faça login na aba Meus jogos para salvar.', true);
+    document.querySelector('.tab[data-tab="meus"]').click();
+    return;
+  }
+  const concurso = state.sistema?.proximo_concurso || null;
+  try {
+    await api('/api/jogos', {
+      method: 'POST',
+      body: JSON.stringify({
+        concurso,
+        metodo: 'Sistema ' + metodo,
+        dezenas,
+        manter_salvo: false,
+        descartar_apos_rodadas: 2
+      })
+    });
+    setStatus('Salvo: ' + metodo);
+    await loadMyGames();
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+}
 
 function renderHoje(s) {
   const u = s.ultimo_resultado;
@@ -182,16 +334,19 @@ function renderHoje(s) {
     ['Ciclo', ciclo?.status || '—', ciclo?.iniciado_em ? String(ciclo.iniciado_em).slice(0,16) : '']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
 
+  if (!$('concurso').value && s.proximo_concurso) $('concurso').value = s.proximo_concurso;
+
   const jogos = s.jogos_gerados || [];
   $('jogosSistema').innerHTML = jogos.length
     ? jogos.map(j => {
         const dez = Array.isArray(j.dezenas) ? j.dezenas : [];
-        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span>soma ${j.soma ?? '—'} · P${j.pares ?? '—'}/I${j.impares ?? '—'}</span></div>${balls(dez)}</div>`;
+        const payload = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
+        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span>soma ${j.soma ?? '—'} · P${j.pares ?? '—'}/I${j.impares ?? '—'} <button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px;margin-left:6px">Salvar</button></span></div>${balls(dez)}</div>`;
       }).join('')
-    : '<p class="muted">Nenhum jogo em jogos_sistema para o próximo concurso. Rode o ciclo ou exporte o checkpoint do Cérebro.</p>';
+    : '<p class="muted">Nenhum jogo em jogos_sistema. Rode o ciclo ou exporte o checkpoint do Cérebro.</p>';
 
   if (u) {
-    $('ultimoResultado').innerHTML = `<div class="meta" style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`;
+    $('ultimoResultado').innerHTML = `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`;
   } else {
     $('ultimoResultado').innerHTML = '<p class="muted">Sem resultados no D1.</p>';
   }
@@ -323,6 +478,7 @@ async function refreshAll() {
   try {
     await loadSistema();
     await loadAprend();
+    if (token) await loadMyGames();
     setStatus('Cockpit atualizado · ' + new Date().toLocaleTimeString('pt-BR'));
   } catch (e) {
     setStatus(e.message || String(e), true);
@@ -331,18 +487,110 @@ async function refreshAll() {
   }
 }
 
+$('jogosSistema').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('[data-save]');
+  if (!btn) return;
+  try {
+    const { metodo, dezenas } = JSON.parse(decodeURIComponent(btn.dataset.save));
+    saveSystemGame(metodo, dezenas);
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+});
+
+$('loginBtn').addEventListener('click', async () => {
+  setAuthStatus('Entrando…');
+  try {
+    const data = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: $('email').value, senha: $('senha').value })
+    });
+    token = data.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    setAuthStatus('');
+    showLoggedIn(data.user);
+  } catch (e) {
+    setAuthStatus(e.message, true);
+  }
+});
+
+$('registerBtn').addEventListener('click', async () => {
+  setAuthStatus('Criando conta…');
+  try {
+    const data = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ nome: $('nome').value, email: $('email').value, senha: $('senha').value })
+    });
+    token = data.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    setAuthStatus('');
+    showLoggedIn(data.user);
+  } catch (e) {
+    setAuthStatus(e.message, true);
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
+  showLoggedOut();
+});
+
+$('saveBtn').addEventListener('click', async () => {
+  if (!token) { setAppStatus('Faça login primeiro', true); return; }
+  try {
+    await api('/api/jogos', {
+      method: 'POST',
+      body: JSON.stringify({
+        concurso: $('concurso').value,
+        metodo: $('metodo').value,
+        dezenas_texto: $('dezenas').value,
+        manter_salvo: $('manterSalvo').checked,
+        descartar_apos_rodadas: 2
+      })
+    });
+    $('dezenas').value = '';
+    setAppStatus('Jogo salvo');
+    await loadMyGames();
+  } catch (e) {
+    setAppStatus(e.message, true);
+  }
+});
+
+$('checkBtn').addEventListener('click', async () => {
+  try {
+    const data = await api('/api/jogos/conferir-pendentes', { method: 'POST', body: '{}' });
+    setAppStatus(`Conferidos: ${data.jogos_conferidos} · novas: ${data.conferencias_novas||0} · descartados: ${data.jogos_descartados||0}`);
+    await loadMyGames();
+  } catch (e) {
+    setAppStatus(e.message, true);
+  }
+});
+
+$('reloadGamesBtn').addEventListener('click', () => loadMyGames());
+
+$('gamesList').addEventListener('click', async (ev) => {
+  const idStatus = ev.target.dataset.id && ev.target.dataset.status ? ev.target.dataset.id : '';
+  const idDel = ev.target.dataset.delete || '';
+  try {
+    if (idStatus) {
+      await api('/api/jogos/' + idStatus, { method: 'PATCH', body: JSON.stringify({ status: ev.target.dataset.status }) });
+      await loadMyGames();
+    }
+    if (idDel && confirm('Excluir este jogo?')) {
+      await api('/api/jogos/' + idDel, { method: 'DELETE' });
+      await loadMyGames();
+    }
+  } catch (e) {
+    setAppStatus(e.message, true);
+  }
+});
+
 $('btnRefresh').addEventListener('click', refreshAll);
 $('btnCiclo').addEventListener('click', async () => {
   $('btnCiclo').disabled = true;
-  setStatus('Rodando ciclo (precisa autenticação em algumas rotas)…');
+  setStatus('Rodando ciclo…');
   try {
-    const token = localStorage.getItem('lotofacil_token') || '';
-    const r = await fetch('/api/ciclo/rodar', {
-      method: 'POST',
-      headers: token ? { Authorization: 'Bearer ' + token } : {}
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.message || 'Ciclo recusado (login?)');
+    const data = await api('/api/ciclo/rodar', { method: 'POST', body: '{}' });
     setStatus('Ciclo ok · gerados ' + (data.jogos_gerados ?? '—'));
     await refreshAll();
   } catch (e) {
@@ -357,7 +605,7 @@ $('btnAprend').addEventListener('click', async () => {
   setStatus('Aprendizado sincronizado');
 });
 
-refreshAll();
+bootstrapAuth().then(refreshAll);
 </script>
 </body>
 </html>
