@@ -55,6 +55,141 @@ async function safeAll(env, sql, binds = []) {
   }
 }
 
+/** Aplica colunas das migrations 0004 e 0006 se ainda não existirem no D1 de produção. */
+async function ensureAppSchema(env) {
+  if (!env?.DB) return;
+  const alters = [
+    'ALTER TABLE jogos ADD COLUMN manter_salvo INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE jogos ADD COLUMN descartar_apos_rodadas INTEGER NOT NULL DEFAULT 2',
+    'ALTER TABLE conferencias ADD COLUMN dezenas_jogadas TEXT',
+    'ALTER TABLE conferencias ADD COLUMN dezenas_acertadas TEXT',
+    'ALTER TABLE conferencias ADD COLUMN metodo TEXT'
+  ];
+  for (const sql of alters) {
+    try {
+      await env.DB.prepare(sql).run();
+    } catch {
+      // coluna já existe — ok
+    }
+  }
+}
+
+async function getUserFromRequest(request, env) {
+  const header = request.headers.get('authorization') || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const token = match[1].trim();
+  return safeFirst(env, `
+    SELECT usuarios.id, usuarios.nome, usuarios.email, usuarios.criado_em
+    FROM sessoes
+    JOIN usuarios ON usuarios.id = sessoes.usuario_id
+    WHERE sessoes.token = ?
+      AND datetime(sessoes.expira_em) > datetime('now')
+  `, [token]);
+}
+
+/** Lista jogos sem indicadores/aprendizado pesados (fonte do 500). */
+async function listJogosSeguro(user, env) {
+  await ensureAppSchema(env);
+
+  let rows = await safeAll(env, `
+    SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
+           manter_salvo, descartar_apos_rodadas, criado_em, atualizado_em
+    FROM jogos
+    WHERE usuario_id = ?
+    ORDER BY datetime(criado_em) DESC
+    LIMIT 1000
+  `, [user.id]);
+
+  // fallback se ainda faltar coluna
+  if (!rows.length) {
+    const alt = await safeAll(env, `
+      SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
+             criado_em, atualizado_em
+      FROM jogos
+      WHERE usuario_id = ?
+      ORDER BY datetime(criado_em) DESC
+      LIMIT 1000
+    `, [user.id]);
+    if (alt.length) rows = alt;
+  }
+
+  // contar total sem filtro de order para debug
+  if (!rows.length) {
+    const cnt = await safeFirst(env, 'SELECT COUNT(*) AS c FROM jogos WHERE usuario_id = ?', [user.id]);
+    if (cnt && Number(cnt.c) > 0) {
+      rows = await safeAll(env, `
+        SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
+               criado_em, atualizado_em
+        FROM jogos WHERE usuario_id = ? ORDER BY id DESC LIMIT 1000
+      `, [user.id]);
+    }
+  }
+
+  const jogos = rows.map((jogo) => {
+    let dezenas = [];
+    try { dezenas = JSON.parse(jogo.dezenas || '[]'); } catch { dezenas = []; }
+    return {
+      id: jogo.id,
+      concurso: jogo.concurso,
+      metodo: jogo.metodo,
+      dezenas,
+      dezenas_texto: jogo.dezenas_texto || dezenasTexto(dezenas),
+      status: jogo.status || 'salvo',
+      observacao: jogo.observacao || null,
+      manter_salvo: Boolean(jogo.manter_salvo),
+      descartar_apos_rodadas: Number(jogo.descartar_apos_rodadas || 2),
+      criado_em: jogo.criado_em,
+      atualizado_em: jogo.atualizado_em,
+      conferencias: []
+    };
+  });
+
+  // conferências leves (sem colunas opcionais obrigatórias)
+  if (jogos.length) {
+    const ids = jogos.map((j) => j.id);
+    const byId = new Map(jogos.map((j) => [j.id, j]));
+    // D1 limita binds; fatia em lotes de 50
+    for (let i = 0; i < ids.length; i += 50) {
+      const chunk = ids.slice(i, i + 50);
+      const ph = chunk.map(() => '?').join(',');
+      const confs = await safeAll(env, `
+        SELECT jogo_id, concurso, acertos, conferido_em,
+               dezenas_sorteadas, dezenas_jogadas, dezenas_acertadas, metodo
+        FROM conferencias
+        WHERE jogo_id IN (${ph})
+        ORDER BY concurso ASC
+      `, chunk);
+      for (const c of confs) {
+        const jogo = byId.get(c.jogo_id);
+        if (!jogo) continue;
+        const rodada = jogo.conferencias.length + 1;
+        jogo.conferencias.push({
+          rodada,
+          concurso: c.concurso,
+          acertos: c.acertos,
+          dezenas_sorteadas: c.dezenas_sorteadas,
+          dezenas_jogadas: c.dezenas_jogadas || jogo.dezenas_texto,
+          dezenas_acertadas: c.dezenas_acertadas || '',
+          metodo: c.metodo || jogo.metodo,
+          conferido_em: c.conferido_em
+        });
+      }
+    }
+    for (const jogo of jogos) {
+      jogo.conferencias.sort((a, b) => Number(b.concurso) - Number(a.concurso));
+    }
+  }
+
+  return json({
+    ok: true,
+    jogos,
+    indicadores_rodada: null,
+    aprendizado_origens: null,
+    source: 'bridge_seguro'
+  });
+}
+
 function parseLabRow(row) {
   if (!row) return null;
   const parse = (v, fb) => {
@@ -74,11 +209,6 @@ function parseLabRow(row) {
   };
 }
 
-/**
- * Status completo mas SEGURO: só leitura no D1.
- * NÃO chama generateNextContestGames nem sincronizarLaboratorios
- * (isso causava "Erro interno do servidor" por CPU/timeout no Worker).
- */
 async function sistemaStatusSeguro(env) {
   if (!env?.DB) {
     return json({ ok: false, message: 'Binding D1 (DB) ausente no deploy.' }, 500);
@@ -149,7 +279,6 @@ async function sistemaStatusSeguro(env) {
     ultimo_ciclo = { ...ciclo, novos_concursos: novos };
   }
 
-  // Frequência nos últimos 120 (barato)
   const recentFreq = await safeAll(env, `
     SELECT dezenas FROM resultados ORDER BY concurso DESC LIMIT 120
   `);
@@ -179,7 +308,6 @@ async function sistemaStatusSeguro(env) {
     };
   });
 
-  // Lab: só lê o que já existe (não prepara / não confere 20k aqui)
   const labProximo = parseLabRow(await safeFirst(env, `
     SELECT * FROM laboratorio_execucoes WHERE concurso = ? LIMIT 1
   `, [proximo]));
@@ -194,7 +322,6 @@ async function sistemaStatusSeguro(env) {
     ORDER BY concurso DESC LIMIT 12
   `)).map(parseLabRow).filter(Boolean);
 
-  // Agregado simples
   let laboratorio_acumulado = null;
   if (labsRecentes.length) {
     const resumo = {
@@ -263,14 +390,8 @@ async function sistemaStatusSeguro(env) {
     laboratorio_semana_historico: [],
     jogos_gerados,
     jogos_conferidor: [],
-    note: 'Status seguro: só leitura. Geração de jogos e lab 20k ficam no ciclo (/api/ciclo/rodar), não no GET.'
+    note: 'Status seguro: só leitura.'
   });
-}
-
-async function sistemaRapido(env) {
-  const data = await sistemaStatusSeguro(env);
-  // Reusa o mesmo payload; client espera mode
-  return data;
 }
 
 async function exportHistoricalResults(env) {
@@ -309,7 +430,7 @@ async function pythonCheckpoint(request, env) {
       ok: false,
       purpose: 'historical_education_only',
       status: 'aguardando_primeiro_checkpoint_python',
-      message: 'O primeiro bloco histórico de 5 concursos ainda não foi publicado.'
+      message: 'Aguardando checkpoint Python.'
     }, 503);
   }
   if (result.invalid) return json({ ok: false, message: 'Checkpoint Python inválido.' }, 500);
@@ -324,7 +445,7 @@ async function pythonCheckpointOperacional(request, env) {
       purpose: 'historical_education_only',
       source_of_truth: 'python',
       status: 'aguardando_checkpoint_operacional',
-      message: 'Rode scripts/exportar_checkpoint_cerebro.py no ciclo diário.'
+      message: 'Rode exportar_checkpoint_cerebro.py no ciclo diário.'
     }, 503);
   }
   if (result.invalid) return json({ ok: false, message: 'Checkpoint operacional inválido.' }, 500);
@@ -351,17 +472,14 @@ export default {
         try {
           return await env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
         } catch (err) {
-          console.error('cockpit asset', err);
           return json({ ok: false, message: 'Falha ao servir o cockpit: ' + (err.message || err) }, 500);
         }
       }
 
-      // Intercepta status: versão segura (evita 500 do worker.js antigo)
       if (request.method === 'GET' && (url.pathname === '/api/sistema/status' || url.pathname === '/api/sistema/rapido')) {
         try {
           return await sistemaStatusSeguro(env);
         } catch (error) {
-          console.error('sistemaStatusSeguro', error);
           return json({
             ok: true,
             mode: 'degraded',
@@ -379,6 +497,35 @@ export default {
         return json({ ok: true, service: 'lotofacil', bridge: true });
       }
 
+      // Lista de jogos: caminho seguro (evita 500 de indicadores/colunas)
+      if (request.method === 'GET' && url.pathname === '/api/jogos') {
+        try {
+          await ensureAppSchema(env);
+          const user = await getUserFromRequest(request, env);
+          if (!user) return json({ ok: false, message: 'Acesso nao autorizado.' }, 401);
+          return await listJogosSeguro(user, env);
+        } catch (err) {
+          console.error('listJogosSeguro', err);
+          return json({
+            ok: false,
+            message: 'Falha ao listar jogos: ' + String(err.message || err)
+          }, 500);
+        }
+      }
+
+      // Antes de conferir / ciclo / POST jogos: garante schema
+      if (
+        url.pathname.startsWith('/api/jogos') ||
+        url.pathname === '/api/ciclo/rodar' ||
+        url.pathname.startsWith('/api/fechamentos')
+      ) {
+        try {
+          await ensureAppSchema(env);
+        } catch (e) {
+          console.error('ensureAppSchema', e);
+        }
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/aprendizado/exportar-resultados') {
         try { return await exportHistoricalResults(env); }
         catch (error) {
@@ -393,7 +540,20 @@ export default {
       }
 
       try {
-        return await historicalWorker.fetch(request, env, ctx);
+        const response = await historicalWorker.fetch(request, env, ctx);
+        // Se conferir-pendentes voltar 500 genérico, devolve mensagem legível
+        if (
+          response.status >= 500 &&
+          url.pathname === '/api/jogos/conferir-pendentes'
+        ) {
+          const body = await response.clone().json().catch(() => ({}));
+          return json({
+            ok: false,
+            message: body.message || 'Conferir pendentes falhou. Schema aplicado; tente de novo ou rode o ciclo.',
+            detail: body
+          }, 500);
+        }
+        return response;
       } catch (err) {
         console.error('historicalWorker', err);
         return json({
