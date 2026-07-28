@@ -7,6 +7,26 @@ function json(data, status = 200) {
   });
 }
 
+/** Rotas unificadas → cockpit (painéis legados ainda existem como assets). */
+const COCKPIT_ROUTES = new Set([
+  '/painel',
+  '/painel.html',
+  '/cockpit',
+  '/painel_cockpit',
+  '/painel_cockpit.html',
+  '/painel_avancado',
+  '/painel_avancado.html',
+  '/painel_mobile',
+  '/painel_mobile.html'
+]);
+
+function assetRequest(request, url, pathname) {
+  const assetUrl = new URL(request.url);
+  assetUrl.pathname = pathname;
+  assetUrl.search = url.search;
+  return new Request(assetUrl.toString(), { method: 'GET', headers: request.headers });
+}
+
 async function exportHistoricalResults(env) {
   const query = await env.DB.prepare(`
     SELECT concurso, data_sorteio, dezenas
@@ -30,12 +50,9 @@ async function exportHistoricalResults(env) {
 async function fetchAssetJson(request, env, assetPath) {
   const assetUrl = new URL(assetPath, request.url);
   const response = await env.ASSETS.fetch(new Request(assetUrl, { headers: request.headers }));
-  if (!response.ok) {
-    return { ok: false, status: response.status };
-  }
+  if (!response.ok) return { ok: false, status: response.status };
   try {
-    const payload = await response.json();
-    return { ok: true, payload };
+    return { ok: true, payload: await response.json() };
   } catch {
     return { ok: false, status: 500, invalid: true };
   }
@@ -51,9 +68,7 @@ async function pythonCheckpoint(request, env) {
       message: 'O primeiro bloco histórico de 5 concursos ainda não foi publicado.'
     }, 503);
   }
-  if (result.invalid) {
-    return json({ ok: false, message: 'Checkpoint Python inválido.' }, 500);
-  }
+  if (result.invalid) return json({ ok: false, message: 'Checkpoint Python inválido.' }, 500);
   return json(result.payload, 200);
 }
 
@@ -68,15 +83,18 @@ async function pythonCheckpointOperacional(request, env) {
       message: 'Rode scripts/exportar_checkpoint_cerebro.py no ciclo diário para publicar o checkpoint operacional.'
     }, 503);
   }
-  if (result.invalid) {
-    return json({ ok: false, message: 'Checkpoint operacional inválido.' }, 500);
-  }
+  if (result.invalid) return json({ ok: false, message: 'Checkpoint operacional inválido.' }, 500);
   return json(result.payload, 200);
 }
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    if (request.method === 'GET' && COCKPIT_ROUTES.has(url.pathname)) {
+      return env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
+    }
+
     if (request.method === 'GET' && url.pathname === '/api/aprendizado/exportar-resultados') {
       try { return await exportHistoricalResults(env); }
       catch (error) {

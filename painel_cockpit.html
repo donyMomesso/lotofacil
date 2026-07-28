@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cockpit — Lotofácil Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--p:#6d28d9;--p2:#4c1d95;--pink:#db2777;--teal:#0f766e;--ink:#21153a;--muted:#74658d;--line:#e9dffb;--bg:#f6f3ff;--ok:#15803d;--warn:#b45309;--bad:#be123c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;padding:16px 18px 40px}
+.hero{background:radial-gradient(circle at 88% 12%,rgba(245,158,11,.28),transparent 30%),linear-gradient(135deg,var(--p2),var(--p) 55%,var(--pink));color:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 16px 48px rgba(76,29,149,.22)}
+.hero-top{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:900;color:#fde68a}
+.hero h1{font:800 clamp(22px,3.5vw,34px)/1.1 Sora,sans-serif;margin:6px 0 8px}
+.hero p{margin:0;max-width:720px;line-height:1.55;color:rgba(255,255,255,.88);font-size:13.5px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.nav a,.btn{text-decoration:none;border-radius:10px;padding:9px 12px;font-weight:800;font-size:12px;border:1px solid rgba(255,255,255,.35);color:#fff;background:rgba(255,255,255,.1)}
+.btn.primary{background:linear-gradient(135deg,#fff,#fde68a);color:#4c1d95;border:0}
+.btn.soft{background:#f3e8ff;color:#5b21b6;border:1px solid #d8b4fe}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.status{margin:12px 0 4px;font-size:12px;font-weight:800;color:var(--p);min-height:18px}
+.status.err{color:var(--bad)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 12px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:12px;color:var(--muted)}
+.tab.active{background:linear-gradient(135deg,var(--p),var(--pink));color:#fff;border-color:transparent}
+.panel{display:none}.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.metric,.card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 22px rgba(43,10,77,.05)}
+.metric{padding:12px 14px}.metric .label{font-size:9px;text-transform:uppercase;font-weight:900;color:#826fa1}.metric .value{font:800 18px Sora,sans-serif;margin-top:4px}.metric .detail{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.35}
+.card{padding:16px;margin-top:12px}.card h2{font:800 15px Sora,sans-serif;margin:0 0 6px}.muted{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 10px}
+.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.table-wrap{overflow:auto;max-height:420px}.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th{position:sticky;top:0;background:#fff;text-align:left;padding:8px;color:#806f9c;text-transform:uppercase;font-size:9px;border-bottom:1px solid var(--line)}
+.table td{padding:8px;border-bottom:1px solid #f1ecfb;vertical-align:middle}
+.dezenas{display:flex;flex-wrap:wrap;gap:4px}.ball{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:#f3e8ff;color:#5b21b6}
+.badge{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900}.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#ffedd5;color:#9a3412}.badge.bad{background:#ffe4e6;color:#be123c}.badge.neu{background:#ede9fe;color:#5b21b6}
+.bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}.bar-label{width:28px;font-weight:800;color:var(--muted)}.bar-track{flex:1;height:10px;background:#f1ecfb;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:999px}
+.notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
+.game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800}
+.spark{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px}.spark span{flex:1;background:linear-gradient(180deg,#c4b5fd,#7c3aed);border-radius:3px 3px 0 0;min-width:4px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">Cérebro Python · Worker · D1</div>
+        <h1>Cockpit Lotofácil Lab</h1>
+        <p>Uma tela para jogos do sistema, governança Champion×Challenger, laboratório e frequência. Todo o aprendizado histórico continua no D1 — só a interface ficou enxuta.</p>
+      </div>
+      <div class="nav">
+        <a href="index.html">Início</a>
+        <a href="laboratorio_21.html">Lab 21</a>
+        <a href="usuario.html">Conta</a>
+        <a href="aprendizado.html">Governança completa</a>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn primary" id="btnRefresh">Atualizar tudo</button>
+      <button class="btn" id="btnCiclo">Rodar ciclo</button>
+      <button class="btn" id="btnAprend">Sync aprendizado</button>
+    </div>
+  </section>
+
+  <div id="status" class="status">Carregando…</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="hoje">Hoje</button>
+    <button class="tab" data-tab="aprend">Aprendizado</button>
+    <button class="tab" data-tab="lab">Laboratório</button>
+    <button class="tab" data-tab="freq">Frequência</button>
+  </div>
+
+  <!-- HOJE -->
+  <section id="panel-hoje" class="panel active">
+    <div class="grid" id="metricsHoje"></div>
+    <div class="layout">
+      <div class="card">
+        <h2>Jogos do sistema (próximo concurso)</h2>
+        <p class="muted">Preferência: checkpoint do Cérebro Python. Fallback: motor JS do Worker.</p>
+        <div id="jogosSistema"></div>
+      </div>
+      <div class="card">
+        <h2>Último resultado</h2>
+        <div id="ultimoResultado"></div>
+        <h2 style="margin-top:16px">Último ciclo</h2>
+        <div id="ultimoCiclo" class="muted">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APRENDIZADO -->
+  <section id="panel-aprend" class="panel">
+    <div class="grid" id="metricsAprend"></div>
+    <div class="layout">
+      <div class="card">
+        <h2>Champion × Challenger</h2>
+        <p class="muted">Promoção só com melhora pareada, IC95%, BH e sem vazamento temporal.</p>
+        <div id="govBox"></div>
+        <div class="actions"><a class="btn soft" href="aprendizado.html" style="color:#5b21b6;border:1px solid #d8b4fe;background:#f3e8ff;text-decoration:none">Abrir auditoria completa →</a></div>
+      </div>
+      <div class="card">
+        <h2>Modelos (resumo)</h2>
+        <div id="modelsBox"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Registros recentes fora da amostra</h2>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Concurso</th><th>Modelo</th><th>Treino até</th><th>Brier</th><th>Top 21</th></tr></thead><tbody id="histBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- LAB -->
+  <section id="panel-lab" class="panel">
+    <div class="grid" id="metricsLab"></div>
+    <div class="layout">
+      <div class="card">
+        <h2>Laboratório semanal</h2>
+        <div id="labSemana"></div>
+      </div>
+      <div class="card">
+        <h2>Estratégias (acumulado recente)</h2>
+        <div id="labEstrat"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FREQ -->
+  <section id="panel-freq" class="panel">
+    <div class="card">
+      <h2>Frequência das dezenas</h2>
+      <p class="muted">Contagem no histórico carregado no D1 (não prediz o próximo sorteio).</p>
+      <div id="freqBars"></div>
+    </div>
+    <div class="card">
+      <h2>Início da dezena (menor número do jogo)</h2>
+      <div id="inicioBars"></div>
+    </div>
+  </section>
+
+  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade dos sorteios permanece. Aprendizado e governança usam só concursos já encerrados (<code>treino_ate < concurso</code>).</div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const int = (n) => Number(n||0).toLocaleString('pt-BR');
+let state = { sistema: null, aprend: null };
+
+function setStatus(msg, err=false) {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'status' + (err ? ' err' : '');
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+function balls(dezenas) {
+  return `<div class="dezenas">${(dezenas||[]).map(d => `<span class="ball">${String(d).padStart(2,'0')}</span>`).join('')}</div>`;
+}
+
+function renderHoje(s) {
+  const u = s.ultimo_resultado;
+  const ciclo = s.ultimo_ciclo;
+  $('metricsHoje').innerHTML = [
+    ['Último concurso', u?.concurso ?? '—', u?.data || ''],
+    ['Próximo', s.proximo_concurso ?? '—', 'alvo do sistema'],
+    ['Histórico D1', int(s.total_concursos), 'concursos'],
+    ['Jogos gerados', int((s.jogos_gerados||[]).length), 'métodos M1–M9'],
+    ['Lab status', s.laboratorio?.status || '—', s.laboratorio ? `c. ${s.laboratorio.concurso}` : ''],
+    ['Ciclo', ciclo?.status || '—', ciclo?.iniciado_em ? String(ciclo.iniciado_em).slice(0,16) : '']
+  ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
+
+  const jogos = s.jogos_gerados || [];
+  $('jogosSistema').innerHTML = jogos.length
+    ? jogos.map(j => {
+        const dez = Array.isArray(j.dezenas) ? j.dezenas : [];
+        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span>soma ${j.soma ?? '—'} · P${j.pares ?? '—'}/I${j.impares ?? '—'}</span></div>${balls(dez)}</div>`;
+      }).join('')
+    : '<p class="muted">Nenhum jogo em jogos_sistema para o próximo concurso. Rode o ciclo ou exporte o checkpoint do Cérebro.</p>';
+
+  if (u) {
+    $('ultimoResultado').innerHTML = `<div class="meta" style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`;
+  } else {
+    $('ultimoResultado').innerHTML = '<p class="muted">Sem resultados no D1.</p>';
+  }
+  $('ultimoCiclo').textContent = ciclo
+    ? `status=${ciclo.status} · novos=${JSON.stringify(ciclo.novos_concursos||[])} · gerados=${ciclo.jogos_gerados ?? '—'} · conf=${ciclo.conferencias ?? '—'}`
+    : 'Ainda sem execução registrada.';
+}
+
+function renderAprend(a) {
+  if (!a || !a.ok) {
+    $('metricsAprend').innerHTML = '<div class="metric"><div class="label">Aprendizado</div><div class="value">—</div><div class="detail">API indisponível</div></div>';
+    return;
+  }
+  const g = a.governance;
+  const d = g?.decision;
+  const c = g?.comparison;
+  const q = c?.tests?.find(t => t.id === 'brier')?.qValue;
+  $('metricsAprend').innerHTML = [
+    ['Concursos', int(a.totalContests), 'fora da amostra'],
+    ['Champion', g?.activeChampionName || '—', 'persistido'],
+    ['Desafiante', g?.challengerName || '—', 'pareado'],
+    ['Decisão', d ? (d.status === 'promote' ? 'Promover' : d.status === 'blocked' ? 'Bloqueado' : 'Manter') : '—', ''],
+    ['Amostra', c ? int(c.pairedSamples) : '—', 'mín. 30'],
+    ['Integridade', a.integrity?.ok ? 'OK' : 'Falha', a.integrity?.ok ? 'tempo/soma/hash' : 'revisar']
+  ].map(([l,v,det]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${det}</div></div>`).join('');
+
+  if (g && d) {
+    $('govBox').innerHTML = `<div style="padding:12px;border-radius:12px;border:1px solid var(--line);background:${d.status==='promote'?'#f0fdf4':d.status==='blocked'?'#fff1f2':'#fff7ed'}">
+      <div style="font-weight:900;margin-bottom:6px">${g.championBeforeName} × ${g.challengerName}
+        <span class="badge ${d.status==='promote'?'ok':d.status==='blocked'?'bad':'warn'}">${d.status}</span></div>
+      <div class="muted">Ganho Brier ${fmt(c?.brierGain,4)} · q=${q!=null?fmt(q,4):'—'} · top21 ${fmt(c?.top21Gain,3)}</div>
+      <div class="muted" style="margin-top:6px"><b>${d.reason || ''}</b></div>
+    </div>`;
+  } else {
+    $('govBox').innerHTML = '<p class="muted">Amostra insuficiente para governança.</p>';
+  }
+
+  const active = g?.activeChampion;
+  $('modelsBox').innerHTML = (a.models || []).map(m => `
+    <div style="padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;${m.key===active?'background:#f0fdf4;border-color:#86efac':''}">
+      <div style="display:flex;justify-content:space-between;gap:8px;font-weight:800">
+        <span>${m.name}</span>
+        ${m.key===active?'<span class="badge ok">Champion</span>':`<span class="badge neu">${m.evidence?.level||''}</span>`}
+      </div>
+      <div class="muted" style="margin-top:6px">n=${int(m.samples)} · Brier ${fmt(m.brier,4)} · top21 ${fmt(m.avgTop21,2)} · drift ${m.drift?.level||'—'}</div>
+    </div>`).join('') || '<p class="muted">Sem modelos.</p>';
+
+  $('histBody').innerHTML = (a.recent || []).slice(0,40).map(r =>
+    `<tr><td><b>${r.concurso}</b></td><td>${r.modelName||r.model}</td><td>${r.trainingThrough}</td><td>${fmt(r.brier,4)}</td><td>${r.top21}</td></tr>`
+  ).join('') || '<tr><td colspan="5">Sem registros</td></tr>';
+}
+
+function renderLab(s) {
+  const ac = s.laboratorio_acumulado;
+  const sem = s.laboratorio_semana_atual;
+  const res = ac?.resumo;
+  $('metricsLab').innerHTML = [
+    ['Jogos (acum.)', int(res?.quantidade), 'recentes conferidos'],
+    ['Média acertos', res ? fmt(res.media_acertos,3) : '—', ''],
+    ['Melhor', res?.melhor_acerto ?? '—', 'acertos'],
+    ['11+', int(res?.acertos_11_mais), ''],
+    ['Semana', sem?.semana_inicio ? `${sem.semana_inicio}–${sem.semana_fim}` : '—', int(sem?.concursos?.length||0)+' concursos'],
+    ['Próx. lab', s.laboratorio?.concurso ?? '—', s.laboratorio?.status || '']
+  ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
+
+  const hist = (s.laboratorio_semana_historico || []).slice(0,8);
+  if (hist.length) {
+    const maxM = Math.max(...hist.map(h => h.media_acertos||0), 1);
+    $('labSemana').innerHTML = `<div class="spark">${hist.slice().reverse().map(h =>
+      `<span title="${h.semana_inicio}: ${fmt(h.media_acertos,3)}" style="height:${Math.max(8, (h.media_acertos/maxM)*100)}%"></span>`
+    ).join('')}</div>
+    <div class="table-wrap" style="margin-top:10px"><table class="table"><thead><tr><th>Semana</th><th>Concursos</th><th>Média</th><th>Melhor</th><th>11+ %</th></tr></thead><tbody>
+    ${hist.map(h=>`<tr><td>${h.semana_inicio}–${h.semana_fim}</td><td>${h.quantidade_concursos}</td><td>${fmt(h.media_acertos,3)}</td><td>${h.melhor_acerto}</td><td>${fmt(h.taxa_11_mais,2)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  } else {
+    $('labSemana').innerHTML = '<p class="muted">Sem semanas conferidas ainda.</p>';
+  }
+
+  const estrat = (ac?.estrategias || []).slice(0,8);
+  $('labEstrat').innerHTML = estrat.length
+    ? estrat.map(e => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${e.label||e.key}</b>
+        <div class="muted">jogos ${int(e.jogos)} · média ${fmt(e.media_acertos,3)} · 11+ ${fmt(e.taxa_11_mais,2)}% · melhor ${e.melhor_acerto}</div></div>`).join('')
+    : '<p class="muted">Sem estratégias agregadas.</p>';
+}
+
+function renderFreq(s) {
+  const freq = s.frequencia_dezenas || [];
+  const maxF = Math.max(...freq.map(f => f.frequencia||0), 1);
+  $('freqBars').innerHTML = freq.map(f => `
+    <div class="bar-row"><span class="bar-label">${f.dezena_texto||String(f.dezena).padStart(2,'0')}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${(f.frequencia/maxF)*100}%"></div></div>
+    <span style="width:52px;text-align:right;font-weight:700;font-size:11px">${f.frequencia}</span>
+    <span style="width:48px;text-align:right;color:var(--muted);font-size:10px">atr ${f.atraso}</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
+
+  const ini = s.inicio_dezena || [];
+  const maxI = Math.max(...ini.map(i => i.quantidade||0), 1);
+  $('inicioBars').innerHTML = ini.map(i => `
+    <div class="bar-row"><span class="bar-label">${i.inicio_texto||i.inicio}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${(i.quantidade/maxI)*100}%;background:linear-gradient(90deg,#0f766e,#14b8a6)"></div></div>
+    <span style="width:70px;text-align:right;font-size:11px;font-weight:700">${i.quantidade} (${fmt(i.percentual,2)}%)</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
+}
+
+async function loadSistema() {
+  const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data.message || 'Falha /api/sistema/status');
+  state.sistema = data;
+  renderHoje(data);
+  renderLab(data);
+  renderFreq(data);
+}
+
+async function loadAprend() {
+  try {
+    const r = await fetch('/api/aprendizado/historico?t=' + Date.now(), { cache: 'no-store' });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha aprendizado');
+    state.aprend = data;
+    renderAprend(data);
+  } catch (e) {
+    renderAprend(null);
+    console.warn(e);
+  }
+}
+
+async function refreshAll() {
+  setStatus('Atualizando cockpit…');
+  $('btnRefresh').disabled = true;
+  try {
+    await loadSistema();
+    await loadAprend();
+    setStatus('Cockpit atualizado · ' + new Date().toLocaleTimeString('pt-BR'));
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  } finally {
+    $('btnRefresh').disabled = false;
+  }
+}
+
+$('btnRefresh').addEventListener('click', refreshAll);
+$('btnCiclo').addEventListener('click', async () => {
+  $('btnCiclo').disabled = true;
+  setStatus('Rodando ciclo (precisa autenticação em algumas rotas)…');
+  try {
+    const token = localStorage.getItem('lotofacil_token') || '';
+    const r = await fetch('/api/ciclo/rodar', {
+      method: 'POST',
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.message || 'Ciclo recusado (login?)');
+    setStatus('Ciclo ok · gerados ' + (data.jogos_gerados ?? '—'));
+    await refreshAll();
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  } finally {
+    $('btnCiclo').disabled = false;
+  }
+});
+$('btnAprend').addEventListener('click', async () => {
+  setStatus('Sincronizando aprendizado…');
+  await loadAprend();
+  setStatus('Aprendizado sincronizado');
+});
+
+refreshAll();
+</script>
+</body>
+</html>
