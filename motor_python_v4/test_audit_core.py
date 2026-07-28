@@ -26,13 +26,23 @@ class AuditCoreTests(unittest.TestCase):
         self.assertEqual(report["completed_checkpoint_contests"] % CHECKPOINT_SIZE, 0)
         self.assertEqual(len(report["checkpoints"]), report["completed_checkpoint_contests"] // CHECKPOINT_SIZE)
         self.assertEqual(report["pending_until_next_checkpoint"], 3)
+        self.assertTrue(all(checkpoint["evaluated_contests"] % CHECKPOINT_SIZE == 0 for checkpoint in report["checkpoints"]))
 
-    def test_public_report_has_no_actionable_fields(self):
+    def test_public_report_has_no_actionable_fields_or_winner(self):
         report = build_report(synthetic_draws(70), min_training=30)
         assert_safe_report(report)
         serialized = str(report).lower()
-        for forbidden in ("ranking", "dezenas", "jogos", "proximo_concurso"):
+        for forbidden in (
+            "ranking", "dezenas", "jogos", "proximo_concurso", "champion",
+            "challenger", "winner", "best_model", "recommendation", "promotion",
+        ):
             self.assertNotIn(forbidden, serialized)
+
+    def test_report_is_reproducible(self):
+        first = build_report(synthetic_draws(70), min_training=30)
+        second = build_report(synthetic_draws(70), min_training=30)
+        self.assertEqual(first["report_hash"], second["report_hash"])
+        self.assertEqual(first["checkpoints"], second["checkpoints"])
 
     def test_duplicate_contest_is_rejected(self):
         draws = synthetic_draws(35)
