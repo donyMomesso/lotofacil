@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lotofacil",
-  "main": "worker_learning.js",
+  "main": "worker_python_bridge.js",
   "compatibility_date": "2026-07-04",
   "observability": {
     "enabled": true
