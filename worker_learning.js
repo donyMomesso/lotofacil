@@ -1,7 +1,7 @@
 import baseWorker from './worker.js';
 import * as Learning from './learning_audit_core.mjs';
 import * as Governance from './learning_governance.mjs';
-import { loadGamesFromCerebroCheckpoint, persistSystemGames } from './worker_cerebro_games.js';
+import { applyCerebroOrBlock } from './worker_cerebro_games.js';
 
 const HISTORY_LIMIT = 180;
 const DEFAULT_TESTS = 48;
@@ -27,28 +27,25 @@ async function sha256Hex(value) {
   return bytesToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
 }
 
-/** Preferência: jogos do Cérebro Python (checkpoint operacional). */
+/**
+ * Única via legítima de gravar jogos_sistema: checkpoint Python válido.
+ * Sem checkpoint → blocked explícito (não gera métodos em JS).
+ */
 async function applyCerebroSystemGames(env) {
   try {
     const latest = await env.DB.prepare(
       'SELECT concurso FROM resultados ORDER BY concurso DESC LIMIT 1'
     ).first();
     const proximo = latest ? Number(latest.concurso) + 1 : 1;
-    const games = await loadGamesFromCerebroCheckpoint(env, proximo);
-    if (!games || !games.length) {
-      return { applied: false, concurso: proximo, reason: 'sem_checkpoint_ou_concurso_divergente' };
-    }
-    await persistSystemGames(env, proximo, games);
-    return {
-      applied: true,
-      concurso: proximo,
-      jogos: games.length,
-      source: 'cerebro_python',
-      metodos: games.map((g) => g.metodo)
-    };
+    return await applyCerebroOrBlock(env, proximo);
   } catch (err) {
     console.error('applyCerebroSystemGames', err);
-    return { applied: false, reason: String(err.message || err) };
+    return {
+      applied: false,
+      blocked: true,
+      status: 'error',
+      reason: String(err.message || err)
+    };
   }
 }
 
@@ -644,7 +641,10 @@ export default {
     const response = await baseWorker.fetch(request, env, ctx);
     if (url.pathname === '/api/ciclo/rodar' && request.method === 'POST' && response.ok && ctx?.waitUntil) {
       ctx.waitUntil((async () => {
-        await applyCerebroSystemGames(env);
+        const gate = await applyCerebroSystemGames(env);
+        if (gate.blocked) {
+          console.warn('CICLO: jogos_sistema NÃO atualizados —', gate.reason || gate.status);
+        }
         await syncHistoricalLearning(env);
       })());
     }
@@ -654,7 +654,10 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       await runBaseScheduled(event, env);
-      await applyCerebroSystemGames(env);
+      const gate = await applyCerebroSystemGames(env);
+      if (gate.blocked) {
+        console.warn('CRON: checkpoint bloqueado —', gate.reason || gate.status);
+      }
       await syncHistoricalLearning(env);
       await historicalLearningSummary(env);
     })());
