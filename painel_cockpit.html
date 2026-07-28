@@ -41,11 +41,9 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}.bar-label{width:28px;font-weight:800;color:var(--muted)}.bar-track{flex:1;height:10px;background:#f1ecfb;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:999px}
 .notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
 .honest{margin-top:12px;padding:14px;border-radius:14px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.55}
-.honest table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}.honest th,.honest td{padding:6px 8px;border-bottom:1px solid #fde68a;text-align:left}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
 .game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800;align-items:center}
-.spark{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px}.spark span{flex:1;background:linear-gradient(180deg,#c4b5fd,#7c3aed);border-radius:3px 3px 0 0;min-width:4px}
 label.field{display:block;font-size:11px;font-weight:800;color:var(--muted);margin:0 0 4px}
 input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:14px Inter,sans-serif;color:var(--ink);background:#fff}
 textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
@@ -97,6 +95,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div class="card">
         <h2>Jogos do sistema</h2>
         <div class="actions" style="margin-top:0;margin-bottom:8px">
+          <button class="btn soft" type="button" id="btnCopyAll">Copiar todos (1 por linha)</button>
           <button class="btn soft" type="button" id="btnSaveAll">Salvar todos M1–M9</button>
         </div>
         <div id="jogosSistema"></div>
@@ -132,6 +131,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
           <button class="btn soft" type="button" id="logoutBtn">Sair</button>
           <button class="btn ok" type="button" id="checkBtn">Conferir pendentes</button>
           <button class="btn soft" type="button" id="reloadGamesBtn">Atualizar lista</button>
+          <button class="btn soft" type="button" id="btnCopyMy">Copiar meus (1 por linha)</button>
         </div>
         <div id="appStatus" class="muted" style="margin-top:10px"></div>
       </div>
@@ -187,7 +187,7 @@ const TOKEN_KEY = 'lotofacil_mobile_token';
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const int = (n) => Number(n||0).toLocaleString('pt-BR');
-let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false, loadingAprend: false, loadingFull: false };
+let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false, loadingAprend: false, loadingFull: false, meusJogos: [] };
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
 
@@ -217,7 +217,6 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     const panel = $('panel-' + btn.dataset.tab);
     if (panel) panel.classList.add('active');
-    // Aprendizado sob demanda (leve o suficiente). Lab NÃO auto-carrega.
     if (btn.dataset.tab === 'aprend' && !state.aprendLoaded && !state.loadingAprend) {
       loadAprend().catch(() => {});
     }
@@ -229,6 +228,62 @@ function balls(dezenas) {
 }
 function dezenasTexto(dezenas) {
   return (dezenas||[]).map(d => String(d).padStart(2,'0')).join('-');
+}
+
+/** Uma sequência por linha — formato 01-02-03-…-15 */
+function linhaSequencia(dezenasOuTexto) {
+  if (Array.isArray(dezenasOuTexto)) return dezenasTexto(dezenasOuTexto);
+  return String(dezenasOuTexto || '').trim();
+}
+
+async function copiarTexto(texto) {
+  const t = String(texto || '').trim();
+  if (!t) throw new Error('Nada para copiar');
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(t);
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = t;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(ta);
+  if (!ok) throw new Error('Não foi possível copiar');
+}
+
+async function copiarTodosSistema() {
+  const jogos = state.sistema?.jogos_gerados || [];
+  if (!jogos.length) {
+    setStatus('Não há jogos do sistema para copiar.', true);
+    return;
+  }
+  const linhas = jogos.map(j => linhaSequencia(j.dezenas_texto || j.dezenas)).filter(Boolean);
+  try {
+    await copiarTexto(linhas.join('\n'));
+    setStatus('Copiado: ' + linhas.length + ' sequência(s), uma por linha');
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  }
+}
+
+async function copiarMeusJogos() {
+  const jogos = state.meusJogos || [];
+  if (!jogos.length) {
+    setAppStatus('Nenhum jogo salvo para copiar.', true);
+    return;
+  }
+  const linhas = jogos.map(j => linhaSequencia(j.dezenas_texto || j.dezenas)).filter(Boolean);
+  try {
+    await copiarTexto(linhas.join('\n'));
+    setAppStatus('Copiado: ' + linhas.length + ' sequência(s)');
+    setStatus('Copiado: ' + linhas.length + ' sequência(s), uma por linha');
+  } catch (e) {
+    setAppStatus(e.message || String(e), true);
+  }
 }
 
 class ApiError extends Error {
@@ -265,6 +320,7 @@ function showLoggedIn(user) {
 
 function showLoggedOut(clearToken) {
   currentUser = null;
+  state.meusJogos = [];
   if (clearToken) {
     token = '';
     localStorage.removeItem(TOKEN_KEY);
@@ -285,7 +341,6 @@ async function bootstrapAuth() {
     const data = await api('/api/me');
     showLoggedIn(data.user);
   } catch (e) {
-    // Só apaga token se for 401 (sessão inválida). Rede/500 mantém login.
     if (e.status === 401) {
       showLoggedOut(true);
       setStatus('Sessão expirada — entre de novo na aba Meus jogos.', true);
@@ -302,13 +357,17 @@ async function loadMyGames() {
   try {
     const data = await api('/api/jogos');
     const jogos = data.jogos || [];
+    state.meusJogos = jogos;
     if (!jogos.length) {
       $('gamesList').innerHTML = '<p class="muted">Nenhum jogo salvo.</p>';
     } else {
-      $('gamesList').innerHTML = jogos.map(j => `
+      $('gamesList').innerHTML = jogos.map(j => {
+        const linha = linhaSequencia(j.dezenas_texto || j.dezenas);
+        const payload = encodeURIComponent(linha);
+        return `
         <div class="game-card">
           <div class="meta">
-            <span>${j.dezenas_texto || dezenasTexto(j.dezenas)}</span>
+            <span>${linha}</span>
             <span>
               ${j.concurso ? `<span class="badge neu">#${j.concurso}</span>` : ''}
               ${j.metodo ? `<span class="badge neu">${j.metodo}</span>` : ''}
@@ -316,10 +375,12 @@ async function loadMyGames() {
             </span>
           </div>
           <div class="actions">
+            <button class="btn soft" type="button" data-copy="${payload}">Copiar</button>
             <button class="btn ok" type="button" data-status="jogado" data-id="${j.id}">Marcar jogado</button>
             <button class="btn danger" type="button" data-delete="${j.id}">Excluir</button>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     setAppStatus('Lista atualizada');
   } catch (e) {
@@ -377,7 +438,7 @@ function renderHoje(s) {
     ['Próximo', s.proximo_concurso ?? '—', ''],
     ['Histórico', int(s.total_concursos), ''],
     ['Jogos', int((s.jogos_gerados||[]).length), 'M1–M9'],
-    ['Modo', s.mode === 'rapido' ? 'rápido' : 'completo', ''],
+    ['Modo', s.mode || '—', ''],
     ['Ciclo', ciclo?.status || '—', '']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
 
@@ -387,14 +448,36 @@ function renderHoje(s) {
   $('jogosSistema').innerHTML = jogos.length
     ? jogos.map(j => {
         const dez = Array.isArray(j.dezenas) ? j.dezenas : [];
-        const payload = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
-        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span><button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px">Salvar</button></span></div>${balls(dez)}</div>`;
+        const linha = linhaSequencia(j.dezenas_texto || dez);
+        const payloadSave = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
+        const payloadCopy = encodeURIComponent(linha);
+        return `<div class="game-card">
+          <div class="meta"><span>${j.metodo}</span>
+            <span>
+              <button class="btn soft" type="button" data-copy="${payloadCopy}" style="padding:4px 8px;font-size:11px">Copiar</button>
+              <button class="btn soft" type="button" data-save="${payloadSave}" style="padding:4px 8px;font-size:11px">Salvar</button>
+            </span>
+          </div>
+          ${balls(dez)}
+          <div class="muted" style="margin-top:6px;font-family:ui-monospace,Consolas,monospace">${linha}</div>
+        </div>`;
       }).join('')
     : '<p class="muted">Lista vazia — rode o ciclo (logado).</p>';
 
   $('ultimoResultado').innerHTML = u
-    ? `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`
+    ? `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}
+       <div class="actions" style="margin-top:8px">
+         <button class="btn soft" type="button" id="btnCopyUltimo">Copiar resultado</button>
+       </div>`
     : '<p class="muted">Sem resultados.</p>';
+  if (u) {
+    $('btnCopyUltimo')?.addEventListener('click', async () => {
+      try {
+        await copiarTexto(linhaSequencia(u.dezenas_texto || u.dezenas));
+        setStatus('Resultado copiado');
+      } catch (e) { setStatus(e.message, true); }
+    });
+  }
   $('ultimoCiclo').textContent = ciclo
     ? `status=${ciclo.status} · gerados=${ciclo.jogos_gerados ?? '—'}`
     : 'Sem ciclo.';
@@ -428,26 +511,26 @@ function renderAprend(a) {
 function renderLab(s) {
   if (!s) return;
   const ac = s.laboratorio_acumulado;
-  if (!ac && s.mode === 'rapido') {
-    $('metricsLab').innerHTML = '<div class="metric"><div class="label">Lab</div><div class="value">—</div><div class="detail">Botão Lab completo</div></div>';
-    $('labSemana').innerHTML = '<p class="muted">Aguardando lab completo.</p>';
+  if (!ac && (s.mode === 'rapido' || s.mode === 'seguro') && !s.laboratorio_ultimo_conferido) {
+    $('metricsLab').innerHTML = '<div class="metric"><div class="label">Lab</div><div class="value">—</div></div>';
+    $('labSemana').innerHTML = '<p class="muted">Aguardando dados.</p>';
     $('labEstrat').innerHTML = '';
     return;
   }
-  const res = ac?.resumo;
+  const res = ac?.resumo || s.laboratorio_ultimo_conferido?.resumo;
   $('metricsLab').innerHTML = [
     ['Jogos', int(res?.quantidade), ''],
     ['Média', res ? fmt(res.media_acertos,3) : '—', ''],
     ['Melhor', res?.melhor_acerto ?? '—', ''],
     ['11+', int(res?.acertos_11_mais), '']
   ].map(([l,v]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
-  const hist = s.laboratorio_semana_historico || [];
-  $('labSemana').innerHTML = hist.length
-    ? hist.slice(0,6).map(h => `<div class="muted">${h.semana_inicio}: média ${fmt(h.media_acertos,3)}</div>`).join('')
-    : '<p class="muted">Sem dados.</p>';
-  $('labEstrat').innerHTML = (ac?.estrategias || []).slice(0,6).map(e =>
-    `<div class="muted"><b>${e.label||e.key}</b> · ${fmt(e.media_acertos,3)}</div>`
+  const estrat = ac?.estrategias || s.laboratorio_ultimo_conferido?.estrategias || [];
+  $('labEstrat').innerHTML = estrat.slice(0,8).map(e =>
+    `<div class="muted"><b>${e.label||e.key}</b> · média ${fmt(e.media_acertos,3)} · 11+ ${fmt(e.taxa_11_mais,2)}%</div>`
   ).join('') || '—';
+  $('labSemana').innerHTML = s.laboratorio_ultimo_conferido
+    ? `<div class="muted">Último conferido: #${s.laboratorio_ultimo_conferido.concurso} · ${s.laboratorio_ultimo_conferido.quantidade} jogos</div>`
+    : '<p class="muted">Sem lab conferido.</p>';
 }
 
 function renderFreq(s) {
@@ -460,7 +543,7 @@ function renderFreq(s) {
     <span style="width:40px;text-align:right;font-size:11px">${f.frequencia}</span></div>`).join('') || '—';
   $('inicioBars').innerHTML = (s.inicio_dezena || []).length
     ? s.inicio_dezena.map(i => `<div class="muted">${i.inicio_texto||i.inicio}: ${i.quantidade}</div>`).join('')
-    : '<p class="muted">Só no lab completo.</p>';
+    : '<p class="muted">—</p>';
 }
 
 async function loadRapido() {
@@ -468,7 +551,6 @@ async function loadRapido() {
   const r = await fetch('/api/sistema/rapido?t=' + Date.now(), { cache: 'no-store' });
   const data = await r.json().catch(() => ({}));
   if (!r.ok && !data.ok) throw new Error(data.message || 'Falha /api/sistema/rapido');
-  // degraded still ok:true
   state.sistema = data;
   try { renderHoje(data); } catch (e) { console.warn(e); }
   try { renderLab(data); } catch (e) { console.warn(e); }
@@ -479,18 +561,17 @@ async function loadRapido() {
 async function loadFull() {
   if (state.loadingFull) return;
   state.loadingFull = true;
-  setStatus('Lab completo (pode demorar)…');
+  setStatus('Lab completo…');
   if ($('btnFull')) $('btnFull').disabled = true;
   try {
     const t0 = performance.now();
     const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || data.ok === false) throw new Error(data.message || 'Falha status completo');
-    data.mode = 'completo';
+    if (!r.ok || data.ok === false) throw new Error(data.message || 'Falha status');
     state.sistema = data;
     state.fullLoaded = true;
     renderHoje(data); renderLab(data); renderFreq(data);
-    setStatus('Lab completo · ' + Math.round(performance.now() - t0) + ' ms');
+    setStatus('Status · ' + Math.round(performance.now() - t0) + ' ms');
   } catch (e) {
     setStatus(e.message || String(e), true);
   } finally {
@@ -534,6 +615,14 @@ async function refreshRapido() {
 }
 
 $('jogosSistema')?.addEventListener('click', async (ev) => {
+  const copyBtn = ev.target.closest('[data-copy]');
+  if (copyBtn) {
+    try {
+      await copiarTexto(decodeURIComponent(copyBtn.dataset.copy));
+      setStatus('Sequência copiada');
+    } catch (e) { setStatus(e.message, true); }
+    return;
+  }
   const btn = ev.target.closest('[data-save]');
   if (!btn) return;
   try {
@@ -544,7 +633,10 @@ $('jogosSistema')?.addEventListener('click', async (ev) => {
   } catch (e) { setStatus(e.message, true); }
 });
 
+$('btnCopyAll')?.addEventListener('click', () => copiarTodosSistema());
 $('btnSaveAll')?.addEventListener('click', () => saveAllSystemGames());
+$('btnCopyMy')?.addEventListener('click', () => copiarMeusJogos());
+
 $('loginBtn')?.addEventListener('click', async () => {
   setAuthStatus('Entrando…');
   try {
@@ -605,6 +697,14 @@ $('checkBtn')?.addEventListener('click', async () => {
 });
 $('reloadGamesBtn')?.addEventListener('click', () => loadMyGames());
 $('gamesList')?.addEventListener('click', async (ev) => {
+  const copyBtn = ev.target.closest('[data-copy]');
+  if (copyBtn) {
+    try {
+      await copiarTexto(decodeURIComponent(copyBtn.dataset.copy));
+      setAppStatus('Sequência copiada');
+    } catch (e) { setAppStatus(e.message, true); }
+    return;
+  }
   const idStatus = ev.target.dataset.id && ev.target.dataset.status ? ev.target.dataset.id : '';
   const idDel = ev.target.dataset.delete || '';
   try {
@@ -645,16 +745,8 @@ window.addEventListener('unhandledrejection', (ev) => {
 });
 
 (async () => {
-  try {
-    await bootstrapAuth();
-  } catch (e) {
-    console.warn(e);
-  }
-  try {
-    await refreshRapido();
-  } catch (e) {
-    setStatus(e.message || String(e), true);
-  }
+  try { await bootstrapAuth(); } catch (e) { console.warn(e); }
+  try { await refreshRapido(); } catch (e) { setStatus(e.message || String(e), true); }
 })();
 </script>
 </body>
