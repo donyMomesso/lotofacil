@@ -10,6 +10,9 @@ teórico esperado (hipergeométrico).
 Lembrete de regra do laboratório: nunca reportar um método como
 "mais perto" de 14 ou 15 acertos. Reportar sempre médias, dispersão
 e frequência relativa dos resultados de acertos (0 a 15).
+
+Geração M1–M9: fonte canônica em motor_python_v4/metodos.py
+(via cerebro_bridge). Fallback local apenas se o motor não estiver disponível.
 """
 import csv
 import itertools
@@ -215,7 +218,7 @@ def frequencia_e_atraso(ate_concurso=None):
     return freq, atraso, total_concursos
 
 
-# ---------- geração dos 5 métodos (hipóteses de estudo) ----------
+# ---------- geração dos métodos (fallback local; canônico = motor_python_v4) ----------
 
 def _sorteio_valido(dezenas):
     return len(set(dezenas)) == 15 and all(1 <= d <= 25 for d in dezenas)
@@ -232,8 +235,6 @@ def metodo_aleatorio_puro(rng):
 
 def metodo_mais_frequentes(rng, freq):
     rng = _rng_or_default(rng)
-    # ordena por frequência desc; empates quebrados aleatoriamente para não
-    # favorecer sistematicamente dezenas menores
     dezenas = TODAS_DEZENAS[:]
     rng.shuffle(dezenas)
     dezenas.sort(key=lambda d: freq[d], reverse=True)
@@ -255,7 +256,7 @@ def metodo_par_impar_balanceado(rng, alvo_pares=8, max_tentativas=500):
         pares = sum(1 for d in candidato if d % 2 == 0)
         if pares == alvo_pares:
             return set(candidato)
-    return metodo_aleatorio_puro(rng)  # fallback, não deve ocorrer na prática
+    return metodo_aleatorio_puro(rng)
 
 
 def metodo_soma_faixa_comum(rng, faixa_min=180, faixa_max=210, max_tentativas=1000):
@@ -264,7 +265,7 @@ def metodo_soma_faixa_comum(rng, faixa_min=180, faixa_max=210, max_tentativas=10
         candidato = rng.sample(TODAS_DEZENAS, 15)
         if faixa_min <= sum(candidato) <= faixa_max:
             return set(candidato)
-    return metodo_aleatorio_puro(rng)  # fallback
+    return metodo_aleatorio_puro(rng)
 
 
 def _resultados_como_sets(ate_concurso=None):
@@ -372,47 +373,25 @@ def metodo_repeticao_controlada(rng, resultados_sets):
 
 
 def metodo_tese_v2(rng, atraso):
-    """
-    M9: Tese V2 - Baseada em dados reais (Concurso 3727, M3)
-    
-    Padrão observado:
-    - Soma: 180-190 (foi 198-200 na tese anterior, estava errado)
-    - Pares: 7 (estava 7.6 na simulação, agora fixo em 7)
-    - Método: Favorece dezenas mais atrasadas (como M3)
-    - Dezenas críticas: Removidas (eram coincidência)
-    
-    Racional: M3 teve 50% de vencimento na realidade vs 8.8% na simulação.
-    Ajustamento de soma para padrão real: 184 ± 6 = 180-190.
-    """
     rng = _rng_or_default(rng)
-    
-    # Ordena por atraso (igual M3, mas com filtro de soma/paridade)
     dezenas_ordenadas = sorted(TODAS_DEZENAS, key=lambda d: atraso[d], reverse=True)
-    
-    # Tenta encontrar combinação com soma 180-190 e 7 pares
     for _ in range(1000):
         candidato = rng.sample(dezenas_ordenadas, 15)
         soma = sum(candidato)
         pares = sum(1 for d in candidato if d % 2 == 0)
-        
-        # Tese V2: soma 180-190, pares = 7
         if SOMA_TESE_V2_MIN <= soma <= SOMA_TESE_V2_MAX and pares == PARES_TESE_V2:
             return set(candidato)
-    
-    # Fallback: tenta pares 6-8 se não encontrar 7 exato
     for _ in range(500):
         candidato = rng.sample(dezenas_ordenadas, 15)
         soma = sum(candidato)
         pares = sum(1 for d in candidato if d % 2 == 0)
-        
         if SOMA_TESE_V2_MIN <= soma <= SOMA_TESE_V2_MAX and 6 <= pares <= 8:
             return set(candidato)
-    
-    # Fallback final: M3 puro
     return metodo_mais_atrasadas(rng, atraso)
 
 
-def gerar_todos_metodos(seed=None, ate_concurso=None):
+def _gerar_todos_metodos_local(seed=None, ate_concurso=None):
+    """Fallback se motor_python_v4 não estiver disponível."""
     rng = random.Random(seed)
     freq, atraso, _ = frequencia_e_atraso(ate_concurso)
     resultados_sets = _resultados_como_sets(ate_concurso)
@@ -427,6 +406,22 @@ def gerar_todos_metodos(seed=None, ate_concurso=None):
         "M8_repeticao_controlada": metodo_repeticao_controlada(rng, resultados_sets),
         "M9_tese_v2": metodo_tese_v2(rng, atraso),
     }
+
+
+def gerar_todos_metodos(seed=None, ate_concurso=None):
+    """
+    Gera um jogo de estudo por método (M1–M9).
+
+    Fonte canônica: motor_python_v4/metodos.py (via cerebro_bridge).
+    Fallback: implementação local (mesma assinatura).
+    """
+    resultados_sets = _resultados_como_sets(ate_concurso)
+    try:
+        from cerebro_bridge import gerar_metodos_cerebro
+
+        return gerar_metodos_cerebro(resultados_sets, seed=seed)
+    except Exception:
+        return _gerar_todos_metodos_local(seed=seed, ate_concurso=ate_concurso)
 
 
 # ---------- estatísticas de desempenho por método ----------
@@ -554,7 +549,6 @@ def salvar_frequencia_dezenas():
             })
 
 
-
 def formatar_para_extensao(matrizes_geradas):
     if not matrizes_geradas:
         return ""
@@ -566,22 +560,8 @@ def formatar_para_extensao(matrizes_geradas):
 
     return "\n".join(linhas_formatadas)
 
-# ---------- desdobramento e filtros combinatorios (estudo, não geração de apostas) ----------
-#
-# Estas funções servem só para ILUSTRAR o espaço de combinações que atendem a
-# certos critérios estruturais (soma, paridade, sequência, distribuição por
-# linha) — nunca para produzir uma lista de jogos "para jogar". Sempre usar em
-# conjunto com o backtest de combinações fixas abaixo, que mostra que mesmo
-# essas combinações "bem-comportadas" têm a mesma esperança teórica de 9,0.
 
 def desdobramento_total(dezenas_base, tamanho_linha=15):
-    """
-    Recebe uma base com mais de `tamanho_linha` dezenas (ex: 18) e retorna
-    todas as combinações possíveis de `tamanho_linha` dezenas dentro dela —
-    a mesma matemática por trás de uma aposta estendida da Lotofácil
-    (C(len(base), tamanho_linha) combinações). Ver dados/apostas_estendidas.csv
-    para o custo de cada tamanho de base.
-    """
     if len(dezenas_base) < tamanho_linha:
         raise ValueError(f"A base deve ter pelo menos {tamanho_linha} dezenas.")
     matriz_gerada = list(itertools.combinations(sorted(dezenas_base), tamanho_linha))
@@ -598,8 +578,6 @@ def passa_filtro_soma(linha, soma_min=180, soma_max=210):
 
 
 def passa_filtro_sem_sequencia_longa(linha, max_run=5):
-    """True se a linha não tem uma sequência de mais de `max_run` dezenas
-    consecutivas (ex: 10,11,12,13,14,15,16 seria uma sequência de 7)."""
     dezenas_ordenadas = sorted(linha)
     maior_run = 1
     run_atual = 1
@@ -613,8 +591,6 @@ def passa_filtro_sem_sequencia_longa(linha, max_run=5):
 
 
 def passa_filtro_linhas_vazias(linha, max_linhas_vazias=1):
-    """True se no máximo `max_linhas_vazias` das 5 linhas do volante
-    (1-5, 6-10, 11-15, 16-20, 21-25) ficam sem nenhuma dezena escolhida."""
     faixas = [(1, 5), (6, 10), (11, 15), (16, 20), (21, 25)]
     vazias = sum(1 for a, b in faixas if not any(a <= d <= b for d in linha))
     return vazias <= max_linhas_vazias
@@ -623,14 +599,6 @@ def passa_filtro_linhas_vazias(linha, max_linhas_vazias=1):
 def aplicar_filtros_combinatorios(matriz_bidimensional, pares_min=8, pares_max=8,
                                    soma_min=180, soma_max=210,
                                    max_run=5, max_linhas_vazias=1):
-    """
-    Filtra uma matriz de combinações, mantendo só as linhas que atendem a
-    todos os critérios simultaneamente (par/ímpar, soma, sem sequência longa,
-    no máximo 1 linha vazia). Por padrão usa exatamente os critérios do
-    estudo "4 filtros combinados" do diário (que reduz as 3.268.760
-    combinações possíveis para 366.487 — 11,21%). Isto é só descrição do
-    espaço combinatório, não é indicação de jogo.
-    """
     matriz_filtrada = []
     for linha in matriz_bidimensional:
         if (passa_filtro_par_impar(linha, pares_min, pares_max)
@@ -642,14 +610,6 @@ def aplicar_filtros_combinatorios(matriz_bidimensional, pares_min=8, pares_max=8
 
 
 def gerar_exemplos_filtrados(n_exemplos=5, seed=None, **filtros_kwargs):
-    """
-    Gera `n_exemplos` combinações de 15 dezenas, por amostragem aleatória
-    com rejeição, que passam pelos filtros combinados (mesma definição de
-    `aplicar_filtros_combinatorios`). Não enumera as 3.268.760 combinações
-    inteiras — amostra direto do espaço de 25 dezenas até achar exemplos
-    válidos, o que é equivalente e muito mais rápido (o filtro combinado
-    aceita ~11% das combinações aleatórias).
-    """
     rng = random.Random(seed)
     exemplos = []
     tentativas = 0
@@ -664,15 +624,6 @@ def gerar_exemplos_filtrados(n_exemplos=5, seed=None, **filtros_kwargs):
 
 
 def backtest_combinacoes_fixas(combinacoes, resultados=None):
-    """
-    Para cada combinação fixa (uma lista de 15 dezenas), confere quantos
-    acertos ela teria feito em CADA concurso real do histórico. Diferente
-    do backtest dos métodos M1-M5 (que gera um jogo novo por concurso),
-    aqui é a MESMA combinação testada contra todos os sorteios já
-    realizados — serve para mostrar que mesmo uma combinação "bem
-    filtrada" tem média de acertos igual à esperança teórica no longo
-    prazo, sem nenhuma vantagem preditiva.
-    """
     if resultados is None:
         resultados = carregar_resultados()
 
@@ -698,4 +649,3 @@ def backtest_combinacoes_fixas(combinacoes, resultados=None):
             "qtd_15_acertos": dist.get(15, 0),
         })
     return linhas
-
