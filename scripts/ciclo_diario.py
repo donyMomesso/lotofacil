@@ -6,17 +6,21 @@ Ciclo diário completo do laboratório — pensado para rodar sozinho
   2. Registra cada um no histórico real.
   3. Confere os jogos de estudo que tinham esses concursos como alvo.
   3b. Importa jogos manuais de dados/meus_jogos.csv (se existir).
-  4. Gera os jogos de estudo do próximo concurso (5 métodos).
+  4. Gera os jogos de estudo do próximo concurso (métodos M1–M9).
   5. Atualiza frequência/atraso e desempenho por método.
   6. Gera o relatório (reports/relatorio_estatistico.md).
   7. Gera o banco JSON do projeto (dados/banco_projeto.json).
   8. Gera os painéis visuais e aplica correção mobile.
   9. Anexa um bloco educativo em diario_estatistico.md.
+ 10. Exporta checkpoint operacional do Cérebro Python.
 
 Uso:
     python3 ciclo_diario.py
 """
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
+import subprocess
+import sys
 
 import lotofacil_lib as lib
 import gerar_relatorio
@@ -31,6 +35,7 @@ from diario import montar_bloco_diario, anexar_diario
 from buscar_resultado import buscar_concurso
 
 BRASILIA = timezone(timedelta(hours=-3))
+BASE_DIR = Path(__file__).resolve().parent.parent
 METODOS_AVANCADOS = {
     "M6_filtros_combinados",
     "M7_cobertura_pares",
@@ -46,6 +51,32 @@ def jogo_exato_ja_gerado(concurso_alvo, metodo, dezenas):
         and j["dezenas"] == dezenas_str
         for j in lib.carregar_jogos()
     )
+
+
+def exportar_checkpoint_cerebro(concurso_alvo: int) -> None:
+    """Gera checkpoint operacional a partir do Cérebro Python (source of truth)."""
+    script = BASE_DIR / "scripts" / "exportar_checkpoint_cerebro.py"
+    if not script.exists():
+        print("[aviso] exportar_checkpoint_cerebro.py não encontrado — pulando checkpoint.")
+        return
+    cmd = [
+        sys.executable,
+        str(script),
+        "--concurso-alvo",
+        str(concurso_alvo),
+        "--seed",
+        str(concurso_alvo),
+    ]
+    try:
+        result = subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120)
+        if result.returncode == 0:
+            print("[ok] Checkpoint do Cérebro Python exportado.")
+            if result.stdout.strip():
+                print(result.stdout.strip())
+        else:
+            print(f"[aviso] Checkpoint falhou (rc={result.returncode}): {result.stderr.strip()[:400]}")
+    except Exception as exc:
+        print(f"[aviso] Checkpoint não gerado: {exc}")
 
 
 def main():
@@ -123,6 +154,9 @@ def main():
         total_concursos=total_concursos,
     )
     anexar_diario(bloco)
+
+    # 10. Checkpoint do Cérebro Python (source of truth)
+    exportar_checkpoint_cerebro(proximo_concurso)
 
     print(f"\nResumo: {len(novos_concursos)} concurso(s) novo(s), "
           f"{len(conferencias_do_dia)} conferência(s), "

@@ -27,10 +27,23 @@ async function exportHistoricalResults(env) {
   });
 }
 
-async function pythonCheckpoint(request, env) {
-  const assetUrl = new URL('/motor_python_v4/checkpoints/latest.json', request.url);
+async function fetchAssetJson(request, env, assetPath) {
+  const assetUrl = new URL(assetPath, request.url);
   const response = await env.ASSETS.fetch(new Request(assetUrl, { headers: request.headers }));
   if (!response.ok) {
+    return { ok: false, status: response.status };
+  }
+  try {
+    const payload = await response.json();
+    return { ok: true, payload };
+  } catch {
+    return { ok: false, status: 500, invalid: true };
+  }
+}
+
+async function pythonCheckpoint(request, env) {
+  const result = await fetchAssetJson(request, env, '/motor_python_v4/checkpoints/latest.json');
+  if (!result.ok) {
     return json({
       ok: false,
       purpose: 'historical_education_only',
@@ -38,12 +51,27 @@ async function pythonCheckpoint(request, env) {
       message: 'O primeiro bloco histórico de 5 concursos ainda não foi publicado.'
     }, 503);
   }
-  try {
-    const payload = await response.json();
-    return json(payload, 200);
-  } catch {
+  if (result.invalid) {
     return json({ ok: false, message: 'Checkpoint Python inválido.' }, 500);
   }
+  return json(result.payload, 200);
+}
+
+async function pythonCheckpointOperacional(request, env) {
+  const result = await fetchAssetJson(request, env, '/motor_python_v4/checkpoints/operacional.json');
+  if (!result.ok) {
+    return json({
+      ok: false,
+      purpose: 'historical_education_only',
+      source_of_truth: 'python',
+      status: 'aguardando_checkpoint_operacional',
+      message: 'Rode scripts/exportar_checkpoint_cerebro.py no ciclo diário para publicar o checkpoint operacional.'
+    }, 503);
+  }
+  if (result.invalid) {
+    return json({ ok: false, message: 'Checkpoint operacional inválido.' }, 500);
+  }
+  return json(result.payload, 200);
 }
 
 export default {
@@ -58,6 +86,9 @@ export default {
     }
     if (request.method === 'GET' && url.pathname === '/api/aprendizado/checkpoint-python') {
       return pythonCheckpoint(request, env);
+    }
+    if (request.method === 'GET' && url.pathname === '/api/aprendizado/checkpoint-operacional') {
+      return pythonCheckpointOperacional(request, env);
     }
     return historicalWorker.fetch(request, env, ctx);
   },
