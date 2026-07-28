@@ -36,6 +36,7 @@ assert.doesNotMatch(page, /Champion|Challenger|promover|recomendação futura|Co
   'assert_safe_report'
 ].forEach((marker) => assert(auditCore.includes(marker), `marcador ausente no núcleo Python: ${marker}`));
 
-assert.doesNotMatch(auditCore, /historical_champion|best_model|winner/);
+assert.doesNotMatch(auditCore, /historical_champion|champion\s*=|best_model\s*=|winner\s*=/);
+assert.match(auditCore, /"champion".*"challenger".*"winner".*"best_model"/s);
 
 console.log('OK: cérebro Python histórico, ponte D1 e painel sem seleção futura.');
