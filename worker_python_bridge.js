@@ -1,4 +1,5 @@
 import historicalWorker from './worker_learning.js';
+import { ensureJogosSistemaProvenance } from './worker_cerebro_games.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -55,7 +56,6 @@ async function safeAll(env, sql, binds = []) {
   }
 }
 
-/** Aplica colunas das migrations 0004 e 0006 se ainda não existirem no D1 de produção. */
 async function ensureAppSchema(env) {
   if (!env?.DB) return;
   const alters = [
@@ -63,14 +63,25 @@ async function ensureAppSchema(env) {
     'ALTER TABLE jogos ADD COLUMN descartar_apos_rodadas INTEGER NOT NULL DEFAULT 2',
     'ALTER TABLE conferencias ADD COLUMN dezenas_jogadas TEXT',
     'ALTER TABLE conferencias ADD COLUMN dezenas_acertadas TEXT',
-    'ALTER TABLE conferencias ADD COLUMN metodo TEXT'
+    'ALTER TABLE conferencias ADD COLUMN metodo TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN origem TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN cerebro_version TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN checkpoint_hash TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN audit_brain_version TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN source_of_truth TEXT',
+    'ALTER TABLE jogos_sistema ADD COLUMN checkpoint_generated_at TEXT'
   ];
   for (const sql of alters) {
     try {
       await env.DB.prepare(sql).run();
     } catch {
-      // coluna já existe — ok
+      // ok
     }
+  }
+  try {
+    await ensureJogosSistemaProvenance(env);
+  } catch (e) {
+    console.error('ensureJogosSistemaProvenance', e);
   }
 }
 
@@ -88,7 +99,6 @@ async function getUserFromRequest(request, env) {
   `, [token]);
 }
 
-/** Lista jogos sem indicadores/aprendizado pesados (fonte do 500). */
 async function listJogosSeguro(user, env) {
   await ensureAppSchema(env);
 
@@ -101,29 +111,14 @@ async function listJogosSeguro(user, env) {
     LIMIT 1000
   `, [user.id]);
 
-  // fallback se ainda faltar coluna
   if (!rows.length) {
     const alt = await safeAll(env, `
       SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
              criado_em, atualizado_em
-      FROM jogos
-      WHERE usuario_id = ?
-      ORDER BY datetime(criado_em) DESC
-      LIMIT 1000
+      FROM jogos WHERE usuario_id = ?
+      ORDER BY id DESC LIMIT 1000
     `, [user.id]);
     if (alt.length) rows = alt;
-  }
-
-  // contar total sem filtro de order para debug
-  if (!rows.length) {
-    const cnt = await safeFirst(env, 'SELECT COUNT(*) AS c FROM jogos WHERE usuario_id = ?', [user.id]);
-    if (cnt && Number(cnt.c) > 0) {
-      rows = await safeAll(env, `
-        SELECT id, concurso, metodo, dezenas, dezenas_texto, status, observacao,
-               criado_em, atualizado_em
-        FROM jogos WHERE usuario_id = ? ORDER BY id DESC LIMIT 1000
-      `, [user.id]);
-    }
   }
 
   const jogos = rows.map((jogo) => {
@@ -145,27 +140,23 @@ async function listJogosSeguro(user, env) {
     };
   });
 
-  // conferências leves (sem colunas opcionais obrigatórias)
   if (jogos.length) {
     const ids = jogos.map((j) => j.id);
     const byId = new Map(jogos.map((j) => [j.id, j]));
-    // D1 limita binds; fatia em lotes de 50
     for (let i = 0; i < ids.length; i += 50) {
       const chunk = ids.slice(i, i + 50);
       const ph = chunk.map(() => '?').join(',');
       const confs = await safeAll(env, `
         SELECT jogo_id, concurso, acertos, conferido_em,
                dezenas_sorteadas, dezenas_jogadas, dezenas_acertadas, metodo
-        FROM conferencias
-        WHERE jogo_id IN (${ph})
+        FROM conferencias WHERE jogo_id IN (${ph})
         ORDER BY concurso ASC
       `, chunk);
       for (const c of confs) {
         const jogo = byId.get(c.jogo_id);
         if (!jogo) continue;
-        const rodada = jogo.conferencias.length + 1;
         jogo.conferencias.push({
-          rodada,
+          rodada: jogo.conferencias.length + 1,
           concurso: c.concurso,
           acertos: c.acertos,
           dezenas_sorteadas: c.dezenas_sorteadas,
@@ -176,18 +167,9 @@ async function listJogosSeguro(user, env) {
         });
       }
     }
-    for (const jogo of jogos) {
-      jogo.conferencias.sort((a, b) => Number(b.concurso) - Number(a.concurso));
-    }
   }
 
-  return json({
-    ok: true,
-    jogos,
-    indicadores_rodada: null,
-    aprendizado_origens: null,
-    source: 'bridge_seguro'
-  });
+  return json({ ok: true, jogos, source: 'bridge_seguro' });
 }
 
 function parseLabRow(row) {
@@ -209,10 +191,32 @@ function parseLabRow(row) {
   };
 }
 
+function mapJogoSistema(row) {
+  let dezenas = [];
+  try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
+  return {
+    concurso: row.concurso,
+    metodo: row.metodo,
+    dezenas,
+    dezenas_texto: row.dezenas_texto,
+    soma: row.soma,
+    pares: row.pares,
+    impares: row.impares,
+    origem: row.origem || null,
+    cerebro_version: row.cerebro_version || null,
+    checkpoint_hash: row.checkpoint_hash || null,
+    audit_brain_version: row.audit_brain_version || null,
+    source_of_truth: row.source_of_truth || null,
+    checkpoint_generated_at: row.checkpoint_generated_at || null,
+    criado_em: row.criado_em || null
+  };
+}
+
 async function sistemaStatusSeguro(env) {
   if (!env?.DB) {
     return json({ ok: false, message: 'Binding D1 (DB) ausente no deploy.' }, 500);
   }
+  await ensureAppSchema(env);
 
   const totalRow = await safeFirst(env, 'SELECT COUNT(*) AS total FROM resultados');
   const latest = await safeFirst(env, `
@@ -249,23 +253,43 @@ async function sistemaStatusSeguro(env) {
     };
   });
 
-  const jogosRows = await safeAll(env, `
-    SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
+  // Prefer SELECT com provenance; fallback sem colunas
+  let jogosRows = await safeAll(env, `
+    SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares,
+           origem, cerebro_version, checkpoint_hash,
+           audit_brain_version, source_of_truth, checkpoint_generated_at, criado_em
     FROM jogos_sistema WHERE concurso = ? ORDER BY metodo
   `, [proximo]);
-  const jogos_gerados = jogosRows.map((row) => {
-    let dezenas = [];
-    try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
-    return {
-      concurso: row.concurso,
-      metodo: row.metodo,
-      dezenas,
-      dezenas_texto: row.dezenas_texto,
-      soma: row.soma,
-      pares: row.pares,
-      impares: row.impares
-    };
-  });
+  if (!jogosRows.length) {
+    jogosRows = await safeAll(env, `
+      SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares, criado_em
+      FROM jogos_sistema WHERE concurso = ? ORDER BY metodo
+    `, [proximo]);
+  }
+  const jogos_gerados = jogosRows.map(mapJogoSistema);
+
+  // Provenance resumida do lote atual
+  const provenance = jogos_gerados.length
+    ? {
+        origem: jogos_gerados[0].origem,
+        cerebro_version: jogos_gerados[0].cerebro_version,
+        checkpoint_hash: jogos_gerados[0].checkpoint_hash,
+        audit_brain_version: jogos_gerados[0].audit_brain_version,
+        source_of_truth: jogos_gerados[0].source_of_truth,
+        checkpoint_generated_at: jogos_gerados[0].checkpoint_generated_at,
+        metodos: jogos_gerados.map((j) => j.metodo),
+        jogos: jogos_gerados.length,
+        rastreavel: Boolean(jogos_gerados[0].checkpoint_hash || jogos_gerados[0].origem)
+      }
+    : null;
+
+  const ultimo_ingest = await safeFirst(env, `
+    SELECT id, concurso, origem, cerebro_version, checkpoint_hash,
+           audit_brain_version, source_of_truth, checkpoint_generated_at,
+           metodos_json, jogos_count, ingestido_em
+    FROM checkpoint_ingest
+    ORDER BY id DESC LIMIT 1
+  `);
 
   const ciclo = await safeFirst(env, `
     SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
@@ -325,8 +349,7 @@ async function sistemaStatusSeguro(env) {
   let laboratorio_acumulado = null;
   if (labsRecentes.length) {
     const resumo = {
-      quantidade: 0,
-      acertos_11: 0, acertos_12: 0, acertos_13: 0, acertos_14: 0, acertos_15: 0,
+      quantidade: 0, acertos_11: 0, acertos_12: 0, acertos_13: 0, acertos_14: 0, acertos_15: 0,
       acertos_11_mais: 0, melhor_acerto: 0, media_acertos: 0
     };
     const estratMap = new Map();
@@ -345,8 +368,7 @@ async function sistemaStatusSeguro(env) {
       for (const item of lab.estrategias || []) {
         const cur = estratMap.get(item.key) || {
           key: item.key, label: item.label, jogos: 0, soma_acertos: 0,
-          acertos_11: 0, acertos_12: 0, acertos_13: 0, acertos_14: 0, acertos_15: 0,
-          melhor_acerto: 0
+          acertos_11: 0, acertos_12: 0, acertos_13: 0, acertos_14: 0, acertos_15: 0, melhor_acerto: 0
         };
         cur.jogos += Number(item.jogos || 0);
         cur.soma_acertos += Number(item.soma_acertos || 0);
@@ -359,9 +381,7 @@ async function sistemaStatusSeguro(env) {
         estratMap.set(item.key, cur);
       }
     }
-    if (resumo.quantidade) {
-      resumo.media_acertos = Number((resumo.media_acertos / resumo.quantidade).toFixed(4));
-    }
+    if (resumo.quantidade) resumo.media_acertos = Number((resumo.media_acertos / resumo.quantidade).toFixed(4));
     const estrategias = Array.from(estratMap.values()).map((item) => ({
       ...item,
       media_acertos: item.jogos ? Number((item.soma_acertos / item.jogos).toFixed(4)) : 0,
@@ -389,8 +409,10 @@ async function sistemaStatusSeguro(env) {
     laboratorio_semana_atual: null,
     laboratorio_semana_historico: [],
     jogos_gerados,
+    provenance,
+    ultimo_ingest,
     jogos_conferidor: [],
-    note: 'Status seguro: só leitura.'
+    note: 'Status seguro. Provenance em jogos_sistema quando origem=cerebro_python.'
   });
 }
 
@@ -403,13 +425,7 @@ async function exportHistoricalResults(env) {
     try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
     return { concurso: Number(row.concurso), data: String(row.data_sorteio || ''), dezenas };
   }).filter((row) => row.concurso > 0 && Array.isArray(row.dezenas) && row.dezenas.length === 15);
-  return json({
-    ok: true,
-    purpose: 'historical_education_only',
-    source: 'd1_resultados',
-    total: resultados.length,
-    resultados
-  });
+  return json({ ok: true, purpose: 'historical_education_only', source: 'd1_resultados', total: resultados.length, resultados });
 }
 
 async function fetchAssetJson(request, env, assetPath) {
@@ -426,12 +442,7 @@ async function fetchAssetJson(request, env, assetPath) {
 async function pythonCheckpoint(request, env) {
   const result = await fetchAssetJson(request, env, '/motor_python_v4/checkpoints/latest.json');
   if (!result.ok) {
-    return json({
-      ok: false,
-      purpose: 'historical_education_only',
-      status: 'aguardando_primeiro_checkpoint_python',
-      message: 'Aguardando checkpoint Python.'
-    }, 503);
+    return json({ ok: false, purpose: 'historical_education_only', status: 'aguardando_primeiro_checkpoint_python', message: 'Aguardando checkpoint Python.' }, 503);
   }
   if (result.invalid) return json({ ok: false, message: 'Checkpoint Python inválido.' }, 500);
   return json(result.payload, 200);
@@ -440,13 +451,7 @@ async function pythonCheckpoint(request, env) {
 async function pythonCheckpointOperacional(request, env) {
   const result = await fetchAssetJson(request, env, '/motor_python_v4/checkpoints/operacional.json');
   if (!result.ok) {
-    return json({
-      ok: false,
-      purpose: 'historical_education_only',
-      source_of_truth: 'python',
-      status: 'aguardando_checkpoint_operacional',
-      message: 'Rode exportar_checkpoint_cerebro.py no ciclo diário.'
-    }, 503);
+    return json({ ok: false, purpose: 'historical_education_only', source_of_truth: 'python', status: 'aguardando_checkpoint_operacional', message: 'Rode exportar_checkpoint_cerebro.py no ciclo diário.' }, 503);
   }
   if (result.invalid) return json({ ok: false, message: 'Checkpoint operacional inválido.' }, 500);
   return json(result.payload, 200);
@@ -455,7 +460,6 @@ async function pythonCheckpointOperacional(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-
     try {
       if (request.method === 'OPTIONS') {
         return new Response(null, {
@@ -481,23 +485,17 @@ export default {
           return await sistemaStatusSeguro(env);
         } catch (error) {
           return json({
-            ok: true,
-            mode: 'degraded',
-            total_concursos: 0,
-            ultimo_resultado: null,
-            proximo_concurso: 1,
-            jogos_gerados: [],
-            frequencia_dezenas: [],
+            ok: true, mode: 'degraded', total_concursos: 0, ultimo_resultado: null,
+            proximo_concurso: 1, jogos_gerados: [], frequencia_dezenas: [],
             message: String(error.message || error)
           });
         }
       }
 
       if (request.method === 'GET' && url.pathname === '/api/health') {
-        return json({ ok: true, service: 'lotofacil', bridge: true });
+        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true });
       }
 
-      // Lista de jogos: caminho seguro (evita 500 de indicadores/colunas)
       if (request.method === 'GET' && url.pathname === '/api/jogos') {
         try {
           await ensureAppSchema(env);
@@ -505,25 +503,16 @@ export default {
           if (!user) return json({ ok: false, message: 'Acesso nao autorizado.' }, 401);
           return await listJogosSeguro(user, env);
         } catch (err) {
-          console.error('listJogosSeguro', err);
-          return json({
-            ok: false,
-            message: 'Falha ao listar jogos: ' + String(err.message || err)
-          }, 500);
+          return json({ ok: false, message: 'Falha ao listar jogos: ' + String(err.message || err) }, 500);
         }
       }
 
-      // Antes de conferir / ciclo / POST jogos: garante schema
       if (
         url.pathname.startsWith('/api/jogos') ||
         url.pathname === '/api/ciclo/rodar' ||
         url.pathname.startsWith('/api/fechamentos')
       ) {
-        try {
-          await ensureAppSchema(env);
-        } catch (e) {
-          console.error('ensureAppSchema', e);
-        }
+        try { await ensureAppSchema(env); } catch (e) { console.error(e); }
       }
 
       if (request.method === 'GET' && url.pathname === '/api/aprendizado/exportar-resultados') {
@@ -541,32 +530,20 @@ export default {
 
       try {
         const response = await historicalWorker.fetch(request, env, ctx);
-        // Se conferir-pendentes voltar 500 genérico, devolve mensagem legível
-        if (
-          response.status >= 500 &&
-          url.pathname === '/api/jogos/conferir-pendentes'
-        ) {
+        if (response.status >= 500 && url.pathname === '/api/jogos/conferir-pendentes') {
           const body = await response.clone().json().catch(() => ({}));
           return json({
             ok: false,
-            message: body.message || 'Conferir pendentes falhou. Schema aplicado; tente de novo ou rode o ciclo.',
+            message: body.message || 'Conferir pendentes falhou.',
             detail: body
           }, 500);
         }
         return response;
       } catch (err) {
-        console.error('historicalWorker', err);
-        return json({
-          ok: false,
-          message: 'Erro no Worker: ' + String(err.message || err)
-        }, 500);
+        return json({ ok: false, message: 'Erro no Worker: ' + String(err.message || err) }, 500);
       }
     } catch (err) {
-      console.error('bridge top', err);
-      return json({
-        ok: false,
-        message: 'Erro interno do servidor: ' + String(err.message || err)
-      }, 500);
+      return json({ ok: false, message: 'Erro interno do servidor: ' + String(err.message || err) }, 500);
     }
   },
 
