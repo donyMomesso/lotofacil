@@ -1,0 +1,87 @@
+name: Publicar checkpoint Python
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: checkpoint-python-historico
+  cancel-in-progress: false
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Definir fonte histórica
+        id: source
+        shell: bash
+        run: |
+          URL="${{ vars.LOTOFACIL_EXPORT_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://lotofacil.donyconfcargo.workers.dev/api/aprendizado/exportar-resultados"
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Exportar resultados encerrados do D1
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            "${{ steps.source.outputs.url }}" \
+            --output /tmp/lotofacil-historico.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path('/tmp/lotofacil-historico.json').read_text(encoding='utf-8'))
+          if not payload.get('ok'):
+              raise SystemExit('A exportação histórica retornou ok=false.')
+          resultados = payload.get('resultados')
+          if not isinstance(resultados, list) or len(resultados) < 31:
+              raise SystemExit('Histórico insuficiente para a auditoria Python.')
+          print(f"Resultados recebidos: {len(resultados)}")
+          PY
+
+      - name: Executar testes do cérebro Python
+        working-directory: motor_python_v4
+        run: python -m unittest -v test_audit_core.py
+
+      - name: Gerar checkpoint somente ao fechar novo bloco de 5
+        working-directory: motor_python_v4
+        run: |
+          python checkpoint.py /tmp/lotofacil-historico.json \
+            --saida checkpoints/latest.json \
+            --min-training 30
+
+      - name: Verificar mudança
+        id: changes
+        shell: bash
+        run: |
+          if git diff --quiet -- motor_python_v4/checkpoints/latest.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nenhum novo bloco completo de 5 concursos."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publicar novo checkpoint
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add motor_python_v4/checkpoints/latest.json
+          git commit -m "Atualiza checkpoint Python histórico"
+          git push origin main

@@ -1,30 +1,56 @@
-# Motor Estatístico Lotofácil v4
+# Cérebro Python — Auditoria Histórica
 
-Módulo isolado para selecionar bases de 15 a 21 dezenas, gerar fechamentos completos ou reduzidos, executar backtests cronológicos e manter memória adaptativa.
+Este diretório concentra a fonte única de auditoria retrospectiva do projeto.
 
-## Experiência incorporada
+O objetivo é comparar, em concursos já encerrados, os métodos Estável, Adaptativo e Python v4 usando exatamente o mesmo histórico disponível em cada ponto do tempo.
 
-- soma entre 180 e 220;
-- 6 a 9 pares;
-- mínimo de 5 primos;
-- pelo menos 8 dezenas da moldura;
-- no mínimo 4 linhas;
-- sequência máxima de 6 dezenas;
-- repetição equilibrada do concurso anterior;
-- frequência dos últimos 10 e 30 concursos;
-- atraso equilibrado e ciclo aberto;
-- diversidade entre jogos;
-- eliminação de resultados históricos idênticos;
-- registro de jogos com 13 ou mais acertos;
-- recalibração conservadora dos pesos após volume mínimo.
+## Escopo
 
-## Instalação
+O relatório público contém somente:
+
+- Brier Score;
+- Log Loss;
+- média histórica dentro do top 21;
+- comparação com referências neutras;
+- métricas acumuladas;
+- métricas dos últimos 5 concursos;
+- drift entre dois blocos consecutivos;
+- integridade temporal;
+- hashes reproduzíveis.
+
+O relatório não contém dezenas, jogos, bases, previsões, recomendação de método ou seleção para concursos futuros.
+
+## Checkpoints de 5 concursos
+
+O Python executa walk-forward cronológico e fecha um checkpoint apenas quando existe um novo bloco completo de 5 concursos avaliados.
+
+Exemplo:
+
+```bash
+cd motor_python_v4
+python checkpoint.py historico_real.json --saida checkpoints/latest.json --min-training 30
+```
+
+Se ainda não existir um novo bloco completo, o arquivo anterior permanece inalterado.
+
+## Proteção temporal
+
+Para cada concurso avaliado, vale obrigatoriamente:
+
+```text
+treino_ate < concurso_avaliado
+```
+
+O resultado do concurso-alvo nunca participa do próprio cálculo.
+
+## API educativa
 
 ```bash
 cd motor_python_v4
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn api:app --reload
 ```
 
 No Windows:
@@ -33,30 +59,38 @@ No Windows:
 .venv\Scripts\activate
 ```
 
-## API
+Rotas:
 
-```bash
-uvicorn api:app --reload
+```text
+GET  /saude
+GET  /auditoria-historica
+GET  /checkpoint-5
+POST /auditoria-historica
 ```
 
-Documentação: `http://127.0.0.1:8000/docs`
+A API não possui rota de geração de jogos ou ranking futuro.
 
-Exemplo para uma base de 18 dezenas e 120 jogos:
+## Integração
+
+O Cloudflare Worker:
+
+1. exporta os resultados encerrados do D1;
+2. serve o último relatório Python publicado;
+3. mantém as demais rotas do sistema pelo Worker principal.
+
+O GitHub Actions consulta o histórico, executa o Python e publica `checkpoints/latest.json` somente quando fecha um novo grupo de 5 avaliações.
+
+## Testes
 
 ```bash
-curl -X POST http://127.0.0.1:8000/gerar-fechamento \
-  -H "Content-Type: application/json" \
-  -d '{"tamanho_base":18,"quantidade_jogos":120}'
+cd motor_python_v4
+python -m unittest -v test_audit_core.py
 ```
 
-## Backtest sem vazamento
+Os testes verificam:
 
-```bash
-python backtest.py historico_real.json --inicio 60 --base 18 --jogos 120
-```
-
-Cada concurso-alvo é analisado usando somente concursos anteriores. Uma base de 18 dezenas possui exatamente 816 combinações simples de 15 dezenas. Um fechamento reduzido não mantém a mesma garantia do fechamento completo; a API informa a cobertura nominal e distribui os jogos buscando diversidade.
-
-## Integração futura
-
-O módulo foi colocado em pasta própria para não interferir no Worker, no D1 e na governança Champion × Challenger existentes. A etapa seguinte é ligar o resultado do backtest deste motor ao pipeline de candidatos Challenger, permitindo promoção apenas após evidência histórica suficiente.
+- ausência de vazamento temporal;
+- rejeição de concurso duplicado;
+- fechamento somente em múltiplos de 5;
+- reprodutibilidade dos hashes;
+- ausência de campos acionáveis no relatório público.

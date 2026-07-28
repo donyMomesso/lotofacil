@@ -1,22 +1,20 @@
-name: Testes Champion Challenger
+name: Testes Cérebro Python Histórico
 
 on:
   pull_request:
     paths:
-      - "learning_audit_core.mjs"
-      - "learning_governance.mjs"
-      - "worker_learning.js"
+      - "motor_python_v4/audit_core.py"
+      - "motor_python_v4/checkpoint.py"
+      - "motor_python_v4/api.py"
+      - "motor_python_v4/test_audit_core.py"
+      - "worker_python_bridge.js"
       - "aprendizado.html"
       - "index.html"
       - "wrangler.jsonc"
-      - "migrations/0002_aprendizado_historico.sql"
-      - "migrations/0003_aprendizado_robustez.sql"
-      - "migrations/0004_champion_challenger.sql"
-      - "tests/test_learning_audit_core.mjs"
-      - "tests/test_learning_governance.mjs"
       - "tests/test_learning_server.mjs"
       - "tests/test_learning_index.js"
       - ".github/workflows/testes-aprendizado.yml"
+      - ".github/workflows/checkpoint-python.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,17 +30,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validar núcleo histórico
-        run: node --check learning_audit_core.mjs
-      - name: Validar governança
-        run: node --check learning_governance.mjs
-      - name: Validar Worker envoltório
-        run: node --input-type=module --check < worker_learning.js
-      - name: Testar robustez estatística
-        run: node tests/test_learning_audit_core.mjs
-      - name: Testar Champion Challenger
-        run: node tests/test_learning_governance.mjs
-      - name: Testar D1 e painel
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validar núcleo Python
+        run: python -m py_compile motor_python_v4/audit_core.py motor_python_v4/checkpoint.py motor_python_v4/api.py
+      - name: Testar checkpoints históricos
+        working-directory: motor_python_v4
+        run: python -m unittest -v test_audit_core.py
+      - name: Validar Worker ponte
+        run: node --input-type=module --check < worker_python_bridge.js
+      - name: Testar Worker e painel
         run: node tests/test_learning_server.mjs
       - name: Testar acesso inicial
         run: node tests/test_learning_index.js

@@ -1,4 +1,4 @@
-import historicalWorker from './worker_learning.js';
+import baseWorker from './worker.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -56,12 +56,12 @@ export default {
         return json({ ok: false, message: 'Falha ao exportar resultados históricos.' }, 500);
       }
     }
-    if (request.method === 'GET' && url.pathname === '/api/aprendizado/checkpoint-python') {
+    if (request.method === 'GET' && ['/api/aprendizado/checkpoint-python', '/api/aprendizado/historico'].includes(url.pathname)) {
       return pythonCheckpoint(request, env);
     }
-    return historicalWorker.fetch(request, env, ctx);
+    return baseWorker.fetch(request, env, ctx);
   },
   async scheduled(event, env, ctx) {
-    return historicalWorker.scheduled(event, env, ctx);
+    return baseWorker.scheduled(event, env, ctx);
   }
 };

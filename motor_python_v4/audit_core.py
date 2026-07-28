@@ -26,6 +26,7 @@ MODEL_WEIGHTS = {
 FORBIDDEN_PUBLIC_KEYS = {
     "ranking", "rankings", "numbers", "dezenas", "base", "bases", "games", "jogos",
     "prediction", "predictions", "previsao", "previsoes", "next_contest", "proximo_concurso",
+    "champion", "challenger", "winner", "best_model", "recommendation", "promotion",
 }
 
 
@@ -181,6 +182,8 @@ def walk_forward(values: Iterable[object], min_training: int = MIN_TRAINING) -> 
 
 
 def _model_summary(rows: Sequence[dict[str, object]]) -> dict[str, object]:
+    if not rows:
+        return {"samples": 0, "brier": 0.0, "log_loss": 0.0, "avg_top21": 0.0}
     return {
         "samples": len(rows),
         "brier": round(mean(float(row["brier"]) for row in rows), 8),
@@ -218,6 +221,7 @@ def build_report(values: Iterable[object], min_training: int = MIN_TRAINING) -> 
     completed_contests = set(evaluated_contests[:completed])
     completed_rows = [row for row in rows if int(row["contest"]) in completed_contests]
     checkpoints: list[dict[str, object]] = []
+
     for end in range(CHECKPOINT_SIZE, completed + 1, CHECKPOINT_SIZE):
         contests = evaluated_contests[:end]
         contest_set = set(contests)
@@ -230,18 +234,17 @@ def build_report(values: Iterable[object], min_training: int = MIN_TRAINING) -> 
                 "recent_5": _model_summary(recent_rows),
                 "drift": _drift(model_rows),
             }
-        champion = min(model_summaries, key=lambda key: float(model_summaries[key]["cumulative"]["brier"]))
         checkpoint = {
             "index": end // CHECKPOINT_SIZE,
             "first_contest": contests[0],
             "last_contest": contests[-1],
             "evaluated_contests": end,
-            "historical_champion": champion if end >= 30 else None,
-            "status": "comparable" if end >= 30 else "collecting_evidence",
+            "status": "historical_comparison_only",
             "models": model_summaries,
         }
         checkpoint["hash"] = _report_hash(checkpoint)
         checkpoints.append(checkpoint)
+
     integrity = {
         "temporal_violations": sum(int(row["training_through"]) >= int(row["contest"]) for row in completed_rows),
         "duplicate_contests": 0,
