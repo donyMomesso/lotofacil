@@ -1,6 +1,6 @@
 /**
- * Consumo do checkpoint operacional do Cérebro Python.
- * Grava provenance no D1 para provar origem/versão/hash de cada jogo do sistema.
+ * Checkpoint operacional do Cérebro Python + provenance no D1.
+ * Política: falha explícita. Sem hash/versão/concurso alinhado → NÃO grava.
  */
 
 function dezenasTexto(dezenas) {
@@ -13,9 +13,6 @@ function scoreSet(dezenas) {
   return { soma, pares, impares: dezenas.length - pares };
 }
 
-/**
- * Garante colunas de provenance (idempotente se migration ainda não rodou).
- */
 export async function ensureJogosSistemaProvenance(env) {
   const alters = [
     'ALTER TABLE jogos_sistema ADD COLUMN origem TEXT',
@@ -26,11 +23,7 @@ export async function ensureJogosSistemaProvenance(env) {
     'ALTER TABLE jogos_sistema ADD COLUMN checkpoint_generated_at TEXT'
   ];
   for (const sql of alters) {
-    try {
-      await env.DB.prepare(sql).run();
-    } catch {
-      // já existe
-    }
+    try { await env.DB.prepare(sql).run(); } catch { /* ok */ }
   }
   try {
     await env.DB.prepare(`
@@ -54,28 +47,64 @@ export async function ensureJogosSistemaProvenance(env) {
 }
 
 /**
- * @param {any} env Cloudflare env com ASSETS + DB
- * @param {number} concurso concurso alvo
- * @returns {Promise<null | Array<object>>}
+ * Inspeciona o checkpoint operacional sem gravar.
+ * status: active | missing | invalid | concurso_mismatch | incomplete
  */
-export async function loadGamesFromCerebroCheckpoint(env, concurso) {
+export async function inspectCerebroCheckpoint(env, concursoEsperado) {
+  const base = {
+    status: 'missing',
+    blocked: true,
+    concurso_esperado: Number(concursoEsperado),
+    message: 'Checkpoint operacional ausente.'
+  };
   try {
     const response = await env.ASSETS.fetch(
       new Request('https://assets.local/motor_python_v4/checkpoints/operacional.json')
     );
-    if (!response.ok) return null;
-    const ck = await response.json();
-    if (!ck || !ck.ok || !ck.jogos_estudo) return null;
-    if (Number(ck.concurso_alvo) !== Number(concurso)) return null;
-
-    const meta = {
-      origem: 'cerebro_python',
-      cerebro_version: ck.cerebro_version || null,
-      checkpoint_hash: ck.checkpoint_hash || null,
-      audit_brain_version: ck.audit_brain_version || null,
-      source_of_truth: ck.source_of_truth || 'python',
-      checkpoint_generated_at: ck.generated_at || null
-    };
+    if (!response.ok) {
+      return { ...base, http_status: response.status, message: 'Asset operacional.json não encontrado (HTTP ' + response.status + ').' };
+    }
+    let ck;
+    try {
+      ck = await response.json();
+    } catch {
+      return { ...base, status: 'invalid', message: 'operacional.json não é JSON válido.' };
+    }
+    if (!ck || ck.ok !== true) {
+      return { ...base, status: 'invalid', message: 'Checkpoint com ok=false ou vazio.' };
+    }
+    if (!ck.checkpoint_hash || !String(ck.checkpoint_hash).trim()) {
+      return {
+        ...base,
+        status: 'incomplete',
+        message: 'Checkpoint sem checkpoint_hash — gravação bloqueada.',
+        cerebro_version: ck.cerebro_version || null,
+        concurso_alvo: ck.concurso_alvo ?? null
+      };
+    }
+    if (!ck.cerebro_version) {
+      return {
+        ...base,
+        status: 'incomplete',
+        message: 'Checkpoint sem cerebro_version — gravação bloqueada.',
+        checkpoint_hash: ck.checkpoint_hash
+      };
+    }
+    if (!ck.jogos_estudo || typeof ck.jogos_estudo !== 'object') {
+      return { ...base, status: 'invalid', message: 'Checkpoint sem jogos_estudo.' };
+    }
+    const alvo = Number(ck.concurso_alvo);
+    if (Number(concursoEsperado) && alvo !== Number(concursoEsperado)) {
+      return {
+        status: 'concurso_mismatch',
+        blocked: true,
+        concurso_esperado: Number(concursoEsperado),
+        concurso_alvo: alvo,
+        cerebro_version: ck.cerebro_version,
+        checkpoint_hash: ck.checkpoint_hash,
+        message: `Checkpoint é para concurso ${alvo}, esperado ${concursoEsperado}. Sem fallback.`
+      };
+    }
 
     const games = [];
     for (const [metodo, info] of Object.entries(ck.jogos_estudo)) {
@@ -83,34 +112,90 @@ export async function loadGamesFromCerebroCheckpoint(env, concurso) {
         ? info.map(Number)
         : (info.dezenas || []).map(Number);
       if (dezenas.length !== 15) continue;
+      if (new Set(dezenas).size !== 15) continue;
+      if (dezenas.some((d) => d < 1 || d > 25)) continue;
       games.push({
         metodo,
         dezenas: dezenas.slice().sort((a, b) => a - b),
-        ...meta
+        origem: 'cerebro_python',
+        cerebro_version: ck.cerebro_version,
+        checkpoint_hash: ck.checkpoint_hash,
+        audit_brain_version: ck.audit_brain_version || null,
+        source_of_truth: ck.source_of_truth || 'python',
+        checkpoint_generated_at: ck.generated_at || null
       });
     }
-    return games.length ? games : null;
+    if (!games.length) {
+      return {
+        status: 'invalid',
+        blocked: true,
+        concurso_alvo: alvo,
+        cerebro_version: ck.cerebro_version,
+        checkpoint_hash: ck.checkpoint_hash,
+        message: 'Checkpoint sem nenhum jogo de 15 dezenas válido.'
+      };
+    }
+
+    return {
+      status: 'active',
+      blocked: false,
+      concurso_esperado: Number(concursoEsperado),
+      concurso_alvo: alvo,
+      cerebro_version: ck.cerebro_version,
+      checkpoint_hash: ck.checkpoint_hash,
+      audit_brain_version: ck.audit_brain_version || null,
+      source_of_truth: ck.source_of_truth || 'python',
+      generated_at: ck.generated_at || null,
+      jogos: games.length,
+      metodos: games.map((g) => g.metodo),
+      games,
+      message: 'Checkpoint Python válido e alinhado ao concurso.'
+    };
   } catch (err) {
-    console.error('checkpoint operacional indisponível', err);
-    return null;
+    return {
+      status: 'invalid',
+      blocked: true,
+      concurso_esperado: Number(concursoEsperado),
+      message: 'Falha ao ler checkpoint: ' + String(err.message || err)
+    };
   }
 }
 
+/** @deprecated use inspectCerebroCheckpoint — mantido para compat */
+export async function loadGamesFromCerebroCheckpoint(env, concurso) {
+  const gate = await inspectCerebroCheckpoint(env, concurso);
+  if (gate.blocked || !gate.games) return null;
+  return gate.games;
+}
+
 /**
- * Persiste jogos do sistema COM provenance.
+ * Só persiste se TODOS os jogos tiverem origem cerebro_python + hash.
+ * Rejeita worker_js silencioso.
  */
-export async function persistSystemGames(env, concurso, games) {
+export async function persistSystemGames(env, concurso, games, options = {}) {
+  const strict = options.strict !== false;
   await ensureJogosSistemaProvenance(env);
+
+  if (!games || !games.length) {
+    throw new Error('persistSystemGames: lista vazia');
+  }
+
+  if (strict) {
+    for (const game of games) {
+      if (game.origem !== 'cerebro_python') {
+        throw new Error('Bloqueado: origem deve ser cerebro_python (sem fallback JS).');
+      }
+      if (!game.checkpoint_hash) {
+        throw new Error('Bloqueado: checkpoint_hash obrigatório.');
+      }
+      if (!game.cerebro_version) {
+        throw new Error('Bloqueado: cerebro_version obrigatória.');
+      }
+    }
+  }
 
   for (const game of games) {
     const stats = scoreSet(game.dezenas);
-    const origem = game.origem || 'worker_js';
-    const cerebroVersion = game.cerebro_version || null;
-    const checkpointHash = game.checkpoint_hash || null;
-    const auditBrain = game.audit_brain_version || null;
-    const sourceOfTruth = game.source_of_truth || (origem === 'cerebro_python' ? 'python' : 'worker_js');
-    const generatedAt = game.checkpoint_generated_at || null;
-
     await env.DB.prepare(`
       INSERT INTO jogos_sistema (
         concurso, metodo, dezenas, dezenas_texto, soma, pares, impares,
@@ -139,16 +224,16 @@ export async function persistSystemGames(env, concurso, games) {
       stats.soma,
       stats.pares,
       stats.impares,
-      origem,
-      cerebroVersion,
-      checkpointHash,
-      auditBrain,
-      sourceOfTruth,
-      generatedAt
+      game.origem || 'cerebro_python',
+      game.cerebro_version || null,
+      game.checkpoint_hash || null,
+      game.audit_brain_version || null,
+      game.source_of_truth || 'python',
+      game.checkpoint_generated_at || null
     ).run();
   }
 
-  const first = games[0] || {};
+  const first = games[0];
   try {
     await env.DB.prepare(`
       INSERT INTO checkpoint_ingest (
@@ -158,11 +243,11 @@ export async function persistSystemGames(env, concurso, games) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       concurso,
-      first.origem || 'worker_js',
-      first.cerebro_version || null,
-      first.checkpoint_hash || null,
+      first.origem,
+      first.cerebro_version,
+      first.checkpoint_hash,
       first.audit_brain_version || null,
-      first.source_of_truth || null,
+      first.source_of_truth || 'python',
       first.checkpoint_generated_at || null,
       JSON.stringify(games.map((g) => g.metodo)),
       games.length
@@ -174,15 +259,43 @@ export async function persistSystemGames(env, concurso, games) {
   return games;
 }
 
-export function tagWorkerJsGames(games, extra = {}) {
-  return (games || []).map((g) => ({
-    ...g,
-    origem: 'worker_js',
-    source_of_truth: 'worker_js',
-    cerebro_version: null,
-    checkpoint_hash: null,
-    audit_brain_version: null,
-    checkpoint_generated_at: null,
-    ...extra
-  }));
+/**
+ * Aplica checkpoint ao D1 ou retorna bloqueio explícito (nunca gera JS).
+ */
+export async function applyCerebroOrBlock(env, concurso) {
+  const gate = await inspectCerebroCheckpoint(env, concurso);
+  if (gate.blocked) {
+    return {
+      applied: false,
+      blocked: true,
+      concurso,
+      status: gate.status,
+      reason: gate.message,
+      gate
+    };
+  }
+  try {
+    await persistSystemGames(env, concurso, gate.games, { strict: true });
+    return {
+      applied: true,
+      blocked: false,
+      concurso,
+      status: 'active',
+      jogos: gate.games.length,
+      source: 'cerebro_python',
+      cerebro_version: gate.cerebro_version,
+      checkpoint_hash: gate.checkpoint_hash,
+      metodos: gate.metodos,
+      gate
+    };
+  } catch (err) {
+    return {
+      applied: false,
+      blocked: true,
+      concurso,
+      status: 'persist_error',
+      reason: String(err.message || err),
+      gate
+    };
+  }
 }
