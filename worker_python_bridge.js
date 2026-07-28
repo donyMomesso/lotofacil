@@ -3,7 +3,11 @@ import historicalWorker from './worker_learning.js';
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'access-control-allow-origin': '*'
+    }
   });
 }
 
@@ -30,19 +34,36 @@ function dezenasTexto(dezenas) {
   return (dezenas || []).map((d) => String(d).padStart(2, '0')).join('-');
 }
 
-/**
- * Status leve para o Cockpit: só lê o D1.
- * Não chama generateNextContestGames, sincronizarLaboratorios nem varre frequência completa.
- * Isso evita o atraso de vários segundos do /api/sistema/status.
- */
+async function safeFirst(env, sql, binds = []) {
+  try {
+    const stmt = env.DB.prepare(sql);
+    return binds.length ? await stmt.bind(...binds).first() : await stmt.first();
+  } catch (err) {
+    console.error('safeFirst', sql, err);
+    return null;
+  }
+}
+
+async function safeAll(env, sql, binds = []) {
+  try {
+    const stmt = env.DB.prepare(sql);
+    const rows = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+    return rows?.results || [];
+  } catch (err) {
+    console.error('safeAll', sql, err);
+    return [];
+  }
+}
+
+/** Status leve: só leitura, cada query isolada para não cair o painel. */
 async function sistemaRapido(env) {
-  const totalRow = await env.DB.prepare('SELECT COUNT(*) AS total FROM resultados').first();
-  const latest = await env.DB.prepare(`
+  const totalRow = await safeFirst(env, 'SELECT COUNT(*) AS total FROM resultados');
+  const latest = await safeFirst(env, `
     SELECT concurso, data_sorteio, dezenas, dezenas_texto
     FROM resultados
     ORDER BY concurso DESC
     LIMIT 1
-  `).first();
+  `);
 
   let ultimo = null;
   let proximo = 1;
@@ -58,14 +79,14 @@ async function sistemaRapido(env) {
     proximo = Number(latest.concurso) + 1;
   }
 
-  const jogosRows = await env.DB.prepare(`
+  const jogosRows = await safeAll(env, `
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares
     FROM jogos_sistema
     WHERE concurso = ?
     ORDER BY metodo
-  `).bind(proximo).all();
+  `, [proximo]);
 
-  const jogos_gerados = (jogosRows.results || []).map((row) => {
+  const jogos_gerados = jogosRows.map((row) => {
     let dezenas = [];
     try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
     return {
@@ -79,13 +100,13 @@ async function sistemaRapido(env) {
     };
   });
 
-  const ciclo = await env.DB.prepare(`
+  const ciclo = await safeFirst(env, `
     SELECT id, iniciado_em, finalizado_em, status, novos_concursos, conferencias,
            jogos_descartados, sessoes_expiradas, proximo_concurso, jogos_gerados, erro
     FROM execucoes_ciclo
     ORDER BY datetime(iniciado_em) DESC
     LIMIT 1
-  `).first();
+  `);
 
   let ultimo_ciclo = null;
   if (ciclo) {
@@ -94,14 +115,13 @@ async function sistemaRapido(env) {
     ultimo_ciclo = { ...ciclo, novos_concursos: novos };
   }
 
-  // Frequência só nos últimos 120 concursos (barato e suficiente para a aba)
-  const recent = await env.DB.prepare(`
+  const recent = await safeAll(env, `
     SELECT dezenas FROM resultados ORDER BY concurso DESC LIMIT 120
-  `).all();
+  `);
   const freq = new Map(Array.from({ length: 25 }, (_, i) => [i + 1, 0]));
-  const atraso = new Map(Array.from({ length: 25 }, (_, i) => [i + 1, recent.results.length]));
+  const atraso = new Map(Array.from({ length: 25 }, (_, i) => [i + 1, recent.length]));
   const seen = new Set();
-  (recent.results || []).forEach((row, idx) => {
+  recent.forEach((row, idx) => {
     let dezenas = [];
     try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
     for (const d of dezenas) {
@@ -112,7 +132,7 @@ async function sistemaRapido(env) {
       }
     }
   });
-  const n = (recent.results || []).length || 1;
+  const n = recent.length || 1;
   const frequencia_dezenas = Array.from({ length: 25 }, (_, i) => {
     const dezena = i + 1;
     return {
@@ -143,12 +163,12 @@ async function sistemaRapido(env) {
 }
 
 async function exportHistoricalResults(env) {
-  const query = await env.DB.prepare(`
+  const rows = await safeAll(env, `
     SELECT concurso, data_sorteio, dezenas
     FROM resultados
     ORDER BY concurso ASC
-  `).all();
-  const resultados = (query.results || []).map((row) => {
+  `);
+  const resultados = rows.map((row) => {
     let dezenas = [];
     try { dezenas = JSON.parse(row.dezenas || '[]'); } catch { dezenas = []; }
     return { concurso: Number(row.concurso), data: String(row.data_sorteio || ''), dezenas };
@@ -206,15 +226,44 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+          'access-control-allow-headers': 'content-type,authorization'
+        }
+      });
+    }
+
     if (request.method === 'GET' && COCKPIT_ROUTES.has(url.pathname)) {
-      return env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
+      try {
+        return await env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
+      } catch (err) {
+        console.error('cockpit asset', err);
+        return json({ ok: false, message: 'Falha ao servir o cockpit.' }, 500);
+      }
     }
 
     if (request.method === 'GET' && url.pathname === '/api/sistema/rapido') {
-      try { return await sistemaRapido(env); }
-      catch (error) {
+      try {
+        return await sistemaRapido(env);
+      } catch (error) {
         console.error(error);
-        return json({ ok: false, message: 'Falha no status rápido.' }, 500);
+        return json({
+          ok: true,
+          mode: 'rapido',
+          degraded: true,
+          total_concursos: 0,
+          ultimo_resultado: null,
+          proximo_concurso: 1,
+          jogos_gerados: [],
+          ultimo_ciclo: null,
+          frequencia_dezenas: [],
+          inicio_dezena: [],
+          message: String(error.message || error)
+        });
       }
     }
 
@@ -231,7 +280,13 @@ export default {
     if (request.method === 'GET' && url.pathname === '/api/aprendizado/checkpoint-operacional') {
       return pythonCheckpointOperacional(request, env);
     }
-    return historicalWorker.fetch(request, env, ctx);
+
+    try {
+      return await historicalWorker.fetch(request, env, ctx);
+    } catch (err) {
+      console.error('historicalWorker', err);
+      return json({ ok: false, message: 'Erro interno do Worker.' }, 500);
+    }
   },
   async scheduled(event, env, ctx) {
     return historicalWorker.scheduled(event, env, ctx);
