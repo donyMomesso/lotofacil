@@ -29,7 +29,7 @@
         <div><div class="eyebrow">Governança estatística automática</div><h1>Champion × Challenger</h1><p>O Champion só é substituído quando o desafiante demonstra melhora histórica pareada, corrigida para múltiplos testes, estável em várias janelas e sem falhas de integridade ou drift.</p></div>
         <a class="back" href="index.html">← Início</a>
       </div>
-      <div class="notice"><b>Regra inviolável:</b> todas as decisões usam somente concursos encerrados e exigem <code>treino_ate &lt; concurso</code>. O painel não publica seleção de dezenas ou combinações.</div>
+      <div class="notice"><b>Regra inviolável:</b> todas as decisões usam somente concursos encerrados e exigem <code>treino_ate < concurso</code>. O painel não publica seleção de dezenas ou combinações.</div>
     </section>
 
     <div id="status" class="status">Carregando governança histórica do D1...</div>
@@ -179,8 +179,19 @@
       el('refreshBtn').disabled = true; setStatus('Atualizando Champion × Challenger no D1...');
       try {
         const response = await fetch(`/api/aprendizado/historico?t=${Date.now()}`, { cache: 'no-store' });
-        const data = await response.json();
-        if (!response.ok || !data.ok) throw new Error(data.message || 'Falha na API histórica.');
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          const preview = text.trim().slice(0, 80).replace(/\s+/g, ' ');
+          throw new Error(
+            response.ok
+              ? `A API devolveu HTML/texto em vez de JSON (${preview}…). Verifique se o Worker está no ar.`
+              : `HTTP ${response.status}: a API não respondeu JSON. ${preview}`
+          );
+        }
+        if (!response.ok || !data.ok) throw new Error(data.message || `Falha na API histórica (HTTP ${response.status}).`);
         payload = data; render(data);
       } catch (error) { setStatus(error.message || 'Não foi possível carregar a governança.', true); }
       finally { el('refreshBtn').disabled = false; }
