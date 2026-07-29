@@ -19,6 +19,10 @@ const COCKPIT_ROUTES = new Set([
   '/painel_mobile', '/painel_mobile.html'
 ]);
 
+const APRENDIZADO_ROUTES = new Set([
+  '/aprend', '/aprendizado', '/aprendizado.html'
+]);
+
 function assetRequest(request, url, pathname) {
   const assetUrl = new URL(request.url);
   assetUrl.pathname = pathname;
@@ -281,6 +285,14 @@ export default {
             'access-control-allow-headers': 'content-type,authorization'
           }
         });
+      }
+
+      if (request.method === 'GET' && APRENDIZADO_ROUTES.has(url.pathname)) {
+        try {
+          return await env.ASSETS.fetch(assetRequest(request, url, '/aprendizado.html'));
+        } catch (err) {
+          return json({ ok: false, message: String(err.message || err) }, 500);
+        }
       }
 
       if (request.method === 'GET' && COCKPIT_ROUTES.has(url.pathname)) {

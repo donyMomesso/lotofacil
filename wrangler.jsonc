@@ -33,7 +33,10 @@
       "/painel_mobile.html",
       "/painel-educativo",
       "/painel-exportacao",
-      "/usuario"
+      "/usuario",
+      "/aprend",
+      "/aprendizado",
+      "/aprendizado.html"
     ]
   },
   "compatibility_flags": [
