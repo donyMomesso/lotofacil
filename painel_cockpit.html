@@ -191,6 +191,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
           <button class="btn ok" type="button" id="checkBtn">Conferir pendentes</button>
           <button class="btn soft" type="button" id="reloadGamesBtn">Atualizar lista</button>
           <button class="btn soft" type="button" id="btnCopyMy">Copiar meus (1 por linha)</button>
+          <button class="btn danger" type="button" id="btnClearMy">Limpar todos</button>
         </div>
         <div id="appStatus" class="muted" style="margin-top:10px"></div>
       </div>
@@ -208,8 +209,11 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div class="actions"><button class="btn primary" type="button" id="saveBtn" style="color:#4c1d95">Salvar jogo</button></div>
     </div>
     <div class="card">
-      <h2>Jogos salvos</h2>
-      <div id="gamesList" class="muted">Faça login para ver seus jogos.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Jogos salvos</h2>
+        <button class="btn danger" type="button" id="btnClearMyList" style="display:none">Limpar área</button>
+      </div>
+      <div id="gamesList" class="muted" style="margin-top:10px">Faça login para ver seus jogos.</div>
     </div>
   </section>
 
@@ -333,6 +337,43 @@ async function copiarMeusJogos() {
   } catch (e) { setAppStatus(e.message || String(e), true); }
 }
 
+async function limparMeusJogos() {
+  if (!token) { setAppStatus('Faça login primeiro.', true); return; }
+  const jogos = state.meusJogos || [];
+  if (!jogos.length) {
+    setAppStatus('Área já está vazia.');
+    return;
+  }
+  const n = jogos.length;
+  if (!confirm('Excluir TODOS os ' + n + ' jogo(s) salvos? Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Confirma limpar a área Meus jogos (' + n + ' registros)?')) return;
+
+  const btnA = $('btnClearMy');
+  const btnB = $('btnClearMyList');
+  if (btnA) btnA.disabled = true;
+  if (btnB) btnB.disabled = true;
+  setAppStatus('Limpando ' + n + ' jogo(s)…');
+  setStatus('Limpando Meus jogos…');
+
+  let ok = 0, fail = 0;
+  for (const j of jogos) {
+    try {
+      await api('/api/jogos/' + j.id, { method: 'DELETE' });
+      ok += 1;
+    } catch {
+      fail += 1;
+    }
+  }
+
+  if (btnA) btnA.disabled = false;
+  if (btnB) btnB.disabled = false;
+
+  await loadMyGames().catch(() => {});
+  const msg = 'Limpeza: ' + ok + ' excluído(s)' + (fail ? ' · ' + fail + ' falha(s)' : '');
+  setAppStatus(msg, fail > 0);
+  setStatus(msg, fail > 0);
+}
+
 class ApiError extends Error {
   constructor(message, status) { super(message); this.status = status || 0; }
 }
@@ -450,11 +491,9 @@ function gerarFechamentoLocal() {
     jogos = combinacoes(base, 15);
     if (jogos.length > maxJogos) jogos = jogos.slice(0, maxJogos);
   } else {
-    // Amostra determinística: janelas + espaçamento cíclico (estudo)
     const allHint = tamanho === 18 ? 816 : tamanho === 19 ? 11628 : 15504;
     jogos = [];
     const seen = new Set();
-    // 1) remover 3 (ou mais) índices de forma circular
     const rem = tamanho - 15;
     for (let start = 0; start < tamanho && jogos.length < maxJogos; start++) {
       for (let step = 1; step < tamanho && jogos.length < maxJogos; step++) {
@@ -469,7 +508,6 @@ function gerarFechamentoLocal() {
         jogos.push(jogo);
       }
     }
-    // 2) se ainda faltar, combinações parciais até o limite
     if (jogos.length < maxJogos) {
       const extra = combinacoes(base, 15);
       for (const jogo of extra) {
@@ -482,8 +520,6 @@ function gerarFechamentoLocal() {
     }
     void allHint;
   }
-  const coberturaTotal = tamanho <= 17 && jogos.length >= combinacoes(base, 15).length;
-  // para 16/17 se limitou amostra, cobertura total falsa
   const totalPossivel = combinacoes(base, 15).length;
   const completa = jogos.length >= totalPossivel;
   return {
@@ -616,6 +652,7 @@ function showLoggedIn(user) {
   if ($('userSessionCard')) $('userSessionCard').style.display = 'block';
   if ($('userLabel')) $('userLabel').textContent = (user.nome || '') + ' · ' + (user.email || '');
   if ($('userChip')) $('userChip').textContent = 'Logado: ' + (user.nome || user.email || '');
+  if ($('btnClearMyList')) $('btnClearMyList').style.display = '';
   loadMyGames().catch(() => {});
   loadFechamentos().catch(() => {});
 }
@@ -628,6 +665,7 @@ function showLoggedOut(clearToken) {
   if ($('userSessionCard')) $('userSessionCard').style.display = 'none';
   if ($('userChip')) $('userChip').textContent = token ? 'Sessão instável' : 'Não logado';
   if ($('gamesList')) $('gamesList').innerHTML = '<span class="muted">Faça login.</span>';
+  if ($('btnClearMyList')) $('btnClearMyList').style.display = 'none';
 }
 
 async function bootstrapAuth() {
@@ -654,6 +692,7 @@ async function loadMyGames() {
     const data = await api('/api/jogos');
     const jogos = data.jogos || [];
     state.meusJogos = jogos;
+    if ($('btnClearMyList')) $('btnClearMyList').style.display = jogos.length ? '' : 'none';
     if (!jogos.length) $('gamesList').innerHTML = '<p class="muted">Nenhum jogo salvo.</p>';
     else {
       $('gamesList').innerHTML = jogos.map(j => {
@@ -669,7 +708,7 @@ async function loadMyGames() {
           </div></div>`;
       }).join('');
     }
-    setAppStatus('Lista atualizada');
+    setAppStatus('Lista atualizada · ' + jogos.length + ' jogo(s)');
   } catch (e) {
     if (e.status === 401) showLoggedOut(true);
     setAppStatus(e.message, true);
@@ -887,6 +926,8 @@ $('jogosSistema')?.addEventListener('click', async (ev) => {
 $('btnCopyAll')?.addEventListener('click', () => copiarTodosSistema());
 $('btnSaveAll')?.addEventListener('click', () => saveAllSystemGames());
 $('btnCopyMy')?.addEventListener('click', () => copiarMeusJogos());
+$('btnClearMy')?.addEventListener('click', () => limparMeusJogos());
+$('btnClearMyList')?.addEventListener('click', () => limparMeusJogos());
 
 $('loginBtn')?.addEventListener('click', async () => {
   setAuthStatus('Entrando…');
