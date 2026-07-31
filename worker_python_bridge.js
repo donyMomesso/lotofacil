@@ -202,10 +202,6 @@ async function purgeNonCerebroSistema(env, concurso) {
   }
 }
 
-/**
- * Desempenho dos jogos do sistema vs resultados oficiais.
- * Cruza jogos_sistema (preferência cerebro_python) com resultados.
- */
 async function desempenhoSistema(env, limit = 30) {
   await ensureAppSchema(env);
   const lim = Math.min(Math.max(Number(limit) || 30, 5), 80);
@@ -231,7 +227,6 @@ async function desempenhoSistema(env, limit = 30) {
   const minC = Math.min(...concursosIds);
   const maxC = Math.max(...concursosIds);
 
-  // Preferir cerebro_python; se não houver, aceita qualquer origem daquele concurso
   let jogosRows = await safeAll(env, `
     SELECT concurso, metodo, dezenas, dezenas_texto, origem, cerebro_version, checkpoint_hash
     FROM jogos_sistema
@@ -246,7 +241,6 @@ async function desempenhoSistema(env, limit = 30) {
     byConcurso.get(c).push(row);
   }
 
-  // Se houver mistura, prioriza origem cerebro_python por concurso
   for (const [c, rows] of byConcurso) {
     const py = rows.filter((r) => r.origem === 'cerebro_python');
     if (py.length) byConcurso.set(c, py);
@@ -332,7 +326,6 @@ async function desempenhoSistema(env, limit = 30) {
     });
   }
 
-  // série cronológica crescente para gráfico
   const serieAsc = serie.slice().reverse();
 
   const por_metodo = Array.from(metodoAgg.values()).map((m) => ({
@@ -351,7 +344,7 @@ async function desempenhoSistema(env, limit = 30) {
     media_media: Number((comDados.reduce((a, s) => a + s.media, 0) / comDados.length).toFixed(2)),
     vezes_11_mais: comDados.reduce((a, s) => a + s.acertos_11_mais, 0),
     melhor_absoluto: Math.max(...comDados.map((s) => s.melhor)),
-    baseline_aleatorio_aprox: 9 // média esperada ~9 em 15 de 25 (estudo, não garantia)
+    baseline_aleatorio_aprox: 9
   } : null;
 
   return json({
@@ -362,8 +355,27 @@ async function desempenhoSistema(env, limit = 30) {
     por_metodo,
     resumo,
     note: comDados.length
-      ? 'Acertos calculados cruzando jogos_sistema × resultados oficiais. Média aleatória teórica ≈ 9.'
-      : 'Ainda não há jogos_sistema históricos no D1 para os últimos concursos. O gráfico enriquece a cada ciclo com Cérebro ativo.'
+      ? 'Acertos = dezenas em comum entre jogo do sistema e resultado oficial. Média aleatória teórica ≈ 9.'
+      : 'Ainda não há jogos_sistema históricos no D1 para os últimos concursos. O gráfico enriquece a cada ciclo com Cérebro ativo (após o sorteio, os jogos do concurso anterior passam a ser conferíveis).'
+  });
+}
+
+async function serveCockpit(request, env, url) {
+  const asset = await env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
+  if (!asset.ok) return asset;
+  let html = await asset.text();
+  if (!html.includes('desempenho_cockpit.js')) {
+    html = html.replace(
+      '</body>',
+      '<script src="/desempenho_cockpit.js" defer></script>\n</body>'
+    );
+  }
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store'
+    }
   });
 }
 
@@ -555,7 +567,7 @@ export default {
 
       if (request.method === 'GET' && COCKPIT_ROUTES.has(url.pathname)) {
         try {
-          return await env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
+          return await serveCockpit(request, env, url);
         } catch (err) {
           return json({ ok: false, message: String(err.message || err) }, 500);
         }
