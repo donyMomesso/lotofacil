@@ -1,5 +1,5 @@
 import historicalWorker from './worker_learning.js';
-import { ensureJogosSistemaProvenance, inspectCerebroCheckpoint } from './worker_cerebro_games.js';
+import { ensureJogosSistemaProvenance, inspectCerebroCheckpoint, applyCerebroOrBlock } from './worker_cerebro_games.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -32,6 +32,12 @@ function assetRequest(request, url, pathname) {
 
 function dezenasTexto(dezenas) {
   return (dezenas || []).map((d) => String(d).padStart(2, '0')).join('-');
+}
+
+function scoreSet(dezenas) {
+  const soma = (dezenas || []).reduce((t, d) => t + Number(d), 0);
+  const pares = (dezenas || []).filter((d) => Number(d) % 2 === 0).length;
+  return { soma, pares, impares: (dezenas || []).length - pares };
 }
 
 async function safeFirst(env, sql, binds = []) {
@@ -115,6 +121,24 @@ async function listJogosSeguro(user, env) {
   return json({ ok: true, jogos, source: 'bridge_seguro' });
 }
 
+/** Apaga todos os jogos do usuário logado (Meus jogos → Limpar todos). */
+async function deleteAllJogosUsuario(user, env) {
+  await ensureAppSchema(env);
+  const countRow = await safeFirst(env, 'SELECT COUNT(*) AS total FROM jogos WHERE usuario_id = ?', [user.id]);
+  const total = Number(countRow?.total || 0);
+  if (!total) {
+    return json({ ok: true, deleted: 0, message: 'Nenhum jogo para limpar.' });
+  }
+  try {
+    await env.DB.prepare('DELETE FROM conferencias WHERE jogo_id IN (SELECT id FROM jogos WHERE usuario_id = ?)').bind(user.id).run();
+  } catch (e) {
+    console.error('delete conferencias', e);
+  }
+  const result = await env.DB.prepare('DELETE FROM jogos WHERE usuario_id = ?').bind(user.id).run();
+  const deleted = Number(result?.meta?.changes ?? total);
+  return json({ ok: true, deleted, message: 'Área Meus jogos limpa.' });
+}
+
 function parseLabRow(row) {
   if (!row) return null;
   const parse = (v, fb) => { try { return v ? JSON.parse(v) : fb; } catch { return fb; } };
@@ -139,6 +163,42 @@ function mapJogoSistema(row) {
   };
 }
 
+function mapGamesFromCheckpoint(games, concurso) {
+  return (games || []).map((g) => {
+    const stats = scoreSet(g.dezenas);
+    return {
+      concurso,
+      metodo: g.metodo,
+      dezenas: g.dezenas,
+      dezenas_texto: dezenasTexto(g.dezenas),
+      soma: stats.soma,
+      pares: stats.pares,
+      impares: stats.impares,
+      origem: g.origem || 'cerebro_python',
+      cerebro_version: g.cerebro_version || null,
+      checkpoint_hash: g.checkpoint_hash || null,
+      audit_brain_version: g.audit_brain_version || null,
+      source_of_truth: g.source_of_truth || 'python',
+      checkpoint_generated_at: g.checkpoint_generated_at || null,
+      criado_em: null,
+      source: 'checkpoint_fallback'
+    };
+  });
+}
+
+/** Remove jogos JS sem provenance do concurso (só mantém cerebro_python). */
+async function purgeNonCerebroSistema(env, concurso) {
+  try {
+    await env.DB.prepare(`
+      DELETE FROM jogos_sistema
+      WHERE concurso = ?
+        AND (origem IS NULL OR origem = '' OR origem != 'cerebro_python')
+    `).bind(concurso).run();
+  } catch (e) {
+    console.error('purgeNonCerebroSistema', e);
+  }
+}
+
 async function sistemaStatusSeguro(env) {
   if (!env?.DB) return json({ ok: false, message: 'Binding D1 ausente.' }, 500);
   await ensureAppSchema(env);
@@ -160,32 +220,62 @@ async function sistemaStatusSeguro(env) {
     proximo = Number(latest.concurso) + 1;
   }
 
-  // Gate do Cérebro — sem fallback silencioso
-  let cerebro_gate;
+  // Gate completo (com games) para fallback e limpeza
+  let gateFull;
   try {
-    cerebro_gate = await inspectCerebroCheckpoint(env, proximo);
-    // não serializar games inteiros no status
-    if (cerebro_gate.games) {
-      const { games, ...rest } = cerebro_gate;
-      cerebro_gate = { ...rest, jogos: games.length };
-    }
+    gateFull = await inspectCerebroCheckpoint(env, proximo);
   } catch (e) {
-    cerebro_gate = { status: 'invalid', blocked: true, message: String(e.message || e) };
+    gateFull = { status: 'invalid', blocked: true, message: String(e.message || e) };
   }
+
+  let cerebro_gate = gateFull;
+  if (cerebro_gate?.games) {
+    const { games, ...rest } = cerebro_gate;
+    cerebro_gate = { ...rest, jogos: games.length };
+  }
+
+  // Só Cérebro no D1
+  await purgeNonCerebroSistema(env, proximo);
 
   let jogosRows = await safeAll(env, `
     SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares,
            origem, cerebro_version, checkpoint_hash,
            audit_brain_version, source_of_truth, checkpoint_generated_at, criado_em
-    FROM jogos_sistema WHERE concurso = ? ORDER BY metodo
+    FROM jogos_sistema
+    WHERE concurso = ? AND origem = 'cerebro_python'
+    ORDER BY metodo
   `, [proximo]);
-  if (!jogosRows.length) {
-    jogosRows = await safeAll(env, `
-      SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares, criado_em
-      FROM jogos_sistema WHERE concurso = ? ORDER BY metodo
-    `, [proximo]);
+
+  let jogos_gerados = jogosRows.map(mapJogoSistema);
+  let source_jogos = 'd1_cerebro';
+
+  // Fallback: D1 vazio mas checkpoint ativo → monta lista a partir do checkpoint
+  if (!jogos_gerados.length && gateFull && !gateFull.blocked && gateFull.games?.length) {
+    jogos_gerados = mapGamesFromCheckpoint(gateFull.games, proximo);
+    source_jogos = 'checkpoint_fallback';
+    // Tenta persistir em background-friendly (síncrono curto)
+    try {
+      await applyCerebroOrBlock(env, proximo);
+      await purgeNonCerebroSistema(env, proximo);
+      const after = await safeAll(env, `
+        SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares,
+               origem, cerebro_version, checkpoint_hash,
+               audit_brain_version, source_of_truth, checkpoint_generated_at, criado_em
+        FROM jogos_sistema
+        WHERE concurso = ? AND origem = 'cerebro_python'
+        ORDER BY metodo
+      `, [proximo]);
+      if (after.length) {
+        jogos_gerados = after.map(mapJogoSistema);
+        source_jogos = 'd1_cerebro';
+      }
+    } catch (e) {
+      console.error('auto-apply cerebro', e);
+    }
   }
-  const jogos_gerados = jogosRows.map(mapJogoSistema);
+
+  const pyOnly = jogos_gerados.filter((j) => j.origem === 'cerebro_python' || j.source === 'checkpoint_fallback');
+  if (pyOnly.length) jogos_gerados = pyOnly;
 
   const provenance = jogos_gerados.length ? {
     origem: jogos_gerados[0].origem,
@@ -193,7 +283,8 @@ async function sistemaStatusSeguro(env) {
     checkpoint_hash: jogos_gerados[0].checkpoint_hash,
     source_of_truth: jogos_gerados[0].source_of_truth,
     jogos: jogos_gerados.length,
-    rastreavel: Boolean(jogos_gerados[0].checkpoint_hash)
+    rastreavel: Boolean(jogos_gerados[0].checkpoint_hash),
+    source_jogos
   } : null;
 
   const ultimo_ingest = await safeFirst(env, `
@@ -248,9 +339,12 @@ async function sistemaStatusSeguro(env) {
     provenance,
     ultimo_ingest,
     cerebro_gate,
+    source_jogos,
     note: cerebro_gate?.blocked
       ? 'Cérebro BLOQUEADO: ' + (cerebro_gate.message || cerebro_gate.status)
-      : 'Checkpoint Python ativo.'
+      : (source_jogos === 'checkpoint_fallback'
+        ? 'Lista montada do checkpoint (D1 ainda sem ingest).'
+        : 'Checkpoint Python ativo.')
   });
 }
 
@@ -319,7 +413,7 @@ export default {
       }
 
       if (request.method === 'GET' && url.pathname === '/api/health') {
-        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true, gate: true });
+        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true, gate: true, cerebro_only: true });
       }
 
       if (request.method === 'GET' && url.pathname === '/api/jogos') {
@@ -327,6 +421,14 @@ export default {
         const user = await getUserFromRequest(request, env);
         if (!user) return json({ ok: false, message: 'Acesso nao autorizado.' }, 401);
         return listJogosSeguro(user, env);
+      }
+
+      // Limpar TODOS os jogos do usuário
+      if (request.method === 'DELETE' && url.pathname === '/api/jogos') {
+        await ensureAppSchema(env);
+        const user = await getUserFromRequest(request, env);
+        if (!user) return json({ ok: false, message: 'Acesso nao autorizado.' }, 401);
+        return deleteAllJogosUsuario(user, env);
       }
 
       if (url.pathname.startsWith('/api/jogos') || url.pathname === '/api/ciclo/rodar') {
