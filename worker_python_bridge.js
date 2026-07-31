@@ -40,6 +40,11 @@ function scoreSet(dezenas) {
   return { soma, pares, impares: (dezenas || []).length - pares };
 }
 
+function countHits(jogoDezenas, sorteadas) {
+  const set = new Set((sorteadas || []).map(Number));
+  return (jogoDezenas || []).filter((d) => set.has(Number(d))).length;
+}
+
 async function safeFirst(env, sql, binds = []) {
   try {
     const stmt = env.DB.prepare(sql);
@@ -121,7 +126,6 @@ async function listJogosSeguro(user, env) {
   return json({ ok: true, jogos, source: 'bridge_seguro' });
 }
 
-/** Apaga todos os jogos do usuário logado (Meus jogos → Limpar todos). */
 async function deleteAllJogosUsuario(user, env) {
   await ensureAppSchema(env);
   const countRow = await safeFirst(env, 'SELECT COUNT(*) AS total FROM jogos WHERE usuario_id = ?', [user.id]);
@@ -186,7 +190,6 @@ function mapGamesFromCheckpoint(games, concurso) {
   });
 }
 
-/** Remove jogos JS sem provenance do concurso (só mantém cerebro_python). */
 async function purgeNonCerebroSistema(env, concurso) {
   try {
     await env.DB.prepare(`
@@ -197,6 +200,171 @@ async function purgeNonCerebroSistema(env, concurso) {
   } catch (e) {
     console.error('purgeNonCerebroSistema', e);
   }
+}
+
+/**
+ * Desempenho dos jogos do sistema vs resultados oficiais.
+ * Cruza jogos_sistema (preferência cerebro_python) com resultados.
+ */
+async function desempenhoSistema(env, limit = 30) {
+  await ensureAppSchema(env);
+  const lim = Math.min(Math.max(Number(limit) || 30, 5), 80);
+
+  const resultados = await safeAll(env, `
+    SELECT concurso, data_sorteio, dezenas, dezenas_texto
+    FROM resultados
+    ORDER BY concurso DESC
+    LIMIT ?
+  `, [lim]);
+
+  if (!resultados.length) {
+    return json({
+      ok: true,
+      concursos: [],
+      por_metodo: [],
+      resumo: null,
+      message: 'Sem resultados no D1.'
+    });
+  }
+
+  const concursosIds = resultados.map((r) => Number(r.concurso));
+  const minC = Math.min(...concursosIds);
+  const maxC = Math.max(...concursosIds);
+
+  // Preferir cerebro_python; se não houver, aceita qualquer origem daquele concurso
+  let jogosRows = await safeAll(env, `
+    SELECT concurso, metodo, dezenas, dezenas_texto, origem, cerebro_version, checkpoint_hash
+    FROM jogos_sistema
+    WHERE concurso >= ? AND concurso <= ?
+    ORDER BY concurso DESC, metodo
+  `, [minC, maxC]);
+
+  const byConcurso = new Map();
+  for (const row of jogosRows) {
+    const c = Number(row.concurso);
+    if (!byConcurso.has(c)) byConcurso.set(c, []);
+    byConcurso.get(c).push(row);
+  }
+
+  // Se houver mistura, prioriza origem cerebro_python por concurso
+  for (const [c, rows] of byConcurso) {
+    const py = rows.filter((r) => r.origem === 'cerebro_python');
+    if (py.length) byConcurso.set(c, py);
+  }
+
+  const serie = [];
+  const metodoAgg = new Map();
+
+  for (const res of resultados) {
+    const concurso = Number(res.concurso);
+    let sorteadas = [];
+    try { sorteadas = JSON.parse(res.dezenas || '[]'); } catch { sorteadas = []; }
+    const jogos = byConcurso.get(concurso) || [];
+
+    if (!jogos.length) {
+      serie.push({
+        concurso,
+        data: res.data_sorteio,
+        sorteadas_texto: res.dezenas_texto || dezenasTexto(sorteadas),
+        jogos: 0,
+        melhor: null,
+        media: null,
+        acertos_11_mais: 0,
+        metodos: []
+      });
+      continue;
+    }
+
+    const detalhe = [];
+    let somaAcertos = 0;
+    let melhor = 0;
+    let acertos11 = 0;
+
+    for (const j of jogos) {
+      let dez = [];
+      try { dez = JSON.parse(j.dezenas || '[]'); } catch { dez = []; }
+      const acertos = countHits(dez, sorteadas);
+      somaAcertos += acertos;
+      if (acertos > melhor) melhor = acertos;
+      if (acertos >= 11) acertos11 += 1;
+
+      detalhe.push({
+        metodo: j.metodo,
+        acertos,
+        dezenas_texto: j.dezenas_texto || dezenasTexto(dez),
+        origem: j.origem || null
+      });
+
+      const key = j.metodo || 'desconhecido';
+      const agg = metodoAgg.get(key) || {
+        metodo: key,
+        jogos: 0,
+        soma: 0,
+        melhor: 0,
+        acertos_11: 0,
+        acertos_12: 0,
+        acertos_13: 0,
+        acertos_14: 0,
+        acertos_15: 0
+      };
+      agg.jogos += 1;
+      agg.soma += acertos;
+      if (acertos > agg.melhor) agg.melhor = acertos;
+      if (acertos === 11) agg.acertos_11 += 1;
+      if (acertos === 12) agg.acertos_12 += 1;
+      if (acertos === 13) agg.acertos_13 += 1;
+      if (acertos === 14) agg.acertos_14 += 1;
+      if (acertos === 15) agg.acertos_15 += 1;
+      metodoAgg.set(key, agg);
+    }
+
+    detalhe.sort((a, b) => b.acertos - a.acertos || String(a.metodo).localeCompare(String(b.metodo)));
+
+    serie.push({
+      concurso,
+      data: res.data_sorteio,
+      sorteadas_texto: res.dezenas_texto || dezenasTexto(sorteadas),
+      jogos: jogos.length,
+      melhor,
+      media: Number((somaAcertos / jogos.length).toFixed(2)),
+      acertos_11_mais: acertos11,
+      metodos: detalhe
+    });
+  }
+
+  // série cronológica crescente para gráfico
+  const serieAsc = serie.slice().reverse();
+
+  const por_metodo = Array.from(metodoAgg.values()).map((m) => ({
+    ...m,
+    media: m.jogos ? Number((m.soma / m.jogos).toFixed(2)) : 0,
+    taxa_11_mais: m.jogos
+      ? Number((((m.acertos_11 + m.acertos_12 + m.acertos_13 + m.acertos_14 + m.acertos_15) * 100) / m.jogos).toFixed(1))
+      : 0
+  })).sort((a, b) => b.media - a.media || b.melhor - a.melhor);
+
+  const comDados = serie.filter((s) => s.jogos > 0);
+  const resumo = comDados.length ? {
+    concursos_com_jogos: comDados.length,
+    concursos_analisados: serie.length,
+    media_melhor: Number((comDados.reduce((a, s) => a + s.melhor, 0) / comDados.length).toFixed(2)),
+    media_media: Number((comDados.reduce((a, s) => a + s.media, 0) / comDados.length).toFixed(2)),
+    vezes_11_mais: comDados.reduce((a, s) => a + s.acertos_11_mais, 0),
+    melhor_absoluto: Math.max(...comDados.map((s) => s.melhor)),
+    baseline_aleatorio_aprox: 9 // média esperada ~9 em 15 de 25 (estudo, não garantia)
+  } : null;
+
+  return json({
+    ok: true,
+    limit: lim,
+    serie: serieAsc,
+    serie_recente: serie,
+    por_metodo,
+    resumo,
+    note: comDados.length
+      ? 'Acertos calculados cruzando jogos_sistema × resultados oficiais. Média aleatória teórica ≈ 9.'
+      : 'Ainda não há jogos_sistema históricos no D1 para os últimos concursos. O gráfico enriquece a cada ciclo com Cérebro ativo.'
+  });
 }
 
 async function sistemaStatusSeguro(env) {
@@ -220,7 +388,6 @@ async function sistemaStatusSeguro(env) {
     proximo = Number(latest.concurso) + 1;
   }
 
-  // Gate completo (com games) para fallback e limpeza
   let gateFull;
   try {
     gateFull = await inspectCerebroCheckpoint(env, proximo);
@@ -234,7 +401,6 @@ async function sistemaStatusSeguro(env) {
     cerebro_gate = { ...rest, jogos: games.length };
   }
 
-  // Só Cérebro no D1
   await purgeNonCerebroSistema(env, proximo);
 
   let jogosRows = await safeAll(env, `
@@ -249,11 +415,9 @@ async function sistemaStatusSeguro(env) {
   let jogos_gerados = jogosRows.map(mapJogoSistema);
   let source_jogos = 'd1_cerebro';
 
-  // Fallback: D1 vazio mas checkpoint ativo → monta lista a partir do checkpoint
   if (!jogos_gerados.length && gateFull && !gateFull.blocked && gateFull.games?.length) {
     jogos_gerados = mapGamesFromCheckpoint(gateFull.games, proximo);
     source_jogos = 'checkpoint_fallback';
-    // Tenta persistir em background-friendly (síncrono curto)
     try {
       await applyCerebroOrBlock(env, proximo);
       await purgeNonCerebroSistema(env, proximo);
@@ -404,6 +568,14 @@ export default {
         }
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/sistema/desempenho') {
+        const lim = Number(url.searchParams.get('limit') || 30);
+        try { return await desempenhoSistema(env, lim); }
+        catch (error) {
+          return json({ ok: false, message: String(error.message || error) }, 500);
+        }
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/sistema/gate') {
         const latest = await safeFirst(env, 'SELECT concurso FROM resultados ORDER BY concurso DESC LIMIT 1');
         const proximo = latest ? Number(latest.concurso) + 1 : 1;
@@ -413,7 +585,7 @@ export default {
       }
 
       if (request.method === 'GET' && url.pathname === '/api/health') {
-        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true, gate: true, cerebro_only: true });
+        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true, gate: true, cerebro_only: true, desempenho: true });
       }
 
       if (request.method === 'GET' && url.pathname === '/api/jogos') {
@@ -423,7 +595,6 @@ export default {
         return listJogosSeguro(user, env);
       }
 
-      // Limpar TODOS os jogos do usuário
       if (request.method === 'DELETE' && url.pathname === '/api/jogos') {
         await ensureAppSchema(env);
         const user = await getUserFromRequest(request, env);
