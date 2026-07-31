@@ -13,6 +13,31 @@ function scoreSet(dezenas) {
   return { soma, pares, impares: dezenas.length - pares };
 }
 
+const CHECKPOINT_CANDIDATE_PATHS = [
+  '/motor_python_v4/checkpoints/operacional.json',
+  '/dados/checkpoint_cerebro.json',
+  '/checkpoints/operacional.json',
+  '/operacional.json'
+];
+
+async function fetchCheckpointAsset(env) {
+  const attempts = [];
+  for (const path of CHECKPOINT_CANDIDATE_PATHS) {
+    try {
+      const response = await env.ASSETS.fetch(
+        new Request(new URL(path, 'https://assets.local').toString())
+      );
+      attempts.push({ path, status: response.status });
+      if (response.ok) {
+        return { response, path, attempts };
+      }
+    } catch (err) {
+      attempts.push({ path, status: 0, error: String(err.message || err) });
+    }
+  }
+  return { response: null, path: null, attempts };
+}
+
 export async function ensureJogosSistemaProvenance(env) {
   const alters = [
     'ALTER TABLE jogos_sistema ADD COLUMN origem TEXT',
@@ -58,20 +83,23 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
     message: 'Checkpoint operacional ausente.'
   };
   try {
-    const response = await env.ASSETS.fetch(
-      new Request('https://assets.local/motor_python_v4/checkpoints/operacional.json')
-    );
-    if (!response.ok) {
-      return { ...base, http_status: response.status, message: 'Asset operacional.json não encontrado (HTTP ' + response.status + ').' };
+    const { response, path, attempts } = await fetchCheckpointAsset(env);
+    if (!response || !response.ok) {
+      return {
+        ...base,
+        http_status: response?.status || 404,
+        message: 'Asset operacional.json não encontrado via ASSETS.',
+        attempts
+      };
     }
     let ck;
     try {
       ck = await response.json();
     } catch {
-      return { ...base, status: 'invalid', message: 'operacional.json não é JSON válido.' };
+      return { ...base, status: 'invalid', message: 'operacional.json não é JSON válido.', path };
     }
     if (!ck || ck.ok !== true) {
-      return { ...base, status: 'invalid', message: 'Checkpoint com ok=false ou vazio.' };
+      return { ...base, status: 'invalid', message: 'Checkpoint com ok=false ou vazio.', path };
     }
     if (!ck.checkpoint_hash || !String(ck.checkpoint_hash).trim()) {
       return {
@@ -79,7 +107,8 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
         status: 'incomplete',
         message: 'Checkpoint sem checkpoint_hash — gravação bloqueada.',
         cerebro_version: ck.cerebro_version || null,
-        concurso_alvo: ck.concurso_alvo ?? null
+        concurso_alvo: ck.concurso_alvo ?? null,
+        path
       };
     }
     if (!ck.cerebro_version) {
@@ -87,11 +116,12 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
         ...base,
         status: 'incomplete',
         message: 'Checkpoint sem cerebro_version — gravação bloqueada.',
-        checkpoint_hash: ck.checkpoint_hash
+        checkpoint_hash: ck.checkpoint_hash,
+        path
       };
     }
     if (!ck.jogos_estudo || typeof ck.jogos_estudo !== 'object') {
-      return { ...base, status: 'invalid', message: 'Checkpoint sem jogos_estudo.' };
+      return { ...base, status: 'invalid', message: 'Checkpoint sem jogos_estudo.', path };
     }
     const alvo = Number(ck.concurso_alvo);
     if (Number(concursoEsperado) && alvo !== Number(concursoEsperado)) {
@@ -102,7 +132,8 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
         concurso_alvo: alvo,
         cerebro_version: ck.cerebro_version,
         checkpoint_hash: ck.checkpoint_hash,
-        message: `Checkpoint é para concurso ${alvo}, esperado ${concursoEsperado}. Sem fallback.`
+        path,
+        message: `Checkpoint é para concurso ${alvo}, esperado ${concursoEsperado}. Atualize o histórico e reexporte o operacional.json.`
       };
     }
 
@@ -132,6 +163,7 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
         concurso_alvo: alvo,
         cerebro_version: ck.cerebro_version,
         checkpoint_hash: ck.checkpoint_hash,
+        path,
         message: 'Checkpoint sem nenhum jogo de 15 dezenas válido.'
       };
     }
@@ -149,6 +181,7 @@ export async function inspectCerebroCheckpoint(env, concursoEsperado) {
       jogos: games.length,
       metodos: games.map((g) => g.metodo),
       games,
+      path,
       message: 'Checkpoint Python válido e alinhado ao concurso.'
     };
   } catch (err) {
