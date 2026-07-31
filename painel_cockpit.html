@@ -40,6 +40,8 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .badge{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900}.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#ffedd5;color:#9a3412}.badge.bad{background:#ffe4e6;color:#be123c}.badge.neu{background:#ede9fe;color:#5b21b6}
 .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}.bar-label{width:28px;font-weight:800;color:var(--muted)}.bar-track{flex:1;height:10px;background:#f1ecfb;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:999px}
 .notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
+.honest{margin-top:12px;padding:14px;border-radius:14px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.55}
+.honest table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}.honest th,.honest td{padding:6px 8px;border-bottom:1px solid #fde68a;text-align:left}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
 .game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800;align-items:center}
@@ -58,17 +60,18 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div>
         <div class="eyebrow">Cérebro Python · Worker · D1</div>
         <h1>Cockpit Lotofácil Lab</h1>
-        <p>Jogos do sistema, aprendizado, laboratório, frequência e seus jogos salvos — numa tela. Todo o histórico de governança permanece no D1.</p>
+        <p>Carga rápida estável. Sessão não some em falha de rede. Lab pesado só no botão.</p>
         <div class="user-chip" id="userChip" style="margin-top:10px">Não logado</div>
       </div>
       <div class="nav">
-        <a href="index.html">Início</a>
-        <a href="laboratorio_21.html">Lab 21</a>
-        <a href="aprendizado.html">Governança</a>
+        <a href="/index.html">Início</a>
+        <a href="/laboratorio_21.html">Lab 21</a>
+        <a href="/aprendizado.html">Governança</a>
       </div>
     </div>
     <div class="actions" style="margin-top:12px">
-      <button class="btn primary" id="btnRefresh">Atualizar tudo</button>
+      <button class="btn primary" id="btnRefresh">Atualizar rápido</button>
+      <button class="btn" id="btnFull">Lab completo (lento)</button>
       <button class="btn" id="btnCiclo">Rodar ciclo</button>
       <button class="btn" id="btnAprend">Sync aprendizado</button>
     </div>
@@ -86,10 +89,16 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
 
   <section id="panel-hoje" class="panel active">
     <div class="grid" id="metricsHoje"></div>
+    <div class="honest">
+      <b>Honestidade (não é previsão de prêmio)</b>
+      <div style="margin-top:6px">Métodos não garantem 11+ nem 15. Jogos abaixo são perfis de estudo.</div>
+    </div>
     <div class="layout">
       <div class="card">
-        <h2>Jogos do sistema (próximo concurso)</h2>
-        <p class="muted">Checkpoint do Cérebro quando disponível. Clique em <b>Salvar</b> (precisa estar logado na aba Meus jogos).</p>
+        <h2>Jogos do sistema</h2>
+        <div class="actions" style="margin-top:0;margin-bottom:8px">
+          <button class="btn soft" type="button" id="btnSaveAll">Salvar todos M1–M9</button>
+        </div>
         <div id="jogosSistema"></div>
       </div>
       <div class="card">
@@ -105,9 +114,8 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
     <div class="layout">
       <div class="card" id="authCard">
         <h2>Acesso</h2>
-        <p class="muted">Mesma conta da área do usuário. Token compartilhado com <code>usuario.html</code>.</p>
         <div class="form-row">
-          <div><label class="field" for="nome">Nome (cadastro)</label><input id="nome" autocomplete="name"></div>
+          <div><label class="field" for="nome">Nome</label><input id="nome" autocomplete="name"></div>
           <div><label class="field" for="email">Email</label><input id="email" type="email" autocomplete="email"></div>
         </div>
         <div style="margin-top:10px"><label class="field" for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password"></div>
@@ -117,7 +125,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
         </div>
         <div id="authStatus" class="muted" style="margin-top:10px"></div>
       </div>
-      <div class="card" id="userPanelCard" style="display:none">
+      <div class="card" id="userSessionCard" style="display:none">
         <h2>Sessão</h2>
         <div id="userLabel" class="muted"></div>
         <div class="actions">
@@ -132,12 +140,11 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <h2>Salvar manual</h2>
       <div class="form-row">
         <div><label class="field" for="concurso">Concurso</label><input id="concurso" inputmode="numeric"></div>
-        <div><label class="field" for="metodo">Método</label><input id="metodo" placeholder="Manual / M1…"></div>
+        <div><label class="field" for="metodo">Método</label><input id="metodo"></div>
       </div>
-      <div style="margin-top:10px"><label class="field" for="dezenas">Dezenas</label><textarea id="dezenas" placeholder="01-02-03-…-15"></textarea></div>
-      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:var(--muted)">
-        <input id="manterSalvo" type="checkbox" style="width:auto;margin-top:2px">
-        <span>Manter até excluir (senão descarta após 2 conferências)</span>
+      <div style="margin-top:10px"><label class="field" for="dezenas">Dezenas</label><textarea id="dezenas"></textarea></div>
+      <label style="display:flex;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)">
+        <input id="manterSalvo" type="checkbox" style="width:auto"> Manter até excluir
       </label>
       <div class="actions"><button class="btn primary" type="button" id="saveBtn" style="color:#4c1d95">Salvar jogo</button></div>
     </div>
@@ -150,66 +157,57 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
   <section id="panel-aprend" class="panel">
     <div class="grid" id="metricsAprend"></div>
     <div class="layout">
-      <div class="card">
-        <h2>Champion × Challenger</h2>
-        <p class="muted">Promoção só com melhora pareada, IC95%, BH e sem vazamento temporal.</p>
-        <div id="govBox"></div>
-        <div class="actions"><a class="btn soft" href="aprendizado.html" style="color:#5b21b6;text-decoration:none">Auditoria completa →</a></div>
-      </div>
-      <div class="card">
-        <h2>Modelos (resumo)</h2>
-        <div id="modelsBox"></div>
-      </div>
+      <div class="card"><h2>Champion × Challenger</h2><div id="govBox"></div></div>
+      <div class="card"><h2>Modelos</h2><div id="modelsBox"></div></div>
     </div>
     <div class="card">
-      <h2>Registros recentes fora da amostra</h2>
+      <h2>Registros recentes</h2>
       <div class="table-wrap"><table class="table"><thead><tr><th>Concurso</th><th>Modelo</th><th>Treino até</th><th>Brier</th><th>Top 21</th></tr></thead><tbody id="histBody"></tbody></table></div>
     </div>
   </section>
 
   <section id="panel-lab" class="panel">
+    <p class="muted">Não carrega sozinho (evita queda). Use o botão <b>Lab completo</b> no topo.</p>
     <div class="grid" id="metricsLab"></div>
     <div class="layout">
-      <div class="card"><h2>Laboratório semanal</h2><div id="labSemana"></div></div>
-      <div class="card"><h2>Estratégias (acumulado recente)</h2><div id="labEstrat"></div></div>
+      <div class="card"><h2>Semanal</h2><div id="labSemana"></div></div>
+      <div class="card"><h2>Estratégias</h2><div id="labEstrat"></div></div>
     </div>
   </section>
 
   <section id="panel-freq" class="panel">
-    <div class="card">
-      <h2>Frequência das dezenas</h2>
-      <p class="muted">Histórico no D1 — não prediz o próximo sorteio.</p>
-      <div id="freqBars"></div>
-    </div>
-    <div class="card">
-      <h2>Início da dezena</h2>
-      <div id="inicioBars"></div>
-    </div>
+    <div class="card"><h2>Frequência</h2><div id="freqBars"></div></div>
+    <div class="card"><h2>Início</h2><div id="inicioBars"></div></div>
   </section>
 
-  <div class="notice"><b>Aviso:</b> laboratório educativo. Aleatoriedade permanece. Aprendizado usa só concursos encerrados (<code>treino_ate < concurso</code>).</div>
+  <div class="notice">Laboratório educativo. Aleatoriedade permanece.</div>
 </main>
 <script>
 const TOKEN_KEY = 'lotofacil_mobile_token';
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const int = (n) => Number(n||0).toLocaleString('pt-BR');
-let state = { sistema: null, aprend: null };
+let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false, loadingAprend: false, loadingFull: false };
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
 
 function setStatus(msg, err=false) {
   const el = $('status');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'status' + (err ? ' err' : '');
 }
 function setAuthStatus(msg, err=false) {
-  $('authStatus').textContent = msg || '';
-  $('authStatus').style.color = err ? 'var(--bad)' : 'var(--muted)';
+  const el = $('authStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = err ? 'var(--bad)' : 'var(--muted)';
 }
 function setAppStatus(msg, err=false) {
-  $('appStatus').textContent = msg || '';
-  $('appStatus').style.color = err ? 'var(--bad)' : 'var(--ok)';
+  const el = $('appStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = err ? 'var(--bad)' : 'var(--ok)';
 }
 
 document.querySelectorAll('.tab').forEach(btn => {
@@ -217,7 +215,12 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
-    $('panel-' + btn.dataset.tab).classList.add('active');
+    const panel = $('panel-' + btn.dataset.tab);
+    if (panel) panel.classList.add('active');
+    // Aprendizado sob demanda (leve o suficiente). Lab NÃO auto-carrega.
+    if (btn.dataset.tab === 'aprend' && !state.aprendLoaded && !state.loadingAprend) {
+      loadAprend().catch(() => {});
+    }
   });
 });
 
@@ -228,40 +231,68 @@ function dezenasTexto(dezenas) {
   return (dezenas||[]).map(d => String(d).padStart(2,'0')).join('-');
 }
 
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status || 0;
+  }
+}
+
 async function api(path, options = {}) {
   const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
   if (token) headers.authorization = 'Bearer ' + token;
-  const response = await fetch(path, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(path, { ...options, headers });
+  } catch (e) {
+    throw new ApiError('Rede indisponível: ' + (e.message || e), 0);
+  }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) throw new Error(data.message || 'Falha na requisição');
+  if (!response.ok || data.ok === false) {
+    throw new ApiError(data.message || ('HTTP ' + response.status), response.status);
+  }
   return data;
 }
 
 function showLoggedIn(user) {
   currentUser = user;
-  $('authCard').style.display = 'none';
-  $('userSessionCard').style.display = 'block';
-  $('userLabel').textContent = user.nome + ' · ' + user.email;
-  $('userChip').textContent = 'Logado: ' + user.nome;
-  loadMyGames();
+  if ($('authCard')) $('authCard').style.display = 'none';
+  if ($('userSessionCard')) $('userSessionCard').style.display = 'block';
+  if ($('userLabel')) $('userLabel').textContent = (user.nome || '') + ' · ' + (user.email || '');
+  if ($('userChip')) $('userChip').textContent = 'Logado: ' + (user.nome || user.email || '');
+  loadMyGames().catch(() => {});
 }
-function showLoggedOut() {
+
+function showLoggedOut(clearToken) {
   currentUser = null;
-  token = '';
-  localStorage.removeItem(TOKEN_KEY);
-  $('authCard').style.display = 'block';
-  $('userSessionCard').style.display = 'none';
-  $('userChip').textContent = 'Não logado';
-  $('gamesList').innerHTML = '<span class="muted">Faça login para ver seus jogos.</span>';
+  if (clearToken) {
+    token = '';
+    localStorage.removeItem(TOKEN_KEY);
+  }
+  if ($('authCard')) $('authCard').style.display = 'block';
+  if ($('userSessionCard')) $('userSessionCard').style.display = 'none';
+  if ($('userChip')) $('userChip').textContent = token ? 'Sessão instável (token guardado)' : 'Não logado';
+  if ($('gamesList')) $('gamesList').innerHTML = '<span class="muted">Faça login para ver seus jogos.</span>';
 }
 
 async function bootstrapAuth() {
-  if (!token) { showLoggedOut(); return; }
+  token = localStorage.getItem(TOKEN_KEY) || '';
+  if (!token) {
+    showLoggedOut(false);
+    return;
+  }
   try {
     const data = await api('/api/me');
     showLoggedIn(data.user);
-  } catch {
-    showLoggedOut();
+  } catch (e) {
+    // Só apaga token se for 401 (sessão inválida). Rede/500 mantém login.
+    if (e.status === 401) {
+      showLoggedOut(true);
+      setStatus('Sessão expirada — entre de novo na aba Meus jogos.', true);
+    } else {
+      if ($('userChip')) $('userChip').textContent = 'Token salvo (API temporariamente falhou)';
+      setStatus('Não foi possível validar login agora: ' + (e.message || e), true);
+    }
   }
 }
 
@@ -284,7 +315,6 @@ async function loadMyGames() {
               <span class="badge ${j.status==='conferido'?'ok':'neu'}">${j.status}</span>
             </span>
           </div>
-          ${j.conferencias && j.conferencias.length ? `<div class="muted" style="margin-bottom:8px">${j.conferencias.map(c => `#${c.concurso}: ${c.acertos} acertos`).join(' · ')}</div>` : ''}
           <div class="actions">
             <button class="btn ok" type="button" data-status="jogado" data-id="${j.id}">Marcar jogado</button>
             <button class="btn danger" type="button" data-delete="${j.id}">Excluir</button>
@@ -293,6 +323,7 @@ async function loadMyGames() {
     }
     setAppStatus('Lista atualizada');
   } catch (e) {
+    if (e.status === 401) showLoggedOut(true);
     setAppStatus(e.message, true);
   }
 }
@@ -300,205 +331,221 @@ async function loadMyGames() {
 async function saveSystemGame(metodo, dezenas) {
   if (!token) {
     setStatus('Faça login na aba Meus jogos para salvar.', true);
-    document.querySelector('.tab[data-tab="meus"]').click();
-    return;
+    document.querySelector('.tab[data-tab="meus"]')?.click();
+    return false;
   }
   const concurso = state.sistema?.proximo_concurso || null;
-  try {
-    await api('/api/jogos', {
-      method: 'POST',
-      body: JSON.stringify({
-        concurso,
-        metodo: 'Sistema ' + metodo,
-        dezenas,
-        manter_salvo: false,
-        descartar_apos_rodadas: 2
-      })
-    });
-    setStatus('Salvo: ' + metodo);
-    await loadMyGames();
-  } catch (e) {
-    setStatus(e.message, true);
+  await api('/api/jogos', {
+    method: 'POST',
+    body: JSON.stringify({
+      concurso,
+      metodo: 'Sistema ' + metodo,
+      dezenas,
+      manter_salvo: false,
+      descartar_apos_rodadas: 2
+    })
+  });
+  return true;
+}
+
+async function saveAllSystemGames() {
+  const jogos = state.sistema?.jogos_gerados || [];
+  if (!jogos.length) { setStatus('Não há jogos do sistema para salvar.', true); return; }
+  if (!token) {
+    setStatus('Faça login na aba Meus jogos.', true);
+    document.querySelector('.tab[data-tab="meus"]')?.click();
+    return;
   }
+  $('btnSaveAll').disabled = true;
+  let ok = 0, fail = 0;
+  setStatus('Salvando ' + jogos.length + ' jogos…');
+  for (const j of jogos) {
+    try { await saveSystemGame(j.metodo, j.dezenas); ok += 1; }
+    catch (e) { fail += 1; }
+  }
+  $('btnSaveAll').disabled = false;
+  setStatus('Salvos: ' + ok + (fail ? ' · falhas: ' + fail : ''));
+  await loadMyGames().catch(() => {});
 }
 
 function renderHoje(s) {
+  if (!s) return;
   const u = s.ultimo_resultado;
   const ciclo = s.ultimo_ciclo;
   $('metricsHoje').innerHTML = [
-    ['Último concurso', u?.concurso ?? '—', u?.data || ''],
-    ['Próximo', s.proximo_concurso ?? '—', 'alvo do sistema'],
-    ['Histórico D1', int(s.total_concursos), 'concursos'],
-    ['Jogos gerados', int((s.jogos_gerados||[]).length), 'métodos M1–M9'],
-    ['Lab status', s.laboratorio?.status || '—', s.laboratorio ? `c. ${s.laboratorio.concurso}` : ''],
-    ['Ciclo', ciclo?.status || '—', ciclo?.iniciado_em ? String(ciclo.iniciado_em).slice(0,16) : '']
+    ['Último', u?.concurso ?? '—', u?.data || ''],
+    ['Próximo', s.proximo_concurso ?? '—', ''],
+    ['Histórico', int(s.total_concursos), ''],
+    ['Jogos', int((s.jogos_gerados||[]).length), 'M1–M9'],
+    ['Modo', s.mode === 'rapido' ? 'rápido' : 'completo', ''],
+    ['Ciclo', ciclo?.status || '—', '']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
 
-  if (!$('concurso').value && s.proximo_concurso) $('concurso').value = s.proximo_concurso;
+  if ($('concurso') && !$('concurso').value && s.proximo_concurso) $('concurso').value = s.proximo_concurso;
 
   const jogos = s.jogos_gerados || [];
   $('jogosSistema').innerHTML = jogos.length
     ? jogos.map(j => {
         const dez = Array.isArray(j.dezenas) ? j.dezenas : [];
         const payload = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
-        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span>soma ${j.soma ?? '—'} · P${j.pares ?? '—'}/I${j.impares ?? '—'} <button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px;margin-left:6px">Salvar</button></span></div>${balls(dez)}</div>`;
+        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span><button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px">Salvar</button></span></div>${balls(dez)}</div>`;
       }).join('')
-    : '<p class="muted">Nenhum jogo em jogos_sistema. Rode o ciclo ou exporte o checkpoint do Cérebro.</p>';
+    : '<p class="muted">Lista vazia — rode o ciclo (logado).</p>';
 
-  if (u) {
-    $('ultimoResultado').innerHTML = `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`;
-  } else {
-    $('ultimoResultado').innerHTML = '<p class="muted">Sem resultados no D1.</p>';
-  }
+  $('ultimoResultado').innerHTML = u
+    ? `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`
+    : '<p class="muted">Sem resultados.</p>';
   $('ultimoCiclo').textContent = ciclo
-    ? `status=${ciclo.status} · novos=${JSON.stringify(ciclo.novos_concursos||[])} · gerados=${ciclo.jogos_gerados ?? '—'} · conf=${ciclo.conferencias ?? '—'}`
-    : 'Ainda sem execução registrada.';
+    ? `status=${ciclo.status} · gerados=${ciclo.jogos_gerados ?? '—'}`
+    : 'Sem ciclo.';
 }
 
 function renderAprend(a) {
   if (!a || !a.ok) {
-    $('metricsAprend').innerHTML = '<div class="metric"><div class="label">Aprendizado</div><div class="value">—</div><div class="detail">API indisponível</div></div>';
+    $('metricsAprend').innerHTML = '<div class="metric"><div class="label">Aprendizado</div><div class="value">—</div></div>';
     return;
   }
   const g = a.governance;
   const d = g?.decision;
-  const c = g?.comparison;
-  const q = c?.tests?.find(t => t.id === 'brier')?.qValue;
   $('metricsAprend').innerHTML = [
-    ['Concursos', int(a.totalContests), 'fora da amostra'],
-    ['Champion', g?.activeChampionName || '—', 'persistido'],
-    ['Desafiante', g?.challengerName || '—', 'pareado'],
-    ['Decisão', d ? (d.status === 'promote' ? 'Promover' : d.status === 'blocked' ? 'Bloqueado' : 'Manter') : '—', ''],
-    ['Amostra', c ? int(c.pairedSamples) : '—', 'mín. 30'],
-    ['Integridade', a.integrity?.ok ? 'OK' : 'Falha', a.integrity?.ok ? 'tempo/soma/hash' : 'revisar']
-  ].map(([l,v,det]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${det}</div></div>`).join('');
-
-  if (g && d) {
-    $('govBox').innerHTML = `<div style="padding:12px;border-radius:12px;border:1px solid var(--line);background:${d.status==='promote'?'#f0fdf4':d.status==='blocked'?'#fff1f2':'#fff7ed'}">
-      <div style="font-weight:900;margin-bottom:6px">${g.championBeforeName} × ${g.challengerName}
-        <span class="badge ${d.status==='promote'?'ok':d.status==='blocked'?'bad':'warn'}">${d.status}</span></div>
-      <div class="muted">Ganho Brier ${fmt(c?.brierGain,4)} · q=${q!=null?fmt(q,4):'—'} · top21 ${fmt(c?.top21Gain,3)}</div>
-      <div class="muted" style="margin-top:6px"><b>${d.reason || ''}</b></div>
-    </div>`;
-  } else {
-    $('govBox').innerHTML = '<p class="muted">Amostra insuficiente para governança.</p>';
-  }
-
+    ['Concursos', int(a.totalContests), ''],
+    ['Champion', g?.activeChampionName || '—', ''],
+    ['Decisão', d?.status || '—', ''],
+    ['Integridade', a.integrity?.ok ? 'OK' : 'Falha', '']
+  ].map(([l,v]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+  $('govBox').innerHTML = g
+    ? `<div class="muted"><b>${g.championBeforeName || ''} × ${g.challengerName || ''}</b><br>${d?.reason || ''}</div>`
+    : '<p class="muted">Sem governança ainda.</p>';
   const active = g?.activeChampion;
-  $('modelsBox').innerHTML = (a.models || []).map(m => `
-    <div style="padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;${m.key===active?'background:#f0fdf4;border-color:#86efac':''}">
-      <div style="display:flex;justify-content:space-between;gap:8px;font-weight:800">
-        <span>${m.name}</span>
-        ${m.key===active?'<span class="badge ok">Champion</span>':`<span class="badge neu">${m.evidence?.level||''}</span>`}
-      </div>
-      <div class="muted" style="margin-top:6px">n=${int(m.samples)} · Brier ${fmt(m.brier,4)} · top21 ${fmt(m.avgTop21,2)} · drift ${m.drift?.level||'—'}</div>
-    </div>`).join('') || '<p class="muted">Sem modelos.</p>';
-
-  $('histBody').innerHTML = (a.recent || []).slice(0,40).map(r =>
-    `<tr><td><b>${r.concurso}</b></td><td>${r.modelName||r.model}</td><td>${r.trainingThrough}</td><td>${fmt(r.brier,4)}</td><td>${r.top21}</td></tr>`
-  ).join('') || '<tr><td colspan="5">Sem registros</td></tr>';
+  $('modelsBox').innerHTML = (a.models || []).map(m =>
+    `<div class="muted" style="margin-top:6px"><b>${m.name}</b> ${m.key===active?'(champion)':''} · Brier ${fmt(m.brier,4)}</div>`
+  ).join('') || '—';
+  $('histBody').innerHTML = (a.recent || []).slice(0,30).map(r =>
+    `<tr><td>${r.concurso}</td><td>${r.modelName||r.model}</td><td>${r.trainingThrough}</td><td>${fmt(r.brier,4)}</td><td>${r.top21}</td></tr>`
+  ).join('') || '<tr><td colspan="5">—</td></tr>';
 }
 
 function renderLab(s) {
+  if (!s) return;
   const ac = s.laboratorio_acumulado;
-  const sem = s.laboratorio_semana_atual;
+  if (!ac && s.mode === 'rapido') {
+    $('metricsLab').innerHTML = '<div class="metric"><div class="label">Lab</div><div class="value">—</div><div class="detail">Botão Lab completo</div></div>';
+    $('labSemana').innerHTML = '<p class="muted">Aguardando lab completo.</p>';
+    $('labEstrat').innerHTML = '';
+    return;
+  }
   const res = ac?.resumo;
   $('metricsLab').innerHTML = [
-    ['Jogos (acum.)', int(res?.quantidade), 'recentes conferidos'],
-    ['Média acertos', res ? fmt(res.media_acertos,3) : '—', ''],
-    ['Melhor', res?.melhor_acerto ?? '—', 'acertos'],
-    ['11+', int(res?.acertos_11_mais), ''],
-    ['Semana', sem?.semana_inicio ? `${sem.semana_inicio}–${sem.semana_fim}` : '—', int(sem?.concursos?.length||0)+' concursos'],
-    ['Próx. lab', s.laboratorio?.concurso ?? '—', s.laboratorio?.status || '']
-  ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
-
-  const hist = (s.laboratorio_semana_historico || []).slice(0,8);
-  if (hist.length) {
-    const maxM = Math.max(...hist.map(h => h.media_acertos||0), 1);
-    $('labSemana').innerHTML = `<div class="spark">${hist.slice().reverse().map(h =>
-      `<span title="${h.semana_inicio}: ${fmt(h.media_acertos,3)}" style="height:${Math.max(8, (h.media_acertos/maxM)*100)}%"></span>`
-    ).join('')}</div>
-    <div class="table-wrap" style="margin-top:10px"><table class="table"><thead><tr><th>Semana</th><th>Concursos</th><th>Média</th><th>Melhor</th><th>11+ %</th></tr></thead><tbody>
-    ${hist.map(h=>`<tr><td>${h.semana_inicio}–${h.semana_fim}</td><td>${h.quantidade_concursos}</td><td>${fmt(h.media_acertos,3)}</td><td>${h.melhor_acerto}</td><td>${fmt(h.taxa_11_mais,2)}</td></tr>`).join('')}
-    </tbody></table></div>`;
-  } else {
-    $('labSemana').innerHTML = '<p class="muted">Sem semanas conferidas ainda.</p>';
-  }
-
-  const estrat = (ac?.estrategias || []).slice(0,8);
-  $('labEstrat').innerHTML = estrat.length
-    ? estrat.map(e => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${e.label||e.key}</b>
-        <div class="muted">jogos ${int(e.jogos)} · média ${fmt(e.media_acertos,3)} · 11+ ${fmt(e.taxa_11_mais,2)}% · melhor ${e.melhor_acerto}</div></div>`).join('')
-    : '<p class="muted">Sem estratégias agregadas.</p>';
+    ['Jogos', int(res?.quantidade), ''],
+    ['Média', res ? fmt(res.media_acertos,3) : '—', ''],
+    ['Melhor', res?.melhor_acerto ?? '—', ''],
+    ['11+', int(res?.acertos_11_mais), '']
+  ].map(([l,v]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+  const hist = s.laboratorio_semana_historico || [];
+  $('labSemana').innerHTML = hist.length
+    ? hist.slice(0,6).map(h => `<div class="muted">${h.semana_inicio}: média ${fmt(h.media_acertos,3)}</div>`).join('')
+    : '<p class="muted">Sem dados.</p>';
+  $('labEstrat').innerHTML = (ac?.estrategias || []).slice(0,6).map(e =>
+    `<div class="muted"><b>${e.label||e.key}</b> · ${fmt(e.media_acertos,3)}</div>`
+  ).join('') || '—';
 }
 
 function renderFreq(s) {
+  if (!s) return;
   const freq = s.frequencia_dezenas || [];
   const maxF = Math.max(...freq.map(f => f.frequencia||0), 1);
   $('freqBars').innerHTML = freq.map(f => `
-    <div class="bar-row"><span class="bar-label">${f.dezena_texto||String(f.dezena).padStart(2,'0')}</span>
+    <div class="bar-row"><span class="bar-label">${f.dezena_texto||f.dezena}</span>
     <div class="bar-track"><div class="bar-fill" style="width:${(f.frequencia/maxF)*100}%"></div></div>
-    <span style="width:52px;text-align:right;font-weight:700;font-size:11px">${f.frequencia}</span>
-    <span style="width:48px;text-align:right;color:var(--muted);font-size:10px">atr ${f.atraso}</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
-
-  const ini = s.inicio_dezena || [];
-  const maxI = Math.max(...ini.map(i => i.quantidade||0), 1);
-  $('inicioBars').innerHTML = ini.map(i => `
-    <div class="bar-row"><span class="bar-label">${i.inicio_texto||i.inicio}</span>
-    <div class="bar-track"><div class="bar-fill" style="width:${(i.quantidade/maxI)*100}%;background:linear-gradient(90deg,#0f766e,#14b8a6)"></div></div>
-    <span style="width:70px;text-align:right;font-size:11px;font-weight:700">${i.quantidade} (${fmt(i.percentual,2)}%)</span></div>`).join('') || '<p class="muted">Sem dados.</p>';
+    <span style="width:40px;text-align:right;font-size:11px">${f.frequencia}</span></div>`).join('') || '—';
+  $('inicioBars').innerHTML = (s.inicio_dezena || []).length
+    ? s.inicio_dezena.map(i => `<div class="muted">${i.inicio_texto||i.inicio}: ${i.quantidade}</div>`).join('')
+    : '<p class="muted">Só no lab completo.</p>';
 }
 
-async function loadSistema() {
-  const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
-  const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data.message || 'Falha /api/sistema/status');
+async function loadRapido() {
+  const t0 = performance.now();
+  const r = await fetch('/api/sistema/rapido?t=' + Date.now(), { cache: 'no-store' });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok && !data.ok) throw new Error(data.message || 'Falha /api/sistema/rapido');
+  // degraded still ok:true
   state.sistema = data;
-  renderHoje(data);
-  renderLab(data);
-  renderFreq(data);
+  try { renderHoje(data); } catch (e) { console.warn(e); }
+  try { renderLab(data); } catch (e) { console.warn(e); }
+  try { renderFreq(data); } catch (e) { console.warn(e); }
+  return Math.round(performance.now() - t0);
 }
 
-async function loadAprend() {
+async function loadFull() {
+  if (state.loadingFull) return;
+  state.loadingFull = true;
+  setStatus('Lab completo (pode demorar)…');
+  if ($('btnFull')) $('btnFull').disabled = true;
   try {
-    const r = await fetch('/api/aprendizado/historico?t=' + Date.now(), { cache: 'no-store' });
-    const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha aprendizado');
-    state.aprend = data;
-    renderAprend(data);
-  } catch (e) {
-    renderAprend(null);
-    console.warn(e);
-  }
-}
-
-async function refreshAll() {
-  setStatus('Atualizando cockpit…');
-  $('btnRefresh').disabled = true;
-  try {
-    await loadSistema();
-    await loadAprend();
-    if (token) await loadMyGames();
-    setStatus('Cockpit atualizado · ' + new Date().toLocaleTimeString('pt-BR'));
+    const t0 = performance.now();
+    const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data.ok === false) throw new Error(data.message || 'Falha status completo');
+    data.mode = 'completo';
+    state.sistema = data;
+    state.fullLoaded = true;
+    renderHoje(data); renderLab(data); renderFreq(data);
+    setStatus('Lab completo · ' + Math.round(performance.now() - t0) + ' ms');
   } catch (e) {
     setStatus(e.message || String(e), true);
   } finally {
-    $('btnRefresh').disabled = false;
+    state.loadingFull = false;
+    if ($('btnFull')) $('btnFull').disabled = false;
   }
 }
 
-$('jogosSistema').addEventListener('click', (ev) => {
+async function loadAprend() {
+  if (state.loadingAprend) return;
+  state.loadingAprend = true;
+  setStatus('Carregando aprendizado…');
+  try {
+    const r = await fetch('/api/aprendizado/historico?t=' + Date.now(), { cache: 'no-store' });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha aprendizado');
+    state.aprend = data;
+    state.aprendLoaded = true;
+    renderAprend(data);
+    setStatus('Aprendizado ok');
+  } catch (e) {
+    renderAprend(null);
+    setStatus(e.message || String(e), true);
+  } finally {
+    state.loadingAprend = false;
+  }
+}
+
+async function refreshRapido() {
+  setStatus('Atualizando…');
+  if ($('btnRefresh')) $('btnRefresh').disabled = true;
+  try {
+    const ms = await loadRapido();
+    if (token) await loadMyGames().catch(() => {});
+    setStatus('Rápido · ' + ms + ' ms');
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  } finally {
+    if ($('btnRefresh')) $('btnRefresh').disabled = false;
+  }
+}
+
+$('jogosSistema')?.addEventListener('click', async (ev) => {
   const btn = ev.target.closest('[data-save]');
   if (!btn) return;
   try {
     const { metodo, dezenas } = JSON.parse(decodeURIComponent(btn.dataset.save));
-    saveSystemGame(metodo, dezenas);
-  } catch (e) {
-    setStatus(e.message, true);
-  }
+    await saveSystemGame(metodo, dezenas);
+    setStatus('Salvo: ' + metodo);
+    await loadMyGames().catch(() => {});
+  } catch (e) { setStatus(e.message, true); }
 });
 
-$('loginBtn').addEventListener('click', async () => {
+$('btnSaveAll')?.addEventListener('click', () => saveAllSystemGames());
+$('loginBtn')?.addEventListener('click', async () => {
   setAuthStatus('Entrando…');
   try {
     const data = await api('/api/auth/login', {
@@ -509,13 +556,10 @@ $('loginBtn').addEventListener('click', async () => {
     localStorage.setItem(TOKEN_KEY, token);
     setAuthStatus('');
     showLoggedIn(data.user);
-  } catch (e) {
-    setAuthStatus(e.message, true);
-  }
+  } catch (e) { setAuthStatus(e.message, true); }
 });
-
-$('registerBtn').addEventListener('click', async () => {
-  setAuthStatus('Criando conta…');
+$('registerBtn')?.addEventListener('click', async () => {
+  setAuthStatus('Criando…');
   try {
     const data = await api('/api/auth/register', {
       method: 'POST',
@@ -525,17 +569,13 @@ $('registerBtn').addEventListener('click', async () => {
     localStorage.setItem(TOKEN_KEY, token);
     setAuthStatus('');
     showLoggedIn(data.user);
-  } catch (e) {
-    setAuthStatus(e.message, true);
-  }
+  } catch (e) { setAuthStatus(e.message, true); }
 });
-
-$('logoutBtn').addEventListener('click', async () => {
+$('logoutBtn')?.addEventListener('click', async () => {
   try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
-  showLoggedOut();
+  showLoggedOut(true);
 });
-
-$('saveBtn').addEventListener('click', async () => {
+$('saveBtn')?.addEventListener('click', async () => {
   if (!token) { setAppStatus('Faça login primeiro', true); return; }
   try {
     await api('/api/jogos', {
@@ -552,23 +592,19 @@ $('saveBtn').addEventListener('click', async () => {
     setAppStatus('Jogo salvo');
     await loadMyGames();
   } catch (e) {
+    if (e.status === 401) showLoggedOut(true);
     setAppStatus(e.message, true);
   }
 });
-
-$('checkBtn').addEventListener('click', async () => {
+$('checkBtn')?.addEventListener('click', async () => {
   try {
     const data = await api('/api/jogos/conferir-pendentes', { method: 'POST', body: '{}' });
-    setAppStatus(`Conferidos: ${data.jogos_conferidos} · novas: ${data.conferencias_novas||0} · descartados: ${data.jogos_descartados||0}`);
+    setAppStatus(`Conferidos: ${data.jogos_conferidos}`);
     await loadMyGames();
-  } catch (e) {
-    setAppStatus(e.message, true);
-  }
+  } catch (e) { setAppStatus(e.message, true); }
 });
-
-$('reloadGamesBtn').addEventListener('click', () => loadMyGames());
-
-$('gamesList').addEventListener('click', async (ev) => {
+$('reloadGamesBtn')?.addEventListener('click', () => loadMyGames());
+$('gamesList')?.addEventListener('click', async (ev) => {
   const idStatus = ev.target.dataset.id && ev.target.dataset.status ? ev.target.dataset.id : '';
   const idDel = ev.target.dataset.delete || '';
   try {
@@ -576,36 +612,50 @@ $('gamesList').addEventListener('click', async (ev) => {
       await api('/api/jogos/' + idStatus, { method: 'PATCH', body: JSON.stringify({ status: ev.target.dataset.status }) });
       await loadMyGames();
     }
-    if (idDel && confirm('Excluir este jogo?')) {
+    if (idDel && confirm('Excluir?')) {
       await api('/api/jogos/' + idDel, { method: 'DELETE' });
       await loadMyGames();
     }
-  } catch (e) {
-    setAppStatus(e.message, true);
-  }
+  } catch (e) { setAppStatus(e.message, true); }
 });
-
-$('btnRefresh').addEventListener('click', refreshAll);
-$('btnCiclo').addEventListener('click', async () => {
-  $('btnCiclo').disabled = true;
-  setStatus('Rodando ciclo…');
+$('btnRefresh')?.addEventListener('click', refreshRapido);
+$('btnFull')?.addEventListener('click', loadFull);
+$('btnCiclo')?.addEventListener('click', async () => {
+  if ($('btnCiclo')) $('btnCiclo').disabled = true;
+  setStatus('Ciclo…');
   try {
     const data = await api('/api/ciclo/rodar', { method: 'POST', body: '{}' });
     setStatus('Ciclo ok · gerados ' + (data.jogos_gerados ?? '—'));
-    await refreshAll();
+    state.fullLoaded = false;
+    await refreshRapido();
   } catch (e) {
-    setStatus(e.message || String(e), true);
+    if (e.status === 401) {
+      setStatus('Ciclo precisa de login (aba Meus jogos).', true);
+      document.querySelector('.tab[data-tab="meus"]')?.click();
+    } else setStatus(e.message || String(e), true);
   } finally {
-    $('btnCiclo').disabled = false;
+    if ($('btnCiclo')) $('btnCiclo').disabled = false;
   }
 });
-$('btnAprend').addEventListener('click', async () => {
-  setStatus('Sincronizando aprendizado…');
-  await loadAprend();
-  setStatus('Aprendizado sincronizado');
+$('btnAprend')?.addEventListener('click', () => loadAprend());
+
+window.addEventListener('unhandledrejection', (ev) => {
+  console.error(ev.reason);
+  setStatus('Erro: ' + (ev.reason?.message || ev.reason), true);
 });
 
-bootstrapAuth().then(refreshAll);
+(async () => {
+  try {
+    await bootstrapAuth();
+  } catch (e) {
+    console.warn(e);
+  }
+  try {
+    await refreshRapido();
+  } catch (e) {
+    setStatus(e.message || String(e), true);
+  }
+})();
 </script>
 </body>
 </html>
