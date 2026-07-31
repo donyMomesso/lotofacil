@@ -2,14 +2,15 @@
 """
 Exporta o checkpoint operacional do Cérebro Python.
 
-Uso típico no ciclo diário (GitHub Actions):
+Pipeline:
+  1) carrega histórico (CSV/JSON)
+  2) valida (buracos, duplicados, dezenas) — se falhar, NÃO grava checkpoint
+  3) gera checkpoint versionado com hash
+  4) espelha em motor_python_v4/checkpoints/operacional.json
 
+Uso:
+  python scripts/validar_historico.py dados/resultados_lotofacil.csv
   python scripts/exportar_checkpoint_cerebro.py
-  python scripts/exportar_checkpoint_cerebro.py --fechamento --base 18 --jogos 30
-
-Lê dados/resultados_lotofacil.csv (ou JSON) e grava:
-  dados/checkpoint_cerebro.json
-  motor_python_v4/checkpoints/operacional.json  (espelho para assets)
 """
 from __future__ import annotations
 
@@ -21,9 +22,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR / "motor_python_v4"))
+sys.path.insert(0, str(BASE_DIR / "scripts"))
 
 from cerebro import Cerebro  # noqa: E402
 from engine import Concurso  # noqa: E402
+from validar_historico import carregar as carregar_rows, validar  # noqa: E402
 
 
 def carregar_historico_csv(caminho: Path) -> list[Concurso]:
@@ -74,12 +77,28 @@ def main() -> int:
     parser.add_argument("--fechamento", action="store_true")
     parser.add_argument("--base", type=int, default=18)
     parser.add_argument("--jogos", type=int, default=30)
+    parser.add_argument(
+        "--pular-validacao",
+        action="store_true",
+        help="NÃO recomendado — só para debug",
+    )
     args = parser.parse_args()
 
     historico_path = Path(args.historico)
     if not historico_path.exists():
         print(json.dumps({"ok": False, "erro": f"Histórico não encontrado: {historico_path}"}, ensure_ascii=False))
         return 1
+
+    if not args.pular_validacao:
+        try:
+            rows = carregar_rows(historico_path)
+            rel = validar(rows)
+        except Exception as exc:  # noqa: BLE001
+            print(json.dumps({"ok": False, "erro": f"Falha na validação: {exc}"}, ensure_ascii=False))
+            return 1
+        if not rel["ok"]:
+            print(json.dumps({"ok": False, "erro": "Histórico inválido — checkpoint NÃO gerado", "validacao": rel}, ensure_ascii=False, indent=2))
+            return 1
 
     historico = carregar_historico(historico_path)
     if not historico:
@@ -96,6 +115,10 @@ def main() -> int:
         quantidade_fechamento=args.jogos,
     )
 
+    if not payload.get("checkpoint_hash") or not payload.get("cerebro_version"):
+        print(json.dumps({"ok": False, "erro": "Checkpoint sem hash ou versão — abortado"}, ensure_ascii=False))
+        return 1
+
     espelho = Path(args.espelho)
     espelho.parent.mkdir(parents=True, exist_ok=True)
     espelho.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -110,6 +133,7 @@ def main() -> int:
         "checkpoint_hash": payload["checkpoint_hash"],
         "saida": str(args.saida),
         "espelho": str(espelho),
+        "validacao": "ok" if not args.pular_validacao else "pulada",
     }
     print(json.dumps(resumo, ensure_ascii=False, indent=2))
     return 0

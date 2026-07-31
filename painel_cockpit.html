@@ -37,20 +37,21 @@ button,a.btn{font:inherit;cursor:pointer}.wrap{max-width:1280px;margin:0 auto;pa
 .table th{position:sticky;top:0;background:#fff;text-align:left;padding:8px;color:#806f9c;text-transform:uppercase;font-size:9px;border-bottom:1px solid var(--line)}
 .table td{padding:8px;border-bottom:1px solid #f1ecfb;vertical-align:middle}
 .dezenas{display:flex;flex-wrap:wrap;gap:4px}.ball{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:#f3e8ff;color:#5b21b6}
+.ball.on{background:linear-gradient(135deg,var(--p),var(--pink));color:#fff;cursor:pointer}
+.ball.off{background:#f1ecfb;color:#a78bfa;cursor:pointer;opacity:.7}
 .badge{display:inline-flex;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900}.badge.ok{background:#dcfce7;color:#166534}.badge.warn{background:#ffedd5;color:#9a3412}.badge.bad{background:#ffe4e6;color:#be123c}.badge.neu{background:#ede9fe;color:#5b21b6}
 .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}.bar-label{width:28px;font-weight:800;color:var(--muted)}.bar-track{flex:1;height:10px;background:#f1ecfb;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:999px}
 .notice{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e40af;font-size:12px;line-height:1.55}
 .honest{margin-top:12px;padding:14px;border-radius:14px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.55}
-.honest table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}.honest th,.honest td{padding:6px 8px;border-bottom:1px solid #fde68a;text-align:left}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .game-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;background:#faf8ff}
 .game-card .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;font-weight:800;align-items:center}
-.spark{display:flex;align-items:flex-end;gap:3px;height:48px;margin-top:8px}.spark span{flex:1;background:linear-gradient(180deg,#c4b5fd,#7c3aed);border-radius:3px 3px 0 0;min-width:4px}
 label.field{display:block;font-size:11px;font-weight:800;color:var(--muted);margin:0 0 4px}
-input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:14px Inter,sans-serif;color:var(--ink);background:#fff}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:14px Inter,sans-serif;color:var(--ink);background:#fff}
 textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:640px){.form-row{grid-template-columns:1fr}}
 .user-chip{font-size:12px;font-weight:700;opacity:.95}
+.pick-grid{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 </style>
 </head>
 <body>
@@ -60,7 +61,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div>
         <div class="eyebrow">Cérebro Python · Worker · D1</div>
         <h1>Cockpit Lotofácil Lab</h1>
-        <p>Carga rápida estável. Sessão não some em falha de rede. Lab pesado só no botão.</p>
+        <p>Carga rápida estável. Fechamento 16–20 com garantia <b>condicional</b> ao grupo.</p>
         <div class="user-chip" id="userChip" style="margin-top:10px">Não logado</div>
       </div>
       <div class="nav">
@@ -81,6 +82,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
 
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="hoje">Hoje</button>
+    <button class="tab" data-tab="fechamento">Fechamento</button>
     <button class="tab" data-tab="meus">Meus jogos</button>
     <button class="tab" data-tab="aprend">Aprendizado</button>
     <button class="tab" data-tab="lab">Laboratório</button>
@@ -97,6 +99,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div class="card">
         <h2>Jogos do sistema</h2>
         <div class="actions" style="margin-top:0;margin-bottom:8px">
+          <button class="btn soft" type="button" id="btnCopyAll">Copiar todos (1 por linha)</button>
           <button class="btn soft" type="button" id="btnSaveAll">Salvar todos M1–M9</button>
         </div>
         <div id="jogosSistema"></div>
@@ -104,8 +107,63 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
       <div class="card">
         <h2>Último resultado</h2>
         <div id="ultimoResultado"></div>
-        <h2 style="margin-top:16px">Último ciclo</h2>
+        <h2 style="margin-top:16px">Último ciclo / Cérebro</h2>
         <div id="ultimoCiclo" class="muted">—</div>
+        <div id="cerebroGate" class="muted" style="margin-top:8px">—</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-fechamento" class="panel">
+    <div class="honest">
+      <b>Garantia condicional — não é “sempre 13/14”</b>
+      <div style="margin-top:6px">
+        Se as <b>15 sorteadas estiverem todas no seu grupo</b>, o fechamento cobre o mínimo declarado abaixo.
+        Se o resultado trouxer dezenas <b>fora</b> do grupo, a garantia <b>não se aplica</b>.
+      </div>
+    </div>
+    <div class="layout">
+      <div class="card">
+        <h2>Montar grupo (16–20)</h2>
+        <div class="form-row">
+          <div>
+            <label class="field" for="fechTamanho">Tamanho do grupo</label>
+            <select id="fechTamanho">
+              <option value="16">16 — cobertura total (16 jogos)</option>
+              <option value="17">17 — cobertura total (136 jogos)</option>
+              <option value="18" selected>18 — amostra / cobertura parcial</option>
+              <option value="19">19 — amostra</option>
+              <option value="20">20 — amostra</option>
+            </select>
+          </div>
+          <div>
+            <label class="field" for="fechQtd">Máx. jogos (amostra)</label>
+            <input id="fechQtd" type="number" min="1" max="300" value="30">
+          </div>
+        </div>
+        <p class="muted" id="fechGarantiaHint" style="margin-top:10px">—</p>
+        <div class="actions">
+          <button class="btn soft" type="button" id="fechTopFreq">Preencher top frequência</button>
+          <button class="btn soft" type="button" id="fechLimpar">Limpar grupo</button>
+        </div>
+        <div class="pick-grid" id="fechPick"></div>
+        <div class="muted">Selecionadas: <b id="fechCount">0</b> · <span id="fechGrupoTxt">—</span></div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="fechGerar" style="color:#4c1d95">Gerar jogos</button>
+          <button class="btn soft" type="button" id="fechCopy">Copiar (1 por linha)</button>
+          <button class="btn ok" type="button" id="fechSaveApi">Salvar fechamento (login)</button>
+          <button class="btn soft" type="button" id="fechSaveJogos">Salvar jogos na conta</button>
+        </div>
+        <div id="fechMeta" class="muted" style="margin-top:10px"></div>
+        <div id="fechJogos" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h2>Meus fechamentos</h2>
+        <p class="muted">Lista do D1 (requer login). Conferência usa acertos no grupo e melhor jogo.</p>
+        <div class="actions" style="margin-top:0">
+          <button class="btn soft" type="button" id="fechReload">Atualizar lista</button>
+        </div>
+        <div id="fechLista" class="muted">Faça login e atualize.</div>
       </div>
     </div>
   </section>
@@ -132,6 +190,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
           <button class="btn soft" type="button" id="logoutBtn">Sair</button>
           <button class="btn ok" type="button" id="checkBtn">Conferir pendentes</button>
           <button class="btn soft" type="button" id="reloadGamesBtn">Atualizar lista</button>
+          <button class="btn soft" type="button" id="btnCopyMy">Copiar meus (1 por linha)</button>
         </div>
         <div id="appStatus" class="muted" style="margin-top:10px"></div>
       </div>
@@ -167,7 +226,7 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
   </section>
 
   <section id="panel-lab" class="panel">
-    <p class="muted">Não carrega sozinho (evita queda). Use o botão <b>Lab completo</b> no topo.</p>
+    <p class="muted">Não carrega sozinho. Use <b>Lab completo</b> no topo.</p>
     <div class="grid" id="metricsLab"></div>
     <div class="layout">
       <div class="card"><h2>Semanal</h2><div id="labSemana"></div></div>
@@ -180,16 +239,17 @@ textarea{min-height:72px;font-family:ui-monospace,Consolas,monospace}
     <div class="card"><h2>Início</h2><div id="inicioBars"></div></div>
   </section>
 
-  <div class="notice">Laboratório educativo. Aleatoriedade permanece.</div>
+  <div class="notice">Laboratório educativo. Fechamento = cobertura sob hipótese; o sorteio continua aleatório.</div>
 </main>
 <script>
 const TOKEN_KEY = 'lotofacil_mobile_token';
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const int = (n) => Number(n||0).toLocaleString('pt-BR');
-let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false, loadingAprend: false, loadingFull: false };
+let state = { sistema: null, aprend: null, aprendLoaded: false, fullLoaded: false, loadingAprend: false, loadingFull: false, meusJogos: [], fechamento: null };
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
+let fechSel = new Set();
 
 function setStatus(msg, err=false) {
   const el = $('status');
@@ -217,9 +277,10 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     const panel = $('panel-' + btn.dataset.tab);
     if (panel) panel.classList.add('active');
-    // Aprendizado sob demanda (leve o suficiente). Lab NÃO auto-carrega.
-    if (btn.dataset.tab === 'aprend' && !state.aprendLoaded && !state.loadingAprend) {
-      loadAprend().catch(() => {});
+    if (btn.dataset.tab === 'aprend' && !state.aprendLoaded && !state.loadingAprend) loadAprend().catch(() => {});
+    if (btn.dataset.tab === 'fechamento') {
+      updateFechHint();
+      if (token) loadFechamentos().catch(() => {});
     }
   });
 });
@@ -230,29 +291,324 @@ function balls(dezenas) {
 function dezenasTexto(dezenas) {
   return (dezenas||[]).map(d => String(d).padStart(2,'0')).join('-');
 }
+function linhaSequencia(dezenasOuTexto) {
+  if (Array.isArray(dezenasOuTexto)) return dezenasTexto(dezenasOuTexto);
+  return String(dezenasOuTexto || '').trim();
+}
+
+async function copiarTexto(texto) {
+  const t = String(texto || '').trim();
+  if (!t) throw new Error('Nada para copiar');
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(t);
+    return;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(ta);
+  if (!ok) throw new Error('Não foi possível copiar');
+}
+
+async function copiarTodosSistema() {
+  const jogos = state.sistema?.jogos_gerados || [];
+  if (!jogos.length) { setStatus('Não há jogos do sistema para copiar.', true); return; }
+  const linhas = jogos.map(j => linhaSequencia(j.dezenas_texto || j.dezenas)).filter(Boolean);
+  try {
+    await copiarTexto(linhas.join('\n'));
+    setStatus('Copiado: ' + linhas.length + ' sequência(s)');
+  } catch (e) { setStatus(e.message || String(e), true); }
+}
+
+async function copiarMeusJogos() {
+  const jogos = state.meusJogos || [];
+  if (!jogos.length) { setAppStatus('Nenhum jogo salvo.', true); return; }
+  const linhas = jogos.map(j => linhaSequencia(j.dezenas_texto || j.dezenas)).filter(Boolean);
+  try {
+    await copiarTexto(linhas.join('\n'));
+    setAppStatus('Copiado: ' + linhas.length);
+    setStatus('Copiado: ' + linhas.length + ' sequência(s)');
+  } catch (e) { setAppStatus(e.message || String(e), true); }
+}
 
 class ApiError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status || 0;
-  }
+  constructor(message, status) { super(message); this.status = status || 0; }
 }
 
 async function api(path, options = {}) {
   const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
   if (token) headers.authorization = 'Bearer ' + token;
   let response;
-  try {
-    response = await fetch(path, { ...options, headers });
-  } catch (e) {
-    throw new ApiError('Rede indisponível: ' + (e.message || e), 0);
-  }
+  try { response = await fetch(path, { ...options, headers }); }
+  catch (e) { throw new ApiError('Rede: ' + (e.message || e), 0); }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) {
-    throw new ApiError(data.message || ('HTTP ' + response.status), response.status);
-  }
+  if (!response.ok || data.ok === false) throw new ApiError(data.message || ('HTTP ' + response.status), response.status);
   return data;
 }
+
+/* ——— Fechamento combinatório ——— */
+function combinacoes(arr, k) {
+  const out = [];
+  const n = arr.length;
+  if (k > n || k <= 0) return out;
+  const idx = Array.from({ length: k }, (_, i) => i);
+  while (true) {
+    out.push(idx.map(i => arr[i]));
+    let i = k - 1;
+    while (i >= 0 && idx[i] === i + n - k) i -= 1;
+    if (i < 0) break;
+    idx[i] += 1;
+    for (let j = i + 1; j < k; j++) idx[j] = idx[j - 1] + 1;
+  }
+  return out;
+}
+
+function garantiaDeclarada(tamanho) {
+  const t = Number(tamanho);
+  if (t === 16) return { texto: 'Se as 15 sorteadas ⊆ grupo de 16 → garantia de 15 pontos (cobertura total, 16 jogos).', minPontos: 15, total: true };
+  if (t === 17) return { texto: 'Se as 15 ⊆ grupo de 17 → garantia de 15 (cobertura total = 136 jogos). Amostra parcial não garante 15.', minPontos: 15, total: true };
+  if (t === 18) return { texto: 'Cobertura total seria 816 jogos. Amostra: garantia formal de 15 só se amostra = total. Use como estudo de carteira.', minPontos: null, total: false };
+  if (t === 19) return { texto: 'Cobertura total = 11628 jogos (inviável aqui). Amostra só para estudo — sem garantia de 13/14/15.', minPontos: null, total: false };
+  return { texto: 'Cobertura total = 15504 jogos. Amostra para estudo — garantia só se o resultado estiver no grupo E a cobertura for completa para o nível desejado.', minPontos: null, total: false };
+}
+
+function updateFechHint() {
+  const t = Number($('fechTamanho')?.value || 18);
+  const g = garantiaDeclarada(t);
+  if ($('fechGarantiaHint')) $('fechGarantiaHint').textContent = g.texto;
+  if (t <= 17) $('fechQtd').value = t === 16 ? 16 : 136;
+  else if (Number($('fechQtd').value) > 120) $('fechQtd').value = 30;
+}
+
+function renderFechPick() {
+  const box = $('fechPick');
+  if (!box) return;
+  box.innerHTML = Array.from({ length: 25 }, (_, i) => i + 1).map(d => {
+    const on = fechSel.has(d);
+    return `<span class="ball ${on ? 'on' : 'off'}" data-d="${d}">${String(d).padStart(2,'0')}</span>`;
+  }).join('');
+  $('fechCount').textContent = String(fechSel.size);
+  $('fechGrupoTxt').textContent = fechSel.size
+    ? [...fechSel].sort((a,b)=>a-b).map(d => String(d).padStart(2,'0')).join('-')
+    : '—';
+}
+
+$('fechPick')?.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-d]');
+  if (!el) return;
+  const d = Number(el.dataset.d);
+  const max = Number($('fechTamanho').value || 18);
+  if (fechSel.has(d)) fechSel.delete(d);
+  else {
+    if (fechSel.size >= max) {
+      setStatus('Grupo já tem ' + max + ' dezenas. Aumente o tamanho ou remova alguma.', true);
+      return;
+    }
+    fechSel.add(d);
+  }
+  renderFechPick();
+});
+
+$('fechTamanho')?.addEventListener('change', () => {
+  updateFechHint();
+  const max = Number($('fechTamanho').value);
+  if (fechSel.size > max) {
+    fechSel = new Set([...fechSel].sort((a,b)=>a-b).slice(0, max));
+    renderFechPick();
+  }
+});
+
+$('fechLimpar')?.addEventListener('click', () => {
+  fechSel = new Set();
+  state.fechamento = null;
+  renderFechPick();
+  $('fechJogos').innerHTML = '';
+  $('fechMeta').textContent = '';
+});
+
+$('fechTopFreq')?.addEventListener('click', () => {
+  const max = Number($('fechTamanho').value || 18);
+  const freq = state.sistema?.frequencia_dezenas || [];
+  const ranked = freq.slice().sort((a,b) => (b.frequencia||0) - (a.frequencia||0));
+  fechSel = new Set(ranked.slice(0, max).map(f => Number(f.dezena)));
+  renderFechPick();
+  setStatus('Grupo = top ' + max + ' por frequência (estudo, não previsão)');
+});
+
+function gerarFechamentoLocal() {
+  const tamanho = Number($('fechTamanho').value || 18);
+  const maxJogos = Math.min(300, Math.max(1, Number($('fechQtd').value || 30)));
+  if (fechSel.size !== tamanho) {
+    throw new Error('Selecione exatamente ' + tamanho + ' dezenas (tem ' + fechSel.size + ').');
+  }
+  const base = [...fechSel].sort((a,b) => a - b);
+  const g = garantiaDeclarada(tamanho);
+  let jogos;
+  if (tamanho <= 17) {
+    jogos = combinacoes(base, 15);
+    if (jogos.length > maxJogos) jogos = jogos.slice(0, maxJogos);
+  } else {
+    // Amostra determinística: janelas + espaçamento cíclico (estudo)
+    const allHint = tamanho === 18 ? 816 : tamanho === 19 ? 11628 : 15504;
+    jogos = [];
+    const seen = new Set();
+    // 1) remover 3 (ou mais) índices de forma circular
+    const rem = tamanho - 15;
+    for (let start = 0; start < tamanho && jogos.length < maxJogos; start++) {
+      for (let step = 1; step < tamanho && jogos.length < maxJogos; step++) {
+        const skip = new Set();
+        for (let r = 0; r < rem; r++) skip.add((start + r * step) % tamanho);
+        if (skip.size < rem) continue;
+        const jogo = base.filter((_, i) => !skip.has(i));
+        if (jogo.length !== 15) continue;
+        const key = jogo.join('-');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        jogos.push(jogo);
+      }
+    }
+    // 2) se ainda faltar, combinações parciais até o limite
+    if (jogos.length < maxJogos) {
+      const extra = combinacoes(base, 15);
+      for (const jogo of extra) {
+        if (jogos.length >= maxJogos) break;
+        const key = jogo.join('-');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        jogos.push(jogo);
+      }
+    }
+    void allHint;
+  }
+  const coberturaTotal = tamanho <= 17 && jogos.length >= combinacoes(base, 15).length;
+  // para 16/17 se limitou amostra, cobertura total falsa
+  const totalPossivel = combinacoes(base, 15).length;
+  const completa = jogos.length >= totalPossivel;
+  return {
+    base,
+    tamanho,
+    jogos,
+    completa,
+    total_possivel: totalPossivel,
+    garantia: completa && tamanho <= 17
+      ? { nivel: 15, texto: 'Garantia 15 pontos SE as 15 sorteadas estiverem no grupo.' }
+      : { nivel: null, texto: g.texto + ' (amostra ' + jogos.length + '/' + totalPossivel + ').' }
+  };
+}
+
+function renderFechJogos(pack) {
+  state.fechamento = pack;
+  $('fechMeta').innerHTML = `
+    <span class="badge ${pack.completa ? 'ok' : 'warn'}">${pack.completa ? 'Cobertura total' : 'Amostra'}</span>
+    · ${pack.jogos.length} jogos · grupo ${pack.tamanho}
+    <div style="margin-top:6px">${pack.garantia.texto}</div>`;
+  $('fechJogos').innerHTML = pack.jogos.slice(0, 80).map((jogo, i) => {
+    const linha = dezenasTexto(jogo);
+    return `<div class="game-card"><div class="meta"><span>#${i+1}</span>
+      <button class="btn soft" type="button" data-copy="${encodeURIComponent(linha)}" style="padding:4px 8px;font-size:11px">Copiar</button>
+    </div>${balls(jogo)}
+    <div class="muted" style="font-family:ui-monospace,Consolas,monospace;margin-top:4px">${linha}</div></div>`;
+  }).join('') + (pack.jogos.length > 80 ? `<p class="muted">… +${pack.jogos.length - 80} (use Copiar todos)</p>` : '');
+}
+
+$('fechGerar')?.addEventListener('click', () => {
+  try {
+    const pack = gerarFechamentoLocal();
+    renderFechJogos(pack);
+    setStatus('Fechamento: ' + pack.jogos.length + ' jogos');
+  } catch (e) { setStatus(e.message || String(e), true); }
+});
+
+$('fechCopy')?.addEventListener('click', async () => {
+  const pack = state.fechamento;
+  if (!pack?.jogos?.length) { setStatus('Gere o fechamento antes.', true); return; }
+  try {
+    await copiarTexto(pack.jogos.map(dezenasTexto).join('\n'));
+    setStatus('Copiado: ' + pack.jogos.length + ' sequência(s)');
+  } catch (e) { setStatus(e.message, true); }
+});
+
+$('fechJogos')?.addEventListener('click', async (ev) => {
+  const btn = ev.target.closest('[data-copy]');
+  if (!btn) return;
+  try {
+    await copiarTexto(decodeURIComponent(btn.dataset.copy));
+    setStatus('Sequência copiada');
+  } catch (e) { setStatus(e.message, true); }
+});
+
+$('fechSaveApi')?.addEventListener('click', async () => {
+  if (!token) { setStatus('Login necessário (aba Meus jogos).', true); document.querySelector('.tab[data-tab="meus"]')?.click(); return; }
+  const pack = state.fechamento;
+  if (!pack?.jogos?.length) { setStatus('Gere o fechamento antes.', true); return; }
+  try {
+    const data = await api('/api/fechamentos', {
+      method: 'POST',
+      body: JSON.stringify({
+        concurso: state.sistema?.proximo_concurso || null,
+        dezenas: pack.base,
+        jogos: pack.jogos
+      })
+    });
+    setStatus(data.existente ? 'Fechamento já existia #' + data.fechamento_id : 'Fechamento salvo #' + data.fechamento_id);
+    await loadFechamentos();
+  } catch (e) { setStatus(e.message, true); }
+});
+
+$('fechSaveJogos')?.addEventListener('click', async () => {
+  if (!token) { setStatus('Login necessário.', true); return; }
+  const pack = state.fechamento;
+  if (!pack?.jogos?.length) { setStatus('Gere o fechamento antes.', true); return; }
+  const concurso = state.sistema?.proximo_concurso || null;
+  let ok = 0, fail = 0;
+  setStatus('Salvando jogos do fechamento…');
+  for (let i = 0; i < pack.jogos.length; i++) {
+    try {
+      await api('/api/jogos', {
+        method: 'POST',
+        body: JSON.stringify({
+          concurso,
+          metodo: 'Fechamento' + pack.tamanho + ' #' + (i + 1),
+          dezenas: pack.jogos[i],
+          manter_salvo: false,
+          descartar_apos_rodadas: 2
+        })
+      });
+      ok += 1;
+    } catch { fail += 1; }
+  }
+  setStatus('Jogos salvos: ' + ok + (fail ? ' · falhas ' + fail : ''));
+  await loadMyGames().catch(() => {});
+});
+
+async function loadFechamentos() {
+  if (!token) {
+    $('fechLista').innerHTML = '<span class="muted">Faça login.</span>';
+    return;
+  }
+  try {
+    const data = await api('/api/fechamentos');
+    const list = data.fechamentos || [];
+    if (!list.length) {
+      $('fechLista').innerHTML = '<p class="muted">Nenhum fechamento salvo.</p>';
+      return;
+    }
+    $('fechLista').innerHTML = list.map(f => {
+      const conf = (f.conferencias || [])[0];
+      return `<div class="game-card">
+        <div class="meta"><span>#${f.concurso} · grupo ${f.tamanho_grupo} · ${f.quantidade_jogos} jogos</span>
+        <span class="badge neu">${f.criado_em ? f.criado_em.slice(0,10) : ''}</span></div>
+        <div class="muted">${f.dezenas_texto || ''}</div>
+        ${conf ? `<div class="muted" style="margin-top:6px">Última conf: grupo ${conf.acertos_grupo} · melhor jogo ${conf.melhor_acerto_jogos}${conf.garantia_14_ativada ? ' · garantia 14 ativada' : ''}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    $('fechLista').innerHTML = '<span class="muted" style="color:var(--bad)">' + (e.message || e) + '</span>';
+  }
+}
+$('fechReload')?.addEventListener('click', () => loadFechamentos());
 
 function showLoggedIn(user) {
   currentUser = user;
@@ -261,65 +617,57 @@ function showLoggedIn(user) {
   if ($('userLabel')) $('userLabel').textContent = (user.nome || '') + ' · ' + (user.email || '');
   if ($('userChip')) $('userChip').textContent = 'Logado: ' + (user.nome || user.email || '');
   loadMyGames().catch(() => {});
+  loadFechamentos().catch(() => {});
 }
 
 function showLoggedOut(clearToken) {
   currentUser = null;
-  if (clearToken) {
-    token = '';
-    localStorage.removeItem(TOKEN_KEY);
-  }
+  state.meusJogos = [];
+  if (clearToken) { token = ''; localStorage.removeItem(TOKEN_KEY); }
   if ($('authCard')) $('authCard').style.display = 'block';
   if ($('userSessionCard')) $('userSessionCard').style.display = 'none';
-  if ($('userChip')) $('userChip').textContent = token ? 'Sessão instável (token guardado)' : 'Não logado';
-  if ($('gamesList')) $('gamesList').innerHTML = '<span class="muted">Faça login para ver seus jogos.</span>';
+  if ($('userChip')) $('userChip').textContent = token ? 'Sessão instável' : 'Não logado';
+  if ($('gamesList')) $('gamesList').innerHTML = '<span class="muted">Faça login.</span>';
 }
 
 async function bootstrapAuth() {
   token = localStorage.getItem(TOKEN_KEY) || '';
-  if (!token) {
-    showLoggedOut(false);
-    return;
-  }
+  if (!token) { showLoggedOut(false); return; }
   try {
     const data = await api('/api/me');
     showLoggedIn(data.user);
   } catch (e) {
-    // Só apaga token se for 401 (sessão inválida). Rede/500 mantém login.
     if (e.status === 401) {
       showLoggedOut(true);
-      setStatus('Sessão expirada — entre de novo na aba Meus jogos.', true);
+      setStatus('Sessão expirada.', true);
     } else {
-      if ($('userChip')) $('userChip').textContent = 'Token salvo (API temporariamente falhou)';
-      setStatus('Não foi possível validar login agora: ' + (e.message || e), true);
+      if ($('userChip')) $('userChip').textContent = 'Token salvo (API falhou)';
+      setStatus('Login: ' + (e.message || e), true);
     }
   }
 }
 
 async function loadMyGames() {
   if (!token) return;
-  setAppStatus('Carregando jogos…');
+  setAppStatus('Carregando…');
   try {
     const data = await api('/api/jogos');
     const jogos = data.jogos || [];
-    if (!jogos.length) {
-      $('gamesList').innerHTML = '<p class="muted">Nenhum jogo salvo.</p>';
-    } else {
-      $('gamesList').innerHTML = jogos.map(j => `
-        <div class="game-card">
-          <div class="meta">
-            <span>${j.dezenas_texto || dezenasTexto(j.dezenas)}</span>
-            <span>
-              ${j.concurso ? `<span class="badge neu">#${j.concurso}</span>` : ''}
-              ${j.metodo ? `<span class="badge neu">${j.metodo}</span>` : ''}
-              <span class="badge ${j.status==='conferido'?'ok':'neu'}">${j.status}</span>
-            </span>
-          </div>
+    state.meusJogos = jogos;
+    if (!jogos.length) $('gamesList').innerHTML = '<p class="muted">Nenhum jogo salvo.</p>';
+    else {
+      $('gamesList').innerHTML = jogos.map(j => {
+        const linha = linhaSequencia(j.dezenas_texto || j.dezenas);
+        return `<div class="game-card"><div class="meta"><span>${linha}</span>
+          <span>${j.concurso ? `<span class="badge neu">#${j.concurso}</span>` : ''}
+          ${j.metodo ? `<span class="badge neu">${j.metodo}</span>` : ''}
+          <span class="badge ${j.status==='conferido'?'ok':'neu'}">${j.status}</span></span></div>
           <div class="actions">
+            <button class="btn soft" type="button" data-copy="${encodeURIComponent(linha)}">Copiar</button>
             <button class="btn ok" type="button" data-status="jogado" data-id="${j.id}">Marcar jogado</button>
             <button class="btn danger" type="button" data-delete="${j.id}">Excluir</button>
-          </div>
-        </div>`).join('');
+          </div></div>`;
+      }).join('');
     }
     setAppStatus('Lista atualizada');
   } catch (e) {
@@ -330,15 +678,14 @@ async function loadMyGames() {
 
 async function saveSystemGame(metodo, dezenas) {
   if (!token) {
-    setStatus('Faça login na aba Meus jogos para salvar.', true);
+    setStatus('Faça login na aba Meus jogos.', true);
     document.querySelector('.tab[data-tab="meus"]')?.click();
     return false;
   }
-  const concurso = state.sistema?.proximo_concurso || null;
   await api('/api/jogos', {
     method: 'POST',
     body: JSON.stringify({
-      concurso,
+      concurso: state.sistema?.proximo_concurso || null,
       metodo: 'Sistema ' + metodo,
       dezenas,
       manter_salvo: false,
@@ -350,21 +697,15 @@ async function saveSystemGame(metodo, dezenas) {
 
 async function saveAllSystemGames() {
   const jogos = state.sistema?.jogos_gerados || [];
-  if (!jogos.length) { setStatus('Não há jogos do sistema para salvar.', true); return; }
-  if (!token) {
-    setStatus('Faça login na aba Meus jogos.', true);
-    document.querySelector('.tab[data-tab="meus"]')?.click();
-    return;
-  }
+  if (!jogos.length) { setStatus('Sem jogos do sistema.', true); return; }
+  if (!token) { setStatus('Faça login.', true); return; }
   $('btnSaveAll').disabled = true;
   let ok = 0, fail = 0;
-  setStatus('Salvando ' + jogos.length + ' jogos…');
   for (const j of jogos) {
-    try { await saveSystemGame(j.metodo, j.dezenas); ok += 1; }
-    catch (e) { fail += 1; }
+    try { await saveSystemGame(j.metodo, j.dezenas); ok++; } catch { fail++; }
   }
   $('btnSaveAll').disabled = false;
-  setStatus('Salvos: ' + ok + (fail ? ' · falhas: ' + fail : ''));
+  setStatus('Salvos: ' + ok + (fail ? ' · falhas ' + fail : ''));
   await loadMyGames().catch(() => {});
 }
 
@@ -372,14 +713,15 @@ function renderHoje(s) {
   if (!s) return;
   const u = s.ultimo_resultado;
   const ciclo = s.ultimo_ciclo;
+  const gate = s.cerebro_gate;
   $('metricsHoje').innerHTML = [
     ['Último', u?.concurso ?? '—', u?.data || ''],
     ['Próximo', s.proximo_concurso ?? '—', ''],
     ['Histórico', int(s.total_concursos), ''],
     ['Jogos', int((s.jogos_gerados||[]).length), 'M1–M9'],
-    ['Modo', s.mode === 'rapido' ? 'rápido' : 'completo', ''],
+    ['Cérebro', gate?.blocked ? 'BLOQUEADO' : (gate?.status || '—'), gate?.cerebro_version || ''],
     ['Ciclo', ciclo?.status || '—', '']
-  ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d}</div></div>`).join('');
+  ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="detail">${d||''}</div></div>`).join('');
 
   if ($('concurso') && !$('concurso').value && s.proximo_concurso) $('concurso').value = s.proximo_concurso;
 
@@ -387,17 +729,27 @@ function renderHoje(s) {
   $('jogosSistema').innerHTML = jogos.length
     ? jogos.map(j => {
         const dez = Array.isArray(j.dezenas) ? j.dezenas : [];
-        const payload = encodeURIComponent(JSON.stringify({ metodo: j.metodo, dezenas: dez }));
-        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span><span><button class="btn soft" type="button" data-save="${payload}" style="padding:4px 8px;font-size:11px">Salvar</button></span></div>${balls(dez)}</div>`;
+        const linha = linhaSequencia(j.dezenas_texto || dez);
+        return `<div class="game-card"><div class="meta"><span>${j.metodo}</span>
+          <span>
+            <button class="btn soft" type="button" data-copy="${encodeURIComponent(linha)}" style="padding:4px 8px;font-size:11px">Copiar</button>
+            <button class="btn soft" type="button" data-save="${encodeURIComponent(JSON.stringify({metodo:j.metodo,dezenas:dez}))}" style="padding:4px 8px;font-size:11px">Salvar</button>
+          </span></div>${balls(dez)}
+          <div class="muted" style="margin-top:6px;font-family:ui-monospace,Consolas,monospace">${linha}</div></div>`;
       }).join('')
-    : '<p class="muted">Lista vazia — rode o ciclo (logado).</p>';
+    : '<p class="muted">Lista vazia — checkpoint Python ou ciclo.</p>';
 
   $('ultimoResultado').innerHTML = u
     ? `<div style="font-weight:800;margin-bottom:8px">#${u.concurso} · ${u.data || ''}</div>${balls(u.dezenas)}`
     : '<p class="muted">Sem resultados.</p>';
-  $('ultimoCiclo').textContent = ciclo
-    ? `status=${ciclo.status} · gerados=${ciclo.jogos_gerados ?? '—'}`
-    : 'Sem ciclo.';
+  $('ultimoCiclo').textContent = ciclo ? `status=${ciclo.status} · gerados=${ciclo.jogos_gerados ?? '—'}` : 'Sem ciclo.';
+  if ($('cerebroGate')) {
+    $('cerebroGate').innerHTML = gate
+      ? `<span class="badge ${gate.blocked ? 'bad' : 'ok'}">${gate.blocked ? 'bloqueado' : 'ativo'}</span>
+         ${gate.checkpoint_hash ? ' · hash ' + String(gate.checkpoint_hash).slice(0,12) + '…' : ''}
+         <div style="margin-top:4px">${gate.message || ''}</div>`
+      : '—';
+  }
 }
 
 function renderAprend(a) {
@@ -415,7 +767,7 @@ function renderAprend(a) {
   ].map(([l,v]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
   $('govBox').innerHTML = g
     ? `<div class="muted"><b>${g.championBeforeName || ''} × ${g.challengerName || ''}</b><br>${d?.reason || ''}</div>`
-    : '<p class="muted">Sem governança ainda.</p>';
+    : '<p class="muted">Sem governança.</p>';
   const active = g?.activeChampion;
   $('modelsBox').innerHTML = (a.models || []).map(m =>
     `<div class="muted" style="margin-top:6px"><b>${m.name}</b> ${m.key===active?'(champion)':''} · Brier ${fmt(m.brier,4)}</div>`
@@ -428,26 +780,20 @@ function renderAprend(a) {
 function renderLab(s) {
   if (!s) return;
   const ac = s.laboratorio_acumulado;
-  if (!ac && s.mode === 'rapido') {
-    $('metricsLab').innerHTML = '<div class="metric"><div class="label">Lab</div><div class="value">—</div><div class="detail">Botão Lab completo</div></div>';
-    $('labSemana').innerHTML = '<p class="muted">Aguardando lab completo.</p>';
-    $('labEstrat').innerHTML = '';
-    return;
-  }
-  const res = ac?.resumo;
+  const res = ac?.resumo || s.laboratorio_ultimo_conferido?.resumo;
   $('metricsLab').innerHTML = [
     ['Jogos', int(res?.quantidade), ''],
     ['Média', res ? fmt(res.media_acertos,3) : '—', ''],
     ['Melhor', res?.melhor_acerto ?? '—', ''],
     ['11+', int(res?.acertos_11_mais), '']
   ].map(([l,v]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
-  const hist = s.laboratorio_semana_historico || [];
-  $('labSemana').innerHTML = hist.length
-    ? hist.slice(0,6).map(h => `<div class="muted">${h.semana_inicio}: média ${fmt(h.media_acertos,3)}</div>`).join('')
-    : '<p class="muted">Sem dados.</p>';
-  $('labEstrat').innerHTML = (ac?.estrategias || []).slice(0,6).map(e =>
-    `<div class="muted"><b>${e.label||e.key}</b> · ${fmt(e.media_acertos,3)}</div>`
+  const estrat = ac?.estrategias || s.laboratorio_ultimo_conferido?.estrategias || [];
+  $('labEstrat').innerHTML = estrat.slice(0,8).map(e =>
+    `<div class="muted"><b>${e.label||e.key}</b> · média ${fmt(e.media_acertos,3)} · 11+ ${fmt(e.taxa_11_mais,2)}%</div>`
   ).join('') || '—';
+  $('labSemana').innerHTML = s.laboratorio_ultimo_conferido
+    ? `<div class="muted">Último: #${s.laboratorio_ultimo_conferido.concurso}</div>`
+    : '<p class="muted">Sem lab conferido.</p>';
 }
 
 function renderFreq(s) {
@@ -460,15 +806,14 @@ function renderFreq(s) {
     <span style="width:40px;text-align:right;font-size:11px">${f.frequencia}</span></div>`).join('') || '—';
   $('inicioBars').innerHTML = (s.inicio_dezena || []).length
     ? s.inicio_dezena.map(i => `<div class="muted">${i.inicio_texto||i.inicio}: ${i.quantidade}</div>`).join('')
-    : '<p class="muted">Só no lab completo.</p>';
+    : '<p class="muted">—</p>';
 }
 
 async function loadRapido() {
   const t0 = performance.now();
   const r = await fetch('/api/sistema/rapido?t=' + Date.now(), { cache: 'no-store' });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok && !data.ok) throw new Error(data.message || 'Falha /api/sistema/rapido');
-  // degraded still ok:true
+  if (!r.ok && !data.ok) throw new Error(data.message || 'Falha rapido');
   state.sistema = data;
   try { renderHoje(data); } catch (e) { console.warn(e); }
   try { renderLab(data); } catch (e) { console.warn(e); }
@@ -479,21 +824,18 @@ async function loadRapido() {
 async function loadFull() {
   if (state.loadingFull) return;
   state.loadingFull = true;
-  setStatus('Lab completo (pode demorar)…');
+  setStatus('Lab completo…');
   if ($('btnFull')) $('btnFull').disabled = true;
   try {
     const t0 = performance.now();
     const r = await fetch('/api/sistema/status?t=' + Date.now(), { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || data.ok === false) throw new Error(data.message || 'Falha status completo');
-    data.mode = 'completo';
-    state.sistema = data;
-    state.fullLoaded = true;
+    if (!r.ok || data.ok === false) throw new Error(data.message || 'Falha status');
+    state.sistema = data; state.fullLoaded = true;
     renderHoje(data); renderLab(data); renderFreq(data);
-    setStatus('Lab completo · ' + Math.round(performance.now() - t0) + ' ms');
-  } catch (e) {
-    setStatus(e.message || String(e), true);
-  } finally {
+    setStatus('Status · ' + Math.round(performance.now() - t0) + ' ms');
+  } catch (e) { setStatus(e.message || String(e), true); }
+  finally {
     state.loadingFull = false;
     if ($('btnFull')) $('btnFull').disabled = false;
   }
@@ -502,21 +844,16 @@ async function loadFull() {
 async function loadAprend() {
   if (state.loadingAprend) return;
   state.loadingAprend = true;
-  setStatus('Carregando aprendizado…');
+  setStatus('Aprendizado…');
   try {
     const r = await fetch('/api/aprendizado/historico?t=' + Date.now(), { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha aprendizado');
-    state.aprend = data;
-    state.aprendLoaded = true;
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Falha');
+    state.aprend = data; state.aprendLoaded = true;
     renderAprend(data);
     setStatus('Aprendizado ok');
-  } catch (e) {
-    renderAprend(null);
-    setStatus(e.message || String(e), true);
-  } finally {
-    state.loadingAprend = false;
-  }
+  } catch (e) { renderAprend(null); setStatus(e.message || String(e), true); }
+  finally { state.loadingAprend = false; }
 }
 
 async function refreshRapido() {
@@ -526,14 +863,17 @@ async function refreshRapido() {
     const ms = await loadRapido();
     if (token) await loadMyGames().catch(() => {});
     setStatus('Rápido · ' + ms + ' ms');
-  } catch (e) {
-    setStatus(e.message || String(e), true);
-  } finally {
-    if ($('btnRefresh')) $('btnRefresh').disabled = false;
-  }
+  } catch (e) { setStatus(e.message || String(e), true); }
+  finally { if ($('btnRefresh')) $('btnRefresh').disabled = false; }
 }
 
 $('jogosSistema')?.addEventListener('click', async (ev) => {
+  const copyBtn = ev.target.closest('[data-copy]');
+  if (copyBtn) {
+    try { await copiarTexto(decodeURIComponent(copyBtn.dataset.copy)); setStatus('Copiado'); }
+    catch (e) { setStatus(e.message, true); }
+    return;
+  }
   const btn = ev.target.closest('[data-save]');
   if (!btn) return;
   try {
@@ -544,31 +884,24 @@ $('jogosSistema')?.addEventListener('click', async (ev) => {
   } catch (e) { setStatus(e.message, true); }
 });
 
+$('btnCopyAll')?.addEventListener('click', () => copiarTodosSistema());
 $('btnSaveAll')?.addEventListener('click', () => saveAllSystemGames());
+$('btnCopyMy')?.addEventListener('click', () => copiarMeusJogos());
+
 $('loginBtn')?.addEventListener('click', async () => {
   setAuthStatus('Entrando…');
   try {
-    const data = await api('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: $('email').value, senha: $('senha').value })
-    });
-    token = data.token;
-    localStorage.setItem(TOKEN_KEY, token);
-    setAuthStatus('');
-    showLoggedIn(data.user);
+    const data = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('email').value, senha: $('senha').value }) });
+    token = data.token; localStorage.setItem(TOKEN_KEY, token);
+    setAuthStatus(''); showLoggedIn(data.user);
   } catch (e) { setAuthStatus(e.message, true); }
 });
 $('registerBtn')?.addEventListener('click', async () => {
   setAuthStatus('Criando…');
   try {
-    const data = await api('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ nome: $('nome').value, email: $('email').value, senha: $('senha').value })
-    });
-    token = data.token;
-    localStorage.setItem(TOKEN_KEY, token);
-    setAuthStatus('');
-    showLoggedIn(data.user);
+    const data = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ nome: $('nome').value, email: $('email').value, senha: $('senha').value }) });
+    token = data.token; localStorage.setItem(TOKEN_KEY, token);
+    setAuthStatus(''); showLoggedIn(data.user);
   } catch (e) { setAuthStatus(e.message, true); }
 });
 $('logoutBtn')?.addEventListener('click', async () => {
@@ -576,21 +909,16 @@ $('logoutBtn')?.addEventListener('click', async () => {
   showLoggedOut(true);
 });
 $('saveBtn')?.addEventListener('click', async () => {
-  if (!token) { setAppStatus('Faça login primeiro', true); return; }
+  if (!token) { setAppStatus('Login primeiro', true); return; }
   try {
     await api('/api/jogos', {
       method: 'POST',
       body: JSON.stringify({
-        concurso: $('concurso').value,
-        metodo: $('metodo').value,
-        dezenas_texto: $('dezenas').value,
-        manter_salvo: $('manterSalvo').checked,
-        descartar_apos_rodadas: 2
+        concurso: $('concurso').value, metodo: $('metodo').value,
+        dezenas_texto: $('dezenas').value, manter_salvo: $('manterSalvo').checked, descartar_apos_rodadas: 2
       })
     });
-    $('dezenas').value = '';
-    setAppStatus('Jogo salvo');
-    await loadMyGames();
+    $('dezenas').value = ''; setAppStatus('Salvo'); await loadMyGames();
   } catch (e) {
     if (e.status === 401) showLoggedOut(true);
     setAppStatus(e.message, true);
@@ -599,23 +927,23 @@ $('saveBtn')?.addEventListener('click', async () => {
 $('checkBtn')?.addEventListener('click', async () => {
   try {
     const data = await api('/api/jogos/conferir-pendentes', { method: 'POST', body: '{}' });
-    setAppStatus(`Conferidos: ${data.jogos_conferidos}`);
-    await loadMyGames();
+    setAppStatus('Conferidos: ' + data.jogos_conferidos);
+    await loadMyGames(); await loadFechamentos().catch(() => {});
   } catch (e) { setAppStatus(e.message, true); }
 });
 $('reloadGamesBtn')?.addEventListener('click', () => loadMyGames());
 $('gamesList')?.addEventListener('click', async (ev) => {
+  const copyBtn = ev.target.closest('[data-copy]');
+  if (copyBtn) {
+    try { await copiarTexto(decodeURIComponent(copyBtn.dataset.copy)); setAppStatus('Copiado'); }
+    catch (e) { setAppStatus(e.message, true); }
+    return;
+  }
   const idStatus = ev.target.dataset.id && ev.target.dataset.status ? ev.target.dataset.id : '';
   const idDel = ev.target.dataset.delete || '';
   try {
-    if (idStatus) {
-      await api('/api/jogos/' + idStatus, { method: 'PATCH', body: JSON.stringify({ status: ev.target.dataset.status }) });
-      await loadMyGames();
-    }
-    if (idDel && confirm('Excluir?')) {
-      await api('/api/jogos/' + idDel, { method: 'DELETE' });
-      await loadMyGames();
-    }
+    if (idStatus) { await api('/api/jogos/' + idStatus, { method: 'PATCH', body: JSON.stringify({ status: ev.target.dataset.status }) }); await loadMyGames(); }
+    if (idDel && confirm('Excluir?')) { await api('/api/jogos/' + idDel, { method: 'DELETE' }); await loadMyGames(); }
   } catch (e) { setAppStatus(e.message, true); }
 });
 $('btnRefresh')?.addEventListener('click', refreshRapido);
@@ -625,17 +953,15 @@ $('btnCiclo')?.addEventListener('click', async () => {
   setStatus('Ciclo…');
   try {
     const data = await api('/api/ciclo/rodar', { method: 'POST', body: '{}' });
-    setStatus('Ciclo ok · gerados ' + (data.jogos_gerados ?? '—'));
+    setStatus('Ciclo ok · ' + (data.jogos_gerados ?? '—'));
     state.fullLoaded = false;
     await refreshRapido();
   } catch (e) {
     if (e.status === 401) {
-      setStatus('Ciclo precisa de login (aba Meus jogos).', true);
+      setStatus('Ciclo precisa de login.', true);
       document.querySelector('.tab[data-tab="meus"]')?.click();
     } else setStatus(e.message || String(e), true);
-  } finally {
-    if ($('btnCiclo')) $('btnCiclo').disabled = false;
-  }
+  } finally { if ($('btnCiclo')) $('btnCiclo').disabled = false; }
 });
 $('btnAprend')?.addEventListener('click', () => loadAprend());
 
@@ -644,17 +970,12 @@ window.addEventListener('unhandledrejection', (ev) => {
   setStatus('Erro: ' + (ev.reason?.message || ev.reason), true);
 });
 
+renderFechPick();
+updateFechHint();
+
 (async () => {
-  try {
-    await bootstrapAuth();
-  } catch (e) {
-    console.warn(e);
-  }
-  try {
-    await refreshRapido();
-  } catch (e) {
-    setStatus(e.message || String(e), true);
-  }
+  try { await bootstrapAuth(); } catch (e) { console.warn(e); }
+  try { await refreshRapido(); } catch (e) { setStatus(e.message || String(e), true); }
 })();
 </script>
 </body>
