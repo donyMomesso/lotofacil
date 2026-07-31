@@ -2,6 +2,7 @@ import baseWorker from './worker.js';
 import * as Learning from './learning_audit_core.mjs';
 import * as Governance from './learning_governance.mjs';
 import { applyCerebroOrBlock } from './worker_cerebro_games.js';
+import { cleanupExpiredGamesSafe, batchUpdateByIds } from './worker_d1_batch.js';
 
 const HISTORY_LIMIT = 180;
 const DEFAULT_TESTS = 48;
@@ -28,9 +29,70 @@ async function sha256Hex(value) {
 }
 
 /**
- * Única via legítima de gravar jogos_sistema: checkpoint Python válido.
- * Sem checkpoint → blocked explícito (não gera métodos em JS).
+ * Intercepta prepares que montam IN (...) gigante e troca por caminho seguro.
+ * Corrige o D1_ERROR: too many SQL variables do cleanupExpiredGames.
  */
+function patchDbForSafeBatch(env) {
+  if (!env?.DB || env.__d1_batch_patched) return;
+  env.__d1_batch_patched = true;
+  const origPrepare = env.DB.prepare.bind(env.DB);
+
+  env.DB.prepare = (query) => {
+    const q = String(query || '');
+    const compact = q.replace(/\s+/g, ' ');
+
+    // cleanupExpiredGames: UPDATE ... cancelado ... WHERE id IN (...)
+    if (/UPDATE\s+jogos/i.test(compact)
+      && /status\s*=\s*'cancelado'/i.test(compact)
+      && /WHERE\s+id\s+IN/i.test(compact)) {
+      return {
+        bind(..._ids) {
+          return {
+            async run() {
+              const n = await cleanupExpiredGamesSafe(env);
+              return { meta: { changes: n } };
+            },
+            async all() { return { results: [] }; },
+            async first() { return null; }
+          };
+        },
+        async run() {
+          const n = await cleanupExpiredGamesSafe(env);
+          return { meta: { changes: n } };
+        },
+        async all() { return { results: [] }; },
+        async first() { return null; }
+      };
+    }
+
+    // conferirPendencias / listagens: UPDATE conferido WHERE id IN (...)
+    if (/UPDATE\s+jogos/i.test(compact)
+      && /status\s*=\s*'conferido'/i.test(compact)
+      && /WHERE\s+id\s+IN/i.test(compact)) {
+      return {
+        bind(...ids) {
+          return {
+            async run() {
+              const flat = ids.flat();
+              return {
+                meta: {
+                  changes: await batchUpdateByIds(
+                    env,
+                    `UPDATE jogos SET status = 'conferido', atualizado_em = CURRENT_TIMESTAMP WHERE id IN`,
+                    flat
+                  )
+                }
+              };
+            }
+          };
+        }
+      };
+    }
+
+    return origPrepare(query);
+  };
+}
+
 async function applyCerebroSystemGames(env) {
   try {
     const latest = await env.DB.prepare(
@@ -182,23 +244,11 @@ async function insertHistoricalEvaluation(env, training, target, modelKey) {
       hash_registro
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
-    target.concurso,
-    target.data,
-    score.model,
-    score.modelName,
-    score.modelVersion,
-    score.trainingThrough,
-    score.drawsUsed,
-    score.probabilitySum,
-    JSON.stringify(record.ranking),
-    JSON.stringify(target.dezenas),
-    evaluation.brier,
-    evaluation.logLoss,
-    evaluation.top15,
-    evaluation.top18,
-    evaluation.top19,
-    evaluation.top20,
-    evaluation.top21,
+    target.concurso, target.data, score.model, score.modelName, score.modelVersion,
+    score.trainingThrough, score.drawsUsed, score.probabilitySum,
+    JSON.stringify(record.ranking), JSON.stringify(target.dezenas),
+    evaluation.brier, evaluation.logLoss,
+    evaluation.top15, evaluation.top18, evaluation.top19, evaluation.top20, evaluation.top21,
     hash
   ).run();
   return Boolean(inserted.meta.changes);
@@ -225,12 +275,7 @@ async function syncHistoricalLearning(env, maxTests = DEFAULT_TESTS) {
     }
     if (touched) evaluatedContests += 1;
   }
-  return {
-    inserted,
-    evaluatedContests,
-    requestedTests: safeTests,
-    modelVersion: Learning.MODEL_VERSION
-  };
+  return { inserted, evaluatedContests, requestedTests: safeTests, modelVersion: Learning.MODEL_VERSION };
 }
 
 function rowCalibration(row) {
@@ -262,85 +307,50 @@ function modelAggregate(rows, key) {
   const brier = Learning.round(Learning.average(values('brier')));
   const avgTop21 = Learning.round(Learning.average(values('top21')), 4);
   const evidence = Learning.evidenceAssessment({
-    samples: selected.length,
-    brierCI,
-    top21CI,
-    permutationPValue: permutation.pValue
+    samples: selected.length, brierCI, top21CI, permutationPValue: permutation.pValue
   });
   return {
-    key,
-    name: Learning.MODELS[key]?.name || key,
-    version: Learning.MODEL_VERSION,
-    samples: selected.length,
-    firstContest: selected[0]?.concurso || null,
-    latestContest,
-    brier,
-    brierCI,
-    logLoss: Learning.round(Learning.average(values('log_loss'))),
+    key, name: Learning.MODELS[key]?.name || key, version: Learning.MODEL_VERSION,
+    samples: selected.length, firstContest: selected[0]?.concurso || null, latestContest,
+    brier, brierCI, logLoss: Learning.round(Learning.average(values('log_loss'))),
     avgTop15: Learning.round(Learning.average(values('top15')), 4),
     avgTop18: Learning.round(Learning.average(values('top18')), 4),
     avgTop19: Learning.round(Learning.average(values('top19')), 4),
     avgTop20: Learning.round(Learning.average(values('top20')), 4),
-    avgTop21,
-    top21CI,
+    avgTop21, top21CI,
     deltaBrier: Learning.round(Learning.BASELINE_BRIER - brier),
     deltaTop21: Learning.round(avgTop21 - Learning.THEORETICAL_TOP21, 4),
     calibrationError: Learning.round(Learning.average(calibrations.map((item) => item.ece))),
     sharpness: Learning.round(Learning.average(calibrations.map((item) => item.sharpness))),
-    permutation,
-    rolling,
-    drift,
-    evidence,
+    permutation, rolling, drift, evidence,
     overfitAlert: ['moderate', 'high'].includes(drift.level)
   };
 }
 
 async function persistModelSummary(env, summary) {
   if (!summary.samples || !summary.latestContest) return;
-  const record = {
-    schema: 1,
-    purpose: 'historical_robustness_summary',
-    generatedAt: new Date().toISOString(),
-    ...summary
-  };
+  const record = { schema: 1, purpose: 'historical_robustness_summary', generatedAt: new Date().toISOString(), ...summary };
   const serialized = Learning.stableStringify(record);
   const hash = await sha256Hex(serialized);
   await env.DB.prepare(`
     INSERT INTO aprendizado_resumos (
-      modelo_chave, versao_modelo, amostras, ultimo_concurso,
-      resumo_json, hash_resumo, atualizado_em
+      modelo_chave, versao_modelo, amostras, ultimo_concurso, resumo_json, hash_resumo, atualizado_em
     ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(modelo_chave, versao_modelo, amostras, ultimo_concurso) DO UPDATE SET
-      resumo_json = excluded.resumo_json,
-      hash_resumo = excluded.hash_resumo,
-      atualizado_em = CURRENT_TIMESTAMP
-  `).bind(
-    summary.key,
-    summary.version,
-    summary.samples,
-    summary.latestContest,
-    serialized,
-    hash
-  ).run();
+      resumo_json = excluded.resumo_json, hash_resumo = excluded.hash_resumo, atualizado_em = CURRENT_TIMESTAMP
+  `).bind(summary.key, summary.version, summary.samples, summary.latestContest, serialized, hash).run();
 }
 
 async function versionRegistry(env) {
   const rows = await env.DB.prepare(`
     SELECT versao_modelo, COUNT(*) AS registros, COUNT(DISTINCT concurso) AS concursos,
-           MIN(concurso) AS primeiro_concurso, MAX(concurso) AS ultimo_concurso,
-           MIN(criado_em) AS criado_em
-    FROM aprendizado_historico
-    GROUP BY versao_modelo
-    ORDER BY MAX(criado_em) DESC
+           MIN(concurso) AS primeiro_concurso, MAX(concurso) AS ultimo_concurso, MIN(criado_em) AS criado_em
+    FROM aprendizado_historico GROUP BY versao_modelo ORDER BY MAX(criado_em) DESC
   `).all();
   return rows.results.map((row) => ({
-    version: row.versao_modelo,
-    records: Number(row.registros || 0),
-    contests: Number(row.concursos || 0),
-    firstContest: Number(row.primeiro_concurso || 0),
-    lastContest: Number(row.ultimo_concurso || 0),
-    createdAt: row.criado_em,
-    current: row.versao_modelo === Learning.MODEL_VERSION
+    version: row.versao_modelo, records: Number(row.registros || 0), contests: Number(row.concursos || 0),
+    firstContest: Number(row.primeiro_concurso || 0), lastContest: Number(row.ultimo_concurso || 0),
+    createdAt: row.criado_em, current: row.versao_modelo === Learning.MODEL_VERSION
   }));
 }
 
@@ -355,64 +365,43 @@ async function integritySummary(env, rows) {
     try { calibration = Learning.calibrationDiagnostics(ranking, result); }
     catch { hashViolations += 1; continue; }
     const evaluation = {
-      brier: Number(row.brier),
-      logLoss: Number(row.log_loss),
-      top15: Number(row.top15),
-      top18: Number(row.top18),
-      top19: Number(row.top19),
-      top20: Number(row.top20),
-      top21: Number(row.top21),
-      calibrationError: calibration.ece,
-      sharpness: calibration.sharpness
+      brier: Number(row.brier), logLoss: Number(row.log_loss),
+      top15: Number(row.top15), top18: Number(row.top18), top19: Number(row.top19),
+      top20: Number(row.top20), top21: Number(row.top21),
+      calibrationError: calibration.ece, sharpness: calibration.sharpness
     };
     const record = {
-      schema: 2,
-      purpose: 'historical_evaluation_only',
-      contest: Number(row.concurso),
-      drawDate: row.data_sorteio,
-      modelKey: row.modelo_chave,
-      modelName: row.modelo_nome,
-      modelVersion: row.versao_modelo,
-      trainingThrough: Number(row.treino_ate),
-      trainingCount: Number(row.quantidade_treino),
-      probabilitySum: Number(row.probabilidade_soma),
-      ranking,
-      result,
-      evaluation
+      schema: 2, purpose: 'historical_evaluation_only',
+      contest: Number(row.concurso), drawDate: row.data_sorteio,
+      modelKey: row.modelo_chave, modelName: row.modelo_nome, modelVersion: row.versao_modelo,
+      trainingThrough: Number(row.treino_ate), trainingCount: Number(row.quantidade_treino),
+      probabilitySum: Number(row.probabilidade_soma), ranking, result, evaluation
     };
     const hash = await sha256Hex(Learning.stableStringify(record));
     if (hash !== row.hash_registro) hashViolations += 1;
   }
   return {
-    checkedRecords: rows.length,
-    temporalViolations: temporal,
-    probabilitySumViolations: probability,
-    hashViolations,
+    checkedRecords: rows.length, temporalViolations: temporal,
+    probabilitySumViolations: probability, hashViolations,
     ok: temporal === 0 && probability === 0 && hashViolations === 0
   };
 }
 
 function rowsForModel(rows, modelKey) {
   return rows.filter((row) => row.modelo_chave === modelKey).map((row) => ({
-    concurso: Number(row.concurso),
-    brier: Number(row.brier),
-    top21: Number(row.top21)
+    concurso: Number(row.concurso), brier: Number(row.brier), top21: Number(row.top21)
   }));
 }
 
 async function championState(env, models) {
   let state = await env.DB.prepare(`
     SELECT modelo_chave, desde_concurso, ultima_avaliacao_concurso, atualizado_em
-    FROM aprendizado_campeoes
-    WHERE versao_modelo = ? AND versao_governanca = ?
-    LIMIT 1
+    FROM aprendizado_campeoes WHERE versao_modelo = ? AND versao_governanca = ? LIMIT 1
   `).bind(Learning.MODEL_VERSION, Governance.GOVERNANCE_VERSION).first();
   if (state) {
     return {
-      modelKey: state.modelo_chave,
-      sinceContest: Number(state.desde_concurso || 0),
-      lastEvaluationContest: Number(state.ultima_avaliacao_concurso || 0),
-      updatedAt: state.atualizado_em
+      modelKey: state.modelo_chave, sinceContest: Number(state.desde_concurso || 0),
+      lastEvaluationContest: Number(state.ultima_avaliacao_concurso || 0), updatedAt: state.atualizado_em
     };
   }
   const initialKey = models.some((model) => model.key === 'stable') ? 'stable' : models[0]?.key;
@@ -420,45 +409,22 @@ async function championState(env, models) {
   if (!initialKey || !Number.isFinite(firstContest)) return null;
   await env.DB.prepare(`
     INSERT OR IGNORE INTO aprendizado_campeoes (
-      versao_modelo, versao_governanca, modelo_chave,
-      desde_concurso, ultima_avaliacao_concurso, atualizado_em
+      versao_modelo, versao_governanca, modelo_chave, desde_concurso, ultima_avaliacao_concurso, atualizado_em
     ) VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-  `).bind(
-    Learning.MODEL_VERSION,
-    Governance.GOVERNANCE_VERSION,
-    initialKey,
-    firstContest
-  ).run();
-  return {
-    modelKey: initialKey,
-    sinceContest: firstContest,
-    lastEvaluationContest: 0,
-    updatedAt: null
-  };
+  `).bind(Learning.MODEL_VERSION, Governance.GOVERNANCE_VERSION, initialKey, firstContest).run();
+  return { modelKey: initialKey, sinceContest: firstContest, lastEvaluationContest: 0, updatedAt: null };
 }
 
 async function decisionHistory(env, limit = 20) {
   const rows = await env.DB.prepare(`
-    SELECT concurso_ate, campeao_atual, desafiante, decisao,
-           promovido_modelo, decisao_json, hash_decisao, criado_em
-    FROM aprendizado_decisoes
-    WHERE versao_modelo = ? AND versao_governanca = ?
-    ORDER BY concurso_ate DESC, id DESC
-    LIMIT ?
-  `).bind(
-    Learning.MODEL_VERSION,
-    Governance.GOVERNANCE_VERSION,
-    Math.min(Math.max(Number(limit || 20), 1), 100)
-  ).all();
+    SELECT concurso_ate, campeao_atual, desafiante, decisao, promovido_modelo, decisao_json, hash_decisao, criado_em
+    FROM aprendizado_decisoes WHERE versao_modelo = ? AND versao_governanca = ?
+    ORDER BY concurso_ate DESC, id DESC LIMIT ?
+  `).bind(Learning.MODEL_VERSION, Governance.GOVERNANCE_VERSION, Math.min(Math.max(Number(limit || 20), 1), 100)).all();
   return rows.results.map((row) => ({
-    contestThrough: Number(row.concurso_ate),
-    championBefore: row.campeao_atual,
-    challenger: row.desafiante,
-    status: row.decisao,
-    promotedModel: row.promovido_modelo || null,
-    record: parseJson(row.decisao_json, null),
-    hash: row.hash_decisao,
-    createdAt: row.criado_em
+    contestThrough: Number(row.concurso_ate), championBefore: row.campeao_atual, challenger: row.desafiante,
+    status: row.decisao, promotedModel: row.promovido_modelo || null,
+    record: parseJson(row.decisao_json, null), hash: row.hash_decisao, createdAt: row.criado_em
   }));
 }
 
@@ -476,89 +442,51 @@ async function evaluateChampionChallenger(env, rows, models, integrity) {
   const champion = models.find((model) => model.key === state.modelKey);
   if (!champion || !challenger) return null;
   const comparison = Governance.compareChampionChallenger(
-    rowsForModel(rows, champion.key),
-    rowsForModel(rows, challenger.key),
+    rowsForModel(rows, champion.key), rowsForModel(rows, challenger.key),
     { championKey: champion.key, challengerKey: challenger.key }
   );
   const contestsSincePromotion = Math.max(0, Number(comparison.latestContest || 0) - Number(state.sinceContest || 0));
   const decision = Governance.promotionDecision(comparison, {
-    integrityOk: integrity.ok,
-    challengerDriftLevel: challenger.drift.level,
-    contestsSincePromotion
+    integrityOk: integrity.ok, challengerDriftLevel: challenger.drift.level, contestsSincePromotion
   });
   const activeAfter = decision.status === 'promote' ? challenger.key : champion.key;
   const record = {
-    schema: 1,
-    purpose: 'historical_champion_challenger_governance',
-    generatedAt: new Date().toISOString(),
-    modelVersion: Learning.MODEL_VERSION,
-    governanceVersion: Governance.GOVERNANCE_VERSION,
-    latestContest: comparison.latestContest,
-    championBefore: champion.key,
-    championBeforeName: champion.name,
-    challenger: challenger.key,
-    challengerName: challenger.name,
+    schema: 1, purpose: 'historical_champion_challenger_governance',
+    generatedAt: new Date().toISOString(), modelVersion: Learning.MODEL_VERSION,
+    governanceVersion: Governance.GOVERNANCE_VERSION, latestContest: comparison.latestContest,
+    championBefore: champion.key, championBeforeName: champion.name,
+    challenger: challenger.key, challengerName: challenger.name,
     activeChampion: activeAfter,
     activeChampionName: models.find((model) => model.key === activeAfter)?.name || activeAfter,
-    contestsSincePromotion,
-    comparison,
-    decision
+    contestsSincePromotion, comparison, decision
   };
   const serialized = Learning.stableStringify(record);
   const hash = await sha256Hex(serialized);
   await env.DB.prepare(`
     INSERT OR IGNORE INTO aprendizado_decisoes (
-      versao_modelo, versao_governanca, concurso_ate, campeao_atual,
-      desafiante, decisao, promovido_modelo, decisao_json, hash_decisao
+      versao_modelo, versao_governanca, concurso_ate, campeao_atual, desafiante, decisao, promovido_modelo, decisao_json, hash_decisao
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    Learning.MODEL_VERSION,
-    Governance.GOVERNANCE_VERSION,
-    comparison.latestContest,
-    champion.key,
-    challenger.key,
-    decision.status,
-    decision.promotedModel,
-    serialized,
-    hash
-  ).run();
+  `).bind(Learning.MODEL_VERSION, Governance.GOVERNANCE_VERSION, comparison.latestContest, champion.key, challenger.key, decision.status, decision.promotedModel, serialized, hash).run();
   await env.DB.prepare(`
-    UPDATE aprendizado_campeoes
-    SET modelo_chave = ?,
-        desde_concurso = CASE WHEN ? = 'promote' THEN ? ELSE desde_concurso END,
-        ultima_avaliacao_concurso = ?,
-        atualizado_em = CURRENT_TIMESTAMP
+    UPDATE aprendizado_campeoes SET modelo_chave = ?,
+      desde_concurso = CASE WHEN ? = 'promote' THEN ? ELSE desde_concurso END,
+      ultima_avaliacao_concurso = ?, atualizado_em = CURRENT_TIMESTAMP
     WHERE versao_modelo = ? AND versao_governanca = ?
-  `).bind(
-    activeAfter,
-    decision.status,
-    comparison.latestContest,
-    comparison.latestContest,
-    Learning.MODEL_VERSION,
-    Governance.GOVERNANCE_VERSION
-  ).run();
+  `).bind(activeAfter, decision.status, comparison.latestContest, comparison.latestContest, Learning.MODEL_VERSION, Governance.GOVERNANCE_VERSION).run();
   return { ...record, hash, history: await decisionHistory(env, 20), reused: false };
 }
 
 async function historicalLearningSummary(env, limit = 1000) {
   await ensureHistoricalLearningTables(env);
   const totals = await env.DB.prepare(`
-    SELECT COUNT(*) AS total_records, COUNT(DISTINCT concurso) AS total_contests,
-           COUNT(DISTINCT versao_modelo) AS total_versions
+    SELECT COUNT(*) AS total_records, COUNT(DISTINCT concurso) AS total_contests, COUNT(DISTINCT versao_modelo) AS total_versions
     FROM aprendizado_historico
   `).first();
   const rows = await env.DB.prepare(`
-    SELECT concurso, data_sorteio, modelo_chave, modelo_nome, versao_modelo,
-           treino_ate, quantidade_treino, probabilidade_soma, ranking_json, resultado_json,
-           brier, log_loss, top15, top18, top19, top20, top21, hash_registro, criado_em
-    FROM aprendizado_historico
-    WHERE versao_modelo = ?
-    ORDER BY concurso DESC, modelo_chave ASC
-    LIMIT ?
-  `).bind(
-    Learning.MODEL_VERSION,
-    Math.min(Math.max(Number(limit || 1000), 20), 2000)
-  ).all();
+    SELECT concurso, data_sorteio, modelo_chave, modelo_nome, versao_modelo, treino_ate, quantidade_treino,
+           probabilidade_soma, ranking_json, resultado_json, brier, log_loss, top15, top18, top19, top20, top21, hash_registro, criado_em
+    FROM aprendizado_historico WHERE versao_modelo = ? ORDER BY concurso DESC, modelo_chave ASC LIMIT ?
+  `).bind(Learning.MODEL_VERSION, Math.min(Math.max(Number(limit || 1000), 20), 2000)).all();
   const models = Object.keys(Learning.MODELS).map((key) => modelAggregate(rows.results, key));
   for (const model of models) await persistModelSummary(env, model);
   const ranked = models.slice().sort((a, b) => {
@@ -572,45 +500,22 @@ async function historicalLearningSummary(env, limit = 1000) {
   const integrity = await integritySummary(env, rows.results);
   const governance = await evaluateChampionChallenger(env, rows.results, models, integrity);
   const recent = rows.results.slice(0, 96).map((row) => ({
-    concurso: Number(row.concurso),
-    data: row.data_sorteio,
-    model: row.modelo_chave,
-    modelName: row.modelo_nome,
-    modelVersion: row.versao_modelo,
-    trainingThrough: Number(row.treino_ate),
-    trainingCount: Number(row.quantidade_treino),
-    probabilitySum: Number(row.probabilidade_soma),
-    brier: Number(row.brier),
-    logLoss: Number(row.log_loss),
-    top15: Number(row.top15),
-    top18: Number(row.top18),
-    top19: Number(row.top19),
-    top20: Number(row.top20),
-    top21: Number(row.top21),
-    hash: row.hash_registro,
-    createdAt: row.criado_em
+    concurso: Number(row.concurso), data: row.data_sorteio, model: row.modelo_chave,
+    modelName: row.modelo_nome, modelVersion: row.versao_modelo,
+    trainingThrough: Number(row.treino_ate), trainingCount: Number(row.quantidade_treino),
+    probabilitySum: Number(row.probabilidade_soma), brier: Number(row.brier), logLoss: Number(row.log_loss),
+    top15: Number(row.top15), top18: Number(row.top18), top19: Number(row.top19),
+    top20: Number(row.top20), top21: Number(row.top21), hash: row.hash_registro, createdAt: row.criado_em
   }));
   return {
-    ok: true,
-    purpose: 'historical_evaluation_only',
-    modelVersion: Learning.MODEL_VERSION,
-    governanceVersion: Governance.GOVERNANCE_VERSION,
-    baselines: {
-      brier: Learning.BASELINE_BRIER,
-      logLoss: Learning.BASELINE_LOG_LOSS,
-      top21: Learning.THEORETICAL_TOP21
-    },
-    totalRecords: Number(totals?.total_records || 0),
-    totalContests: Number(totals?.total_contests || 0),
-    totalVersions: Number(totals?.total_versions || 0),
-    currentVersionRecords: rows.results.length,
-    bestHistoricalModel: ranked[0] || null,
-    models,
+    ok: true, purpose: 'historical_evaluation_only',
+    modelVersion: Learning.MODEL_VERSION, governanceVersion: Governance.GOVERNANCE_VERSION,
+    baselines: { brier: Learning.BASELINE_BRIER, logLoss: Learning.BASELINE_LOG_LOSS, top21: Learning.THEORETICAL_TOP21 },
+    totalRecords: Number(totals?.total_records || 0), totalContests: Number(totals?.total_contests || 0),
+    totalVersions: Number(totals?.total_versions || 0), currentVersionRecords: rows.results.length,
+    bestHistoricalModel: ranked[0] || null, models,
     driftAlerts: models.filter((model) => ['moderate', 'high'].includes(model.drift.level)).map((model) => model.key),
-    versions: await versionRegistry(env),
-    integrity,
-    governance,
-    recent
+    versions: await versionRegistry(env), integrity, governance, recent
   };
 }
 
@@ -621,6 +526,9 @@ async function historicalApi(env, url) {
 }
 
 async function runBaseScheduled(event, env) {
+  patchDbForSafeBatch(env);
+  // Pré-limpeza segura antes do ciclo (evita caminho quebrado)
+  try { await cleanupExpiredGamesSafe(env); } catch (e) { console.error('pre-cleanup', e); }
   const tasks = [];
   await baseWorker.scheduled(event, env, {
     waitUntil(promise) { tasks.push(Promise.resolve(promise)); }
@@ -630,6 +538,7 @@ async function runBaseScheduled(event, env) {
 
 export default {
   async fetch(request, env, ctx) {
+    patchDbForSafeBatch(env);
     const url = new URL(request.url);
     if (url.pathname === '/api/aprendizado/historico' && request.method === 'GET') {
       try { return await historicalApi(env, url); }
@@ -642,9 +551,7 @@ export default {
     if (url.pathname === '/api/ciclo/rodar' && request.method === 'POST' && response.ok && ctx?.waitUntil) {
       ctx.waitUntil((async () => {
         const gate = await applyCerebroSystemGames(env);
-        if (gate.blocked) {
-          console.warn('CICLO: jogos_sistema NÃO atualizados —', gate.reason || gate.status);
-        }
+        if (gate.blocked) console.warn('CICLO: jogos_sistema NÃO atualizados —', gate.reason || gate.status);
         await syncHistoricalLearning(env);
       })());
     }
@@ -653,11 +560,15 @@ export default {
 
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
-      await runBaseScheduled(event, env);
-      const gate = await applyCerebroSystemGames(env);
-      if (gate.blocked) {
-        console.warn('CRON: checkpoint bloqueado —', gate.reason || gate.status);
+      try {
+        await runBaseScheduled(event, env);
+      } catch (err) {
+        console.error('scheduled cycle', err);
+        // Garante cleanup mesmo se o ciclo base falhar
+        try { await cleanupExpiredGamesSafe(env); } catch (e) { console.error(e); }
       }
+      const gate = await applyCerebroSystemGames(env);
+      if (gate.blocked) console.warn('CRON: checkpoint bloqueado —', gate.reason || gate.status);
       await syncHistoricalLearning(env);
       await historicalLearningSummary(env);
     })());
