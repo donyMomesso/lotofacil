@@ -1,5 +1,12 @@
 import historicalWorker from './worker_learning.js';
 import { ensureJogosSistemaProvenance, inspectCerebroCheckpoint, applyCerebroOrBlock } from './worker_cerebro_games.js';
+import {
+  ensureSugestaoSchema,
+  computeMethodScores,
+  buildSugestaoDoDia,
+  saveSugestaoSnapshot,
+  extractLabHint
+} from './worker_sugestao_dia.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -85,6 +92,7 @@ async function ensureAppSchema(env) {
     try { await env.DB.prepare(sql).run(); } catch { /* ok */ }
   }
   try { await ensureJogosSistemaProvenance(env); } catch (e) { console.error(e); }
+  try { await ensureSugestaoSchema(env); } catch (e) { console.error(e); }
 }
 
 async function getUserFromRequest(request, env) {
@@ -202,6 +210,97 @@ async function purgeNonCerebroSistema(env, concurso) {
   }
 }
 
+/** Carrega jogos atuais (D1 cerebro ou checkpoint) e monta sugestão ranqueada. */
+async function sugestaoDoDiaApi(env) {
+  await ensureAppSchema(env);
+  const latest = await safeFirst(env, 'SELECT concurso FROM resultados ORDER BY concurso DESC LIMIT 1');
+  const proximo = latest ? Number(latest.concurso) + 1 : 1;
+
+  let gateFull;
+  try {
+    gateFull = await inspectCerebroCheckpoint(env, proximo);
+  } catch (e) {
+    gateFull = { status: 'invalid', blocked: true, message: String(e.message || e) };
+  }
+
+  if (gateFull.blocked) {
+    return json({
+      ok: false,
+      blocked: true,
+      gate_blocked: true,
+      concurso: proximo,
+      status: gateFull.status,
+      message: gateFull.message || 'Cérebro bloqueado',
+      prioritarios: [],
+      diversificacao: [],
+      exploracao: [],
+      todos: [],
+      note: 'Atualize o checkpoint: python scripts/publicar_checkpoint.py'
+    });
+  }
+
+  await purgeNonCerebroSistema(env, proximo);
+
+  let jogosRows = await safeAll(env, `
+    SELECT concurso, metodo, dezenas, dezenas_texto, soma, pares, impares,
+           origem, cerebro_version, checkpoint_hash,
+           audit_brain_version, source_of_truth, checkpoint_generated_at, criado_em
+    FROM jogos_sistema
+    WHERE concurso = ? AND origem = 'cerebro_python'
+    ORDER BY metodo
+  `, [proximo]);
+
+  let games = jogosRows.map(mapJogoSistema);
+
+  if (!games.length && gateFull.games?.length) {
+    games = mapGamesFromCheckpoint(gateFull.games, proximo);
+    try {
+      await applyCerebroOrBlock(env, proximo);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  if (!games.length) {
+    return json({
+      ok: false,
+      blocked: true,
+      concurso: proximo,
+      message: 'Sem jogos do Cérebro para o concurso atual.',
+      prioritarios: [],
+      diversificacao: [],
+      exploracao: [],
+      todos: []
+    });
+  }
+
+  const stats = await computeMethodScores(env, 30);
+  const labHint = await extractLabHint(env);
+  const sugestao = buildSugestaoDoDia(games, stats, labHint);
+
+  // snapshot imutável (não sobrescreve)
+  try {
+    await saveSugestaoSnapshot(env, proximo, sugestao.todos);
+  } catch (e) {
+    console.error('snapshot sugestao', e);
+  }
+
+  return json({
+    ok: true,
+    blocked: false,
+    concurso: proximo,
+    cerebro_version: gateFull.cerebro_version || games[0]?.cerebro_version,
+    checkpoint_hash: gateFull.checkpoint_hash || games[0]?.checkpoint_hash,
+    lab_hint: labHint,
+    prioritarios: sugestao.prioritarios,
+    diversificacao: sugestao.diversificacao,
+    exploracao: sugestao.exploracao,
+    todos: sugestao.todos,
+    ranking_metodos: sugestao.ranking_metodos,
+    note: sugestao.note
+  });
+}
+
 async function desempenhoSistema(env, limit = 30) {
   await ensureAppSchema(env);
   const lim = Math.min(Math.max(Number(limit) || 30, 5), 80);
@@ -227,12 +326,22 @@ async function desempenhoSistema(env, limit = 30) {
   const minC = Math.min(...concursosIds);
   const maxC = Math.max(...concursosIds);
 
+  // Preferir snapshot imutável
   let jogosRows = await safeAll(env, `
-    SELECT concurso, metodo, dezenas, dezenas_texto, origem, cerebro_version, checkpoint_hash
-    FROM jogos_sistema
+    SELECT concurso, metodo, dezenas, dezenas_texto, origem, NULL as cerebro_version, checkpoint_hash
+    FROM sugestao_dia_snapshot
     WHERE concurso >= ? AND concurso <= ?
-    ORDER BY concurso DESC, metodo
+    ORDER BY concurso DESC, rank_pos ASC
   `, [minC, maxC]);
+
+  if (!jogosRows.length) {
+    jogosRows = await safeAll(env, `
+      SELECT concurso, metodo, dezenas, dezenas_texto, origem, cerebro_version, checkpoint_hash
+      FROM jogos_sistema
+      WHERE concurso >= ? AND concurso <= ?
+      ORDER BY concurso DESC, metodo
+    `, [minC, maxC]);
+  }
 
   const byConcurso = new Map();
   for (const row of jogosRows) {
@@ -355,8 +464,8 @@ async function desempenhoSistema(env, limit = 30) {
     por_metodo,
     resumo,
     note: comDados.length
-      ? 'Acertos = dezenas em comum entre jogo do sistema e resultado oficial. Média aleatória teórica ≈ 9.'
-      : 'Ainda não há jogos_sistema históricos no D1 para os últimos concursos. O gráfico enriquece a cada ciclo com Cérebro ativo (após o sorteio, os jogos do concurso anterior passam a ser conferíveis).'
+      ? 'Acertos = snapshot/sugestão × resultado oficial. Média aleatória teórica ≈ 9.'
+      : 'Ainda sem histórico. Após cada sorteio com snapshot gravado, o gráfico enriquece.'
   });
 }
 
@@ -364,11 +473,15 @@ async function serveCockpit(request, env, url) {
   const asset = await env.ASSETS.fetch(assetRequest(request, url, '/painel_cockpit.html'));
   if (!asset.ok) return asset;
   let html = await asset.text();
+  const scripts = [];
+  if (!html.includes('sugestao_dia.js')) {
+    scripts.push('<script src="/sugestao_dia.js" defer></script>');
+  }
   if (!html.includes('desempenho_cockpit.js')) {
-    html = html.replace(
-      '</body>',
-      '<script src="/desempenho_cockpit.js" defer></script>\n</body>'
-    );
+    scripts.push('<script src="/desempenho_cockpit.js" defer></script>');
+  }
+  if (scripts.length) {
+    html = html.replace('</body>', scripts.join('\n') + '\n</body>');
   }
   return new Response(html, {
     status: 200,
@@ -588,6 +701,13 @@ export default {
         }
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/sistema/sugestao') {
+        try { return await sugestaoDoDiaApi(env); }
+        catch (error) {
+          return json({ ok: false, message: String(error.message || error) }, 500);
+        }
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/sistema/gate') {
         const latest = await safeFirst(env, 'SELECT concurso FROM resultados ORDER BY concurso DESC LIMIT 1');
         const proximo = latest ? Number(latest.concurso) + 1 : 1;
@@ -597,7 +717,10 @@ export default {
       }
 
       if (request.method === 'GET' && url.pathname === '/api/health') {
-        return json({ ok: true, service: 'lotofacil', bridge: true, provenance: true, gate: true, cerebro_only: true, desempenho: true });
+        return json({
+          ok: true, service: 'lotofacil', bridge: true, provenance: true,
+          gate: true, cerebro_only: true, desempenho: true, sugestao_dia: true
+        });
       }
 
       if (request.method === 'GET' && url.pathname === '/api/jogos') {
