@@ -3,6 +3,14 @@
  * Política: falha explícita. Sem hash/versão/concurso alinhado → NÃO grava.
  */
 
+import {
+  ensureSugestaoSchema,
+  computeMethodScores,
+  buildSugestaoDoDia,
+  saveSugestaoSnapshot,
+  extractLabHint
+} from './worker_sugestao_dia.js';
+
 function dezenasTexto(dezenas) {
   return dezenas.map((d) => String(d).padStart(2, '0')).join('-');
 }
@@ -69,6 +77,7 @@ export async function ensureJogosSistemaProvenance(env) {
   } catch (err) {
     console.error('checkpoint_ingest', err);
   }
+  try { await ensureSugestaoSchema(env); } catch (e) { console.error(e); }
 }
 
 /**
@@ -203,7 +212,7 @@ export async function loadGamesFromCerebroCheckpoint(env, concurso) {
 
 /**
  * Só persiste se TODOS os jogos tiverem origem cerebro_python + hash.
- * Rejeita worker_js silencioso.
+ * Também grava snapshot imutável da sugestão do dia (INSERT OR IGNORE).
  */
 export async function persistSystemGames(env, concurso, games, options = {}) {
   const strict = options.strict !== false;
@@ -287,6 +296,16 @@ export async function persistSystemGames(env, concurso, games, options = {}) {
     ).run();
   } catch (err) {
     console.error('checkpoint_ingest insert', err);
+  }
+
+  // Snapshot imutável ranqueado (não sobrescreve se já existir)
+  try {
+    const stats = await computeMethodScores(env, 30);
+    const labHint = await extractLabHint(env);
+    const sugestao = buildSugestaoDoDia(games, stats, labHint);
+    await saveSugestaoSnapshot(env, concurso, sugestao.todos);
+  } catch (err) {
+    console.error('sugestao snapshot', err);
   }
 
   return games;
