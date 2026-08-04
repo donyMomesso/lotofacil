@@ -1,0 +1,95 @@
+name: Checkpoint operacional (Cérebro Python)
+
+# Após cada sorteio, regenera operacional.json (concurso_alvo = ultimo+1),
+# commita no main e — se houver secrets — faz deploy no Cloudflare.
+# Assim a Sugestão do dia não fica bloqueada por checkpoint velho.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:00 UTC = 01:00 BRT (após o Worker das 01:00 e o sorteio da noite)
+    - cron: "0 4 * * *"
+    # 12:00 UTC = 09:00 BRT (segunda chance se o resultado atrasar)
+    - cron: "0 12 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: checkpoint-operacional
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Publicar checkpoint (sync → validar → export)
+        id: ck
+        run: |
+          set -e
+          python scripts/publicar_checkpoint.py --max-novos 50
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("motor_python_v4/checkpoints/operacional.json")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          alvo = data.get("concurso_alvo")
+          h = str(data.get("checkpoint_hash") or "")[:16]
+          print(f"alvo={alvo} hash={h}")
+          if not alvo or not data.get("checkpoint_hash"):
+              raise SystemExit("checkpoint inválido")
+          with open("/tmp/ck_alvo.txt", "w") as f:
+              f.write(str(alvo))
+          PY
+          echo "concurso_alvo=$(cat /tmp/ck_alvo.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit se mudou
+        id: commit
+        run: |
+          git config user.name "lotofacil-cerebro-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add dados/resultados_lotofacil.csv dados/checkpoint_cerebro.json motor_python_v4/checkpoints/operacional.json
+          if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nenhuma alteração no checkpoint."
+          else
+            ALVO="${{ steps.ck.outputs.concurso_alvo }}"
+            git commit -m "chore: checkpoint operacional #${ALVO} [bot]"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              echo "Push rejeitado (tentativa $i/5)..."
+              sleep 5
+            done
+          fi
+
+      - name: Deploy Cloudflare (se token configurado)
+        if: ${{ steps.commit.outputs.changed == 'true' && env.HAS_CF == 'true' }}
+        env:
+          HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && 'true' || 'false' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm install -g wrangler@4
+          npx wrangler deploy
+
+      - name: Resumo
+        run: |
+          echo "Checkpoint alvo: ${{ steps.ck.outputs.concurso_alvo }}"
+          echo "Commit: ${{ steps.commit.outputs.changed }}"
+          echo "Gate: https://lotofacil.donyconfcargo.workers.dev/api/sistema/gate"
