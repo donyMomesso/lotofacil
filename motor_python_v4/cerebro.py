@@ -34,10 +34,12 @@ from metodos import (
     ESPERANCA_TEORICA,
     METODOS,
     gerar_todos_metodos,
+    metricas_diversidade,
     resumo_jogo,
+    seed_para_concurso,
 )
 
-CEREBRO_VERSION = "cerebro-python-v2.0.0"
+CEREBRO_VERSION = "cerebro-python-v2.1.0"
 PURPOSE = "historical_education_only"
 
 
@@ -107,13 +109,20 @@ class Cerebro:
     def sets_historico(self) -> list[set[int]]:
         return [set(c.dezenas) for c in self.historico]
 
-    # ---- métodos de estudo -------------------------------------------------
-
-    def gerar_metodos(self, seed: int | None = None) -> dict[str, dict]:
-        jogos = gerar_todos_metodos(self.sets_historico(), seed=seed if seed is not None else self.seed)
+    def gerar_metodos(
+        self,
+        seed: int | None = None,
+        concurso_alvo: int | None = None,
+    ) -> dict[str, dict]:
+        alvo = concurso_alvo
+        if alvo is None and self.historico:
+            alvo = self.historico[-1].concurso + 1
+        jogos = gerar_todos_metodos(
+            self.sets_historico(),
+            seed=seed if seed is not None else self.seed,
+            concurso_alvo=alvo,
+        )
         return {nome: resumo_jogo(dezenas) for nome, dezenas in jogos.items()}
-
-    # ---- motor de base / fechamento ----------------------------------------
 
     def pontuar_dezenas(self):
         return self.motor.pontuar_dezenas()
@@ -131,16 +140,12 @@ class Cerebro:
     def recalibrar_pesos(self, taxa: float = 0.03) -> Pesos:
         return self.motor.recalibrar_pesos(taxa=taxa)
 
-    # ---- auditoria histórica (sem campos acionáveis) -----------------------
-
     def auditoria_historica(self, min_training: int = 30) -> dict:
         valores = [
             {"concurso": c.concurso, "data": c.data or "", "dezenas": list(c.dezenas)}
             for c in self.historico
         ]
         return build_report(valores, min_training=min_training)
-
-    # ---- checkpoint operacional (ciclo diário / Worker) --------------------
 
     def checkpoint_operacional(
         self,
@@ -150,20 +155,23 @@ class Cerebro:
         tamanho_base: int = 18,
         quantidade_fechamento: int = 30,
     ) -> dict:
-        """
-        Payload consumido pelo ciclo diário e pelo Worker.
-        Inclui jogos de estudo por método (já existentes no fluxo atual).
-        NÃO é previsão — é material de laboratório.
-        """
         if not self.historico:
             raise ValueError("Histórico vazio: impossível gerar checkpoint.")
 
         ultimo = self.historico[-1]
         alvo = concurso_alvo or (ultimo.concurso + 1)
-        metodos = self.gerar_metodos(seed=seed)
+        seed_base = seed if seed is not None else self.seed
+        seed_efetiva = seed_para_concurso(alvo, seed_base)
+
+        jogos_sets = gerar_todos_metodos(
+            self.sets_historico(),
+            seed=seed_base,
+            concurso_alvo=alvo,
+        )
+        metodos = {nome: resumo_jogo(dezenas) for nome, dezenas in jogos_sets.items()}
+        div = metricas_diversidade(jogos_sets)
 
         ranking, componentes = self.pontuar_dezenas()
-        # ranking interno do motor (estudo); não publicar como "previsão"
         ranking_resumo = [
             {"dezena": d, "nota": nota}
             for d, nota in ranking[:25]
@@ -180,16 +188,25 @@ class Cerebro:
             "ultimo_data": ultimo.data,
             "total_concursos": self.total_concursos,
             "concurso_alvo": alvo,
+            "seed_base": seed_base,
+            "seed_efetiva": seed_efetiva,
             "esperanca_teorica": ESPERANCA_TEORICA,
             "metodos_disponiveis": list(METODOS),
             "jogos_estudo": metodos,
+            "diversidade": {
+                "max_overlap": div["max_overlap"],
+                "media_overlap": div["media_overlap"],
+                "ok": div["ok_diversidade"],
+                "max_overlap_alvo": 11,
+            },
             "pesos_memoria": asdict(self.memoria.pesos),
             "memoria_versao": self.memoria.versao,
             "ranking_estudo_dezenas": ranking_resumo,
             "aviso": (
                 "Material de laboratório estatístico. "
                 "Sorteios são independentes; esperança teórica = 9 acertos. "
-                "Não usar como recomendação de aposta."
+                "Não usar como recomendação de aposta. "
+                "Carteira v2.1: seed por concurso + anti-overlap + perfis lab."
             ),
         }
 
@@ -216,7 +233,6 @@ class Cerebro:
                 ],
             }
 
-        # hash sem o próprio campo hash
         payload["checkpoint_hash"] = _hash_payload(payload)
         return payload
 
@@ -244,4 +260,5 @@ def saude() -> dict:
         "source_of_truth": "python",
         "metodos": list(METODOS),
         "esperanca_teorica": ESPERANCA_TEORICA,
+        "features": ["seed_por_concurso", "anti_overlap", "perfis_lab"],
     }
