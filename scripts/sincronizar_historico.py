@@ -77,11 +77,12 @@ def buscar_concurso(n: int) -> dict | None:
 
 
 def buscar_ultimo() -> dict | None:
+    melhor: dict | None = None
     for url in (CAIXA, f"{HEROKU}/latest"):
         parsed = parse_resultado(http_json(url))
-        if parsed:
-            return parsed
-    return None
+        if parsed and (melhor is None or parsed["concurso"] > melhor["concurso"]):
+            melhor = parsed
+    return melhor
 
 
 def carregar_csv(path: Path) -> dict[int, dict]:
