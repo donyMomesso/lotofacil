@@ -4,7 +4,7 @@
   "cerebro_version": "cerebro-python-v2.1.0",
   "audit_brain_version": "python-historical-brain-v1.0.0",
   "source_of_truth": "python",
-  "generated_at": "2026-08-20T04:26:51Z",
+  "generated_at": "2026-08-20T12:39:33Z",
   "ultimo_concurso": 3766,
   "ultimo_data": "19/08/2026",
   "total_concursos": 3766,
@@ -353,5 +353,5 @@
     }
   ],
   "aviso": "Material de laboratório estatístico. Sorteios são independentes; esperança teórica = 9 acertos. Não usar como recomendação de aposta. Carteira v2.1: seed por concurso + anti-overlap + perfis lab.",
-  "checkpoint_hash": "affd9eca700e9f60b0867fe3461c932d4ab57de737f27d38f5eb4d715b46347e"
+  "checkpoint_hash": "a45fa4689c6007efe592ed8d8545de4ba1cca07f8fef7f7743b3287739de8362"
 }
