@@ -1,1 +1,291 @@
-PLACEHOLDER_WILL_FAIL
+--- a/worker_learning.js
++++ b/worker_learning.js
+@@ -3,6 +3,7 @@
+ import * as Governance from './learning_governance.mjs';
+ import { applyCerebroOrBlock } from './worker_cerebro_games.js';
+ import { cleanupExpiredGamesSafe, batchUpdateByIds } from './worker_d1_batch.js';
++import { hashHistoricalRecord, sha256Hex as hashSha256 } from './learning_hash.mjs';
+ 
+ const HISTORY_LIMIT = 180;
+ const DEFAULT_TESTS = 48;
+@@ -235,7 +236,7 @@
+     result: target.dezenas,
+     evaluation
+   };
+-  const hash = await sha256Hex(Learning.stableStringify(record));
++  const hash = await hashHistoricalRecord(record);
+   const inserted = await env.DB.prepare(`
+     INSERT OR IGNORE INTO aprendizado_historico (
+       concurso, data_sorteio, modelo_chave, modelo_nome, versao_modelo,
+@@ -354,36 +355,66 @@
+   }));
+ }
+ 
+-async function integritySummary(env, rows) {
++async function integritySummary(env, rows, options = {}) {
++  const repair = options.repair === true;
+   const temporal = rows.filter((row) => Number(row.treino_ate) >= Number(row.concurso)).length;
+   const probability = rows.filter((row) => Math.abs(Number(row.probabilidade_soma) - Learning.DRAW_SIZE) > 0.000001).length;
+   let hashViolations = 0;
++  let hashRepaired = 0;
+   for (const row of rows) {
+     const ranking = parseJson(row.ranking_json, []);
+     const result = parseJson(row.resultado_json, []);
+     let calibration;
+     try { calibration = Learning.calibrationDiagnostics(ranking, result); }
+-    catch { hashViolations += 1; continue; }
++    catch {
++      hashViolations += 1;
++      continue;
++    }
+     const evaluation = {
+-      brier: Number(row.brier), logLoss: Number(row.log_loss),
+-      top15: Number(row.top15), top18: Number(row.top18), top19: Number(row.top19),
+-      top20: Number(row.top20), top21: Number(row.top21),
+-      calibrationError: calibration.ece, sharpness: calibration.sharpness
++      brier: Number(row.brier),
++      logLoss: Number(row.log_loss),
++      top15: Number(row.top15),
++      top18: Number(row.top18),
++      top19: Number(row.top19),
++      top20: Number(row.top20),
++      top21: Number(row.top21),
++      calibrationError: calibration.ece,
++      sharpness: calibration.sharpness
+     };
+     const record = {
+-      schema: 2, purpose: 'historical_evaluation_only',
+-      contest: Number(row.concurso), drawDate: row.data_sorteio,
+-      modelKey: row.modelo_chave, modelName: row.modelo_nome, modelVersion: row.versao_modelo,
+-      trainingThrough: Number(row.treino_ate), trainingCount: Number(row.quantidade_treino),
+-      probabilitySum: Number(row.probabilidade_soma), ranking, result, evaluation
++      schema: 2,
++      purpose: 'historical_evaluation_only',
++      contest: Number(row.concurso),
++      drawDate: row.data_sorteio || '',
++      modelKey: row.modelo_chave,
++      modelName: row.modelo_nome,
++      modelVersion: row.versao_modelo,
++      trainingThrough: Number(row.treino_ate),
++      trainingCount: Number(row.quantidade_treino),
++      probabilitySum: Number(row.probabilidade_soma),
++      ranking,
++      result,
++      evaluation
+     };
+-    const hash = await sha256Hex(Learning.stableStringify(record));
+-    if (hash !== row.hash_registro) hashViolations += 1;
++    const hash = await hashHistoricalRecord(record);
++    if (hash === row.hash_registro) continue;
++    hashViolations += 1;
++    if (repair && row.id != null) {
++      await env.DB.prepare(
++        'UPDATE aprendizado_historico SET hash_registro = ? WHERE id = ?'
++      ).bind(hash, row.id).run();
++      hashRepaired += 1;
++      row.hash_registro = hash;
++    }
+   }
++  const remainingHash = repair ? Math.max(0, hashViolations - hashRepaired) : hashViolations;
+   return {
+-    checkedRecords: rows.length, temporalViolations: temporal,
+-    probabilitySumViolations: probability, hashViolations,
+-    ok: temporal === 0 && probability === 0 && hashViolations === 0
++    checkedRecords: rows.length,
++    temporalViolations: temporal,
++    probabilitySumViolations: probability,
++    hashViolations: remainingHash,
++    hashRepaired,
++    ok: temporal === 0 && probability === 0 && remainingHash === 0
+   };
+ }
+ 
+@@ -473,7 +504,7 @@
+     FROM aprendizado_historico
+   `).first();
+   const rows = await env.DB.prepare(`
+-    SELECT concurso, data_sorteio, modelo_chave, modelo_nome, versao_modelo, treino_ate, quantidade_treino,
++    SELECT id, concurso, data_sorteio, modelo_chave, modelo_nome, versao_modelo, treino_ate, quantidade_treino,
+            probabilidade_soma, ranking_json, resultado_json, brier, log_loss, top15, top18, top19, top20, top21, hash_registro, criado_em
+     FROM aprendizado_historico WHERE versao_modelo = ? ORDER BY concurso DESC, modelo_chave ASC LIMIT ?
+   `).bind(Learning.MODEL_VERSION, Math.min(Math.max(Number(limit || 1000), 20), 2000)).all();
+@@ -494,7 +525,7 @@
+     const aScore = (Learning.BASELINE_BRIER - a.brier) * 100 + (a.avgTop21 - Learning.THEORETICAL_TOP21);
+     const bScore = (Learning.BASELINE_BRIER - b.brier) * 100 + (b.avgTop21 - Learning.THEORETICAL_TOP21);
+     return bScore - aScore;
+   });
+-  const integrity = await integritySummary(env, rows.results);
++  const integrity = await integritySummary(env, rows.results, { repair: true });
+   const governance = await evaluateChampionChallenger(env, rows.results, models, integrity);
+   const recent = rows.results.slice(0, 96).map((row) => ({
+     concurso: Number(row.concurso), data: row.data_sorteio, model: row.modelo_chave,
+@@ -524,10 +555,171 @@
+   };
+ }
+ 
++async function ensureMetodosConferenciaTable(env) {
++  await env.DB.prepare(`
++    CREATE TABLE IF NOT EXISTS jogos_sistema_conferencia (
++      id INTEGER PRIMARY KEY AUTOINCREMENT,
++      concurso INTEGER NOT NULL,
++      metodo TEXT NOT NULL,
++      dezenas_jogo TEXT NOT NULL,
++      dezenas_sorteadas TEXT NOT NULL,
++      acertos INTEGER NOT NULL,
++      conferido_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
++      UNIQUE(concurso, metodo)
++    )
++  `).run();
++  await env.DB.prepare(`
++    CREATE INDEX IF NOT EXISTS idx_jsc_concurso
++    ON jogos_sistema_conferencia (concurso DESC)
++  `).run();
++}
++
++function countHits(jogoDezenas, sorteadas) {
++  const set = new Set((sorteadas || []).map(Number));
++  return (jogoDezenas || []).map(Number).filter((n) => set.has(n)).length;
++}
++
++async function conferirJogosSistema(env) {
++  await ensureMetodosConferenciaTable(env);
++  const pending = await env.DB.prepare(`
++    SELECT js.concurso, js.metodo, js.dezenas, js.dezenas_texto, r.dezenas AS dezenas_sorteadas, r.data_sorteio
++    FROM jogos_sistema js
++    JOIN resultados r ON r.concurso = js.concurso
++    LEFT JOIN jogos_sistema_conferencia c
++      ON c.concurso = js.concurso AND c.metodo = js.metodo
++    WHERE c.id IS NULL
++    ORDER BY js.concurso ASC
++    LIMIT 500
++  `).all();
++  let inserted = 0;
++  for (const row of pending.results || []) {
++    const jogo = parseJson(row.dezenas, []);
++    const sorteadas = parseJson(row.dezenas_sorteadas, []);
++    if (!Array.isArray(jogo) || jogo.length !== 15 || !Array.isArray(sorteadas) || sorteadas.length !== 15) continue;
++    const acertos = countHits(jogo, sorteadas);
++    const res = await env.DB.prepare(`
++      INSERT OR IGNORE INTO jogos_sistema_conferencia
++        (concurso, metodo, dezenas_jogo, dezenas_sorteadas, acertos)
++      VALUES (?, ?, ?, ?, ?)
++    `).bind(
++      Number(row.concurso),
++      String(row.metodo),
++      JSON.stringify(jogo),
++      JSON.stringify(sorteadas),
++      acertos
++    ).run();
++    if (res.meta?.changes) inserted += 1;
++  }
++  return { inserted, pending: (pending.results || []).length };
++}
++
++function summarizeMetodoStats(rows, window) {
++  const byContest = new Map();
++  for (const row of rows) {
++    const c = Number(row.concurso);
++    if (!byContest.has(c)) byContest.set(c, []);
++    byContest.get(c).push(row);
++  }
++  const contests = [...byContest.keys()].sort((a, b) => a - b);
++  const use = window ? contests.slice(-window) : contests;
++  const useSet = new Set(use);
++  const byMethod = new Map();
++  for (const row of rows) {
++    if (!useSet.has(Number(row.concurso))) continue;
++    const m = row.metodo;
++    if (!byMethod.has(m)) byMethod.set(m, []);
++    byMethod.get(m).push(Number(row.acertos));
++  }
++  const metodos = [...byMethod.keys()].sort().map((metodo) => {
++    const vals = byMethod.get(metodo);
++    const n = vals.length;
++    const media = n ? vals.reduce((s, v) => s + v, 0) / n : 0;
++    const g11 = n ? vals.filter((v) => v >= 11).length / n : 0;
++    const g12 = n ? vals.filter((v) => v >= 12).length / n : 0;
++    return {
++      metodo,
++      n,
++      media_acertos: Learning.round(media, 4),
++      min: n ? Math.min(...vals) : null,
++      max: n ? Math.max(...vals) : null,
++      pct_11_mais: Learning.round(g11 * 100, 2),
++      pct_12_mais: Learning.round(g12 * 100, 2)
++    };
++  });
++  const all = metodos.flatMap((m) => byMethod.get(m.metodo));
++  return {
++    window: window || 'all',
++    contests: use.length,
++    firstContest: use[0] || null,
++    lastContest: use[use.length - 1] || null,
++    esperanca_teorica: 9,
++    metodos,
++    media_geral: all.length ? Learning.round(all.reduce((s, v) => s + v, 0) / all.length, 4) : null
++  };
++}
++
++async function metodosEstatisticasApi(env, url) {
++  await ensureMetodosConferenciaTable(env);
++  const sync = await conferirJogosSistema(env);
++  const rows = await env.DB.prepare(`
++    SELECT concurso, metodo, acertos, dezenas_jogo, dezenas_sorteadas, conferido_em
++    FROM jogos_sistema_conferencia
++    ORDER BY concurso DESC, metodo ASC
++    LIMIT 2000
++  `).all();
++  const list = rows.results || [];
++  return json({
++    ok: true,
++    purpose: 'metodos_m1_m9_hits_only',
++    sync,
++    total_registros: list.length,
++    janelas: {
++      ultimos_20: summarizeMetodoStats(list, 20),
++      ultimos_50: summarizeMetodoStats(list, 50),
++      completo: summarizeMetodoStats(list, null)
++    },
++    recent: list.slice(0, 45)
++  });
++}
++
+ async function historicalApi(env, url) {
+   const requested = Number(url.searchParams.get('tests') || DEFAULT_TESTS);
+   const sync = await syncHistoricalLearning(env, requested);
+-  return json({ ...(await historicalLearningSummary(env)), sync });
++  let metodosSync = null;
++  try { metodosSync = await conferirJogosSistema(env); } catch (e) { console.error('conferirJogosSistema', e); }
++  return json({ ...(await historicalLearningSummary(env)), sync, metodosSync });
+ }
+ 
+ async function runBaseScheduled(event, env) {
+@@ -547,12 +708,20 @@
+         return json({ ok: false, message: 'Falha ao atualizar a governança histórica.' }, 500);
+       }
+     }
++    if (url.pathname === '/api/estatisticas/metodos' && request.method === 'GET') {
++      try { return await metodosEstatisticasApi(env, url); }
++      catch (error) {
++        console.error(error);
++        return json({ ok: false, message: 'Falha ao calcular estatísticas dos métodos.' }, 500);
++      }
++    }
+     const response = await baseWorker.fetch(request, env, ctx);
+     if (url.pathname === '/api/ciclo/rodar' && request.method === 'POST' && response.ok && ctx?.waitUntil) {
+       ctx.waitUntil((async () => {
+         const gate = await applyCerebroSystemGames(env);
+         if (gate.blocked) console.warn('CICLO: jogos_sistema NÃO atualizados —', gate.reason || gate.status);
+         await syncHistoricalLearning(env);
++        try { await conferirJogosSistema(env); } catch (e) { console.error(e); }
+       })());
+     }
+     return response;
+@@ -570,6 +739,7 @@
+       const gate = await applyCerebroSystemGames(env);
+       if (gate.blocked) console.warn('CRON: checkpoint bloqueado —', gate.reason || gate.status);
+       await syncHistoricalLearning(env);
++      try { await conferirJogosSistema(env); } catch (e) { console.error('conferirJogosSistema', e); }
+       await historicalLearningSummary(env);
+     })());
+   }
