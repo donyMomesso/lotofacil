@@ -57,6 +57,7 @@
         <div class="actions" style="margin:0">
           <button class="btn soft" type="button" id="btnSugCopyTop" style="padding:6px 10px;font-size:11px">Copiar prioritários</button>
           <button class="btn soft" type="button" id="btnSugCopyAll" style="padding:6px 10px;font-size:11px">Copiar todos</button>
+          <button class="btn soft" type="button" id="btnSugSalvar" style="padding:6px 10px;font-size:11px">💾 Salvar p/ conferência</button>
           <button class="btn soft" type="button" id="btnSugReload" style="padding:6px 10px;font-size:11px">Atualizar</button>
         </div>
       </div>
@@ -67,10 +68,68 @@
     document.getElementById('btnSugReload')?.addEventListener('click', () => loadSugestao(true));
     document.getElementById('btnSugCopyTop')?.addEventListener('click', () => copyTier('prioritario'));
     document.getElementById('btnSugCopyAll')?.addEventListener('click', () => copyTier('all'));
+    document.getElementById('btnSugSalvar')?.addEventListener('click', () => salvarParaConferencia());
     return card;
   }
 
   let lastData = null;
+  let salvando = false;
+
+  async function salvarParaConferencia() {
+    if (salvando) return;
+    const authToken = (typeof token !== 'undefined' && token) || localStorage.getItem('lotofacil_mobile_token') || '';
+    if (!authToken) {
+      if (typeof setStatus === 'function') setStatus('Faça login (aba Meus jogos) para salvar a sugestão.', true);
+      return;
+    }
+    const d = lastData;
+    const jogos = d?.todos || [];
+    if (!jogos.length) {
+      if (typeof setStatus === 'function') setStatus('Sem jogos da sugestão para salvar.', true);
+      return;
+    }
+    const btn = document.getElementById('btnSugSalvar');
+    salvando = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+    let ok = 0, fail = 0;
+    if (typeof setStatus === 'function') setStatus('Salvando ' + jogos.length + ' jogo(s) da sugestão para conferência automática...');
+    for (const j of jogos) {
+      try {
+        const doApi = typeof api === 'function' ? api : fallbackApi;
+        await doApi('/api/jogos', {
+          method: 'POST',
+          body: JSON.stringify({
+            concurso: d.concurso,
+            metodo: 'Sugestão do dia - ' + j.metodo,
+            dezenas: j.dezenas,
+            manter_salvo: false,
+            descartar_apos_rodadas: 2
+          })
+        });
+        ok += 1;
+      } catch (e) {
+        fail += 1;
+      }
+    }
+    salvando = false;
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar p/ conferência'; }
+    if (typeof setStatus === 'function') {
+      setStatus('Sugestão salva em Meus jogos: ' + ok + ' jogo(s)' + (fail ? ' · falhas ' + fail : '') + '. A conferência acontece sozinha quando sair o resultado.');
+    }
+    if (typeof loadMyGames === 'function') {
+      try { await loadMyGames(); } catch { /* ok */ }
+    }
+  }
+
+  async function fallbackApi(path, options = {}) {
+    const headers = { 'content-type': 'application/json', ...(options.headers || {}) };
+    const t = localStorage.getItem('lotofacil_mobile_token') || '';
+    if (t) headers.authorization = 'Bearer ' + t;
+    const response = await fetch(path, { ...options, headers });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok === false) throw new Error(data.message || ('HTTP ' + response.status));
+    return data;
+  }
 
   async function copyTier(which) {
     const d = lastData;
