@@ -4,13 +4,13 @@
   "cerebro_version": "cerebro-python-v2.1.0",
   "audit_brain_version": "python-historical-brain-v1.0.0",
   "source_of_truth": "python",
-  "generated_at": "2026-10-02T17:23:09Z",
-  "ultimo_concurso": 3794,
-  "ultimo_data": "01/10/2026",
-  "total_concursos": 3794,
-  "concurso_alvo": 3795,
+  "generated_at": "2026-10-03T09:31:28Z",
+  "ultimo_concurso": 3795,
+  "ultimo_data": "02/10/2026",
+  "total_concursos": 3795,
+  "concurso_alvo": 3796,
   "seed_base": 20260728,
-  "seed_efetiva": 779444401,
+  "seed_efetiva": 772760109,
   "esperanca_teorica": 9.0,
   "metodos_disponiveis": [
     "M1_aleatorio_puro",
@@ -28,24 +28,24 @@
       "dezenas": [
         2,
         3,
+        4,
         6,
         7,
+        8,
         9,
         10,
-        12,
-        14,
         15,
         18,
+        19,
         20,
-        21,
         22,
         23,
-        25
+        24
       ],
-      "dezenas_str": "02-03-06-07-09-10-12-14-15-18-20-21-22-23-25",
-      "soma": 207,
-      "pares": 8,
-      "impares": 7
+      "dezenas_str": "02-03-04-06-07-08-09-10-15-18-19-20-22-23-24",
+      "soma": 190,
+      "pares": 9,
+      "impares": 6
     },
     "M2_mais_frequentes": {
       "dezenas": [
@@ -72,92 +72,92 @@
     },
     "M3_mais_atrasadas": {
       "dezenas": [
-        1,
         2,
+        3,
+        5,
         6,
         7,
         9,
-        11,
-        14,
+        10,
         15,
         16,
         17,
-        18,
-        20,
-        22,
-        24,
-        25
-      ],
-      "dezenas_str": "01-02-06-07-09-11-14-15-16-17-18-20-22-24-25",
-      "soma": 207,
-      "pares": 8,
-      "impares": 7
-    },
-    "M4_par_impar_balanceado": {
-      "dezenas": [
-        6,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        16,
-        17,
-        18,
         20,
         21,
         22,
         23,
         25
       ],
-      "dezenas_str": "06-08-09-10-11-12-13-16-17-18-20-21-22-23-25",
-      "soma": 231,
+      "dezenas_str": "02-03-05-06-07-09-10-15-16-17-20-21-22-23-25",
+      "soma": 201,
+      "pares": 6,
+      "impares": 9
+    },
+    "M4_par_impar_balanceado": {
+      "dezenas": [
+        2,
+        3,
+        5,
+        8,
+        12,
+        13,
+        14,
+        15,
+        16,
+        19,
+        20,
+        21,
+        22,
+        24,
+        25
+      ],
+      "dezenas_str": "02-03-05-08-12-13-14-15-16-19-20-21-22-24-25",
+      "soma": 219,
       "pares": 8,
       "impares": 7
     },
     "M5_soma_faixa_comum": {
       "dezenas": [
-        1,
         2,
-        3,
         4,
+        6,
         7,
         8,
-        11,
-        14,
-        15,
-        16,
-        17,
-        19,
-        20,
-        21,
-        23
-      ],
-      "dezenas_str": "01-02-03-04-07-08-11-14-15-16-17-19-20-21-23",
-      "soma": 181,
-      "pares": 6,
-      "impares": 9
-    },
-    "M6_filtros_combinados": {
-      "dezenas": [
-        2,
-        3,
-        5,
-        6,
         9,
         10,
         12,
-        13,
+        14,
+        15,
+        17,
+        20,
+        22,
+        23,
+        25
+      ],
+      "dezenas_str": "02-04-06-07-08-09-10-12-14-15-17-20-22-23-25",
+      "soma": 194,
+      "pares": 9,
+      "impares": 6
+    },
+    "M6_filtros_combinados": {
+      "dezenas": [
+        1,
+        4,
+        5,
+        6,
+        8,
+        10,
+        11,
+        14,
         15,
         17,
         18,
-        21,
-        22,
+        19,
         23,
-        24
+        24,
+        25
       ],
-      "dezenas_str": "02-03-05-06-09-10-12-13-15-17-18-21-22-23-24",
+      "dezenas_str": "01-04-05-06-08-10-11-14-15-17-18-19-23-24-25",
       "soma": 200,
       "pares": 7,
       "impares": 8
@@ -166,44 +166,44 @@
       "dezenas": [
         1,
         3,
-        4,
+        5,
         6,
         7,
-        12,
+        10,
         13,
         14,
-        15,
-        16,
+        17,
+        18,
         19,
+        20,
         21,
         22,
-        23,
         24
       ],
-      "dezenas_str": "01-03-04-06-07-12-13-14-15-16-19-21-22-23-24",
+      "dezenas_str": "01-03-05-06-07-10-13-14-17-18-19-20-21-22-24",
       "soma": 200,
       "pares": 7,
       "impares": 8
     },
     "M8_repeticao_controlada": {
       "dezenas": [
-        1,
-        2,
         3,
         4,
+        5,
         6,
+        7,
+        9,
+        11,
         12,
-        13,
-        15,
-        17,
+        14,
         18,
         19,
-        20,
         21,
+        22,
         24,
         25
       ],
-      "dezenas_str": "01-02-03-04-06-12-13-15-17-18-19-20-21-24-25",
+      "dezenas_str": "03-04-05-06-07-09-11-12-14-18-19-21-22-24-25",
       "soma": 200,
       "pares": 7,
       "impares": 8
@@ -211,22 +211,22 @@
     "M9_tese_v2": {
       "dezenas": [
         1,
-        2,
         3,
         4,
         5,
-        7,
         8,
+        9,
+        10,
         12,
-        17,
-        18,
+        14,
+        15,
         19,
+        20,
         21,
         22,
-        24,
         25
       ],
-      "dezenas_str": "01-02-03-04-05-07-08-12-17-18-19-21-22-24-25",
+      "dezenas_str": "01-03-04-05-08-09-10-12-14-15-19-20-21-22-25",
       "soma": 188,
       "pares": 7,
       "impares": 8
@@ -234,7 +234,7 @@
   },
   "diversidade": {
     "max_overlap": 11,
-    "media_overlap": 8.81,
+    "media_overlap": 9.06,
     "ok": true,
     "max_overlap_alvo": 11
   },
@@ -252,106 +252,106 @@
   "memoria_versao": 1,
   "ranking_estudo_dezenas": [
     {
-      "dezena": 19,
-      "nota": 78.7552
-    },
-    {
-      "dezena": 4,
-      "nota": 78.6085
-    },
-    {
-      "dezena": 13,
-      "nota": 77.2885
-    },
-    {
-      "dezena": 16,
-      "nota": 76.8645
-    },
-    {
-      "dezena": 6,
-      "nota": 76.8085
-    },
-    {
-      "dezena": 9,
-      "nota": 76.5924
-    },
-    {
-      "dezena": 11,
-      "nota": 75.6682
+      "dezena": 7,
+      "nota": 81.8324
     },
     {
       "dezena": 23,
-      "nota": 75.4152
+      "nota": 79.9864
+    },
+    {
+      "dezena": 19,
+      "nota": 79.5552
+    },
+    {
+      "dezena": 11,
+      "nota": 79.4818
     },
     {
       "dezena": 3,
-      "nota": 75.2818
+      "nota": 78.5818
     },
     {
-      "dezena": 21,
-      "nota": 74.2085
+      "dezena": 25,
+      "nota": 78.1858
     },
     {
       "dezena": 5,
-      "nota": 73.8152
+      "nota": 77.7818
+    },
+    {
+      "dezena": 4,
+      "nota": 77.1418
+    },
+    {
+      "dezena": 13,
+      "nota": 76.7218
+    },
+    {
+      "dezena": 17,
+      "nota": 75.2658
+    },
+    {
+      "dezena": 10,
+      "nota": 74.6752
+    },
+    {
+      "dezena": 18,
+      "nota": 74.1818
+    },
+    {
+      "dezena": 14,
+      "nota": 73.9152
+    },
+    {
+      "dezena": 20,
+      "nota": 73.6858
+    },
+    {
+      "dezena": 6,
+      "nota": 73.6418
+    },
+    {
+      "dezena": 12,
+      "nota": 73.6152
     },
     {
       "dezena": 1,
       "nota": 73.4085
     },
     {
-      "dezena": 14,
-      "nota": 72.8348
-    },
-    {
-      "dezena": 7,
-      "nota": 72.7748
-    },
-    {
-      "dezena": 18,
-      "nota": 72.7152
-    },
-    {
-      "dezena": 24,
-      "nota": 72.3085
-    },
-    {
-      "dezena": 20,
-      "nota": 71.9948
-    },
-    {
-      "dezena": 17,
-      "nota": 71.8748
-    },
-    {
-      "dezena": 25,
-      "nota": 70.8615
-    },
-    {
-      "dezena": 10,
-      "nota": 69.7085
-    },
-    {
-      "dezena": 12,
-      "nota": 69.4152
+      "dezena": 21,
+      "nota": 72.5464
     },
     {
       "dezena": 15,
-      "nota": 68.3752
+      "nota": 72.013
     },
     {
-      "dezena": 2,
-      "nota": 65.6712
+      "dezena": 16,
+      "nota": 70.9312
+    },
+    {
+      "dezena": 24,
+      "nota": 69.7085
+    },
+    {
+      "dezena": 9,
+      "nota": 64.8833
     },
     {
       "dezena": 8,
-      "nota": 63.6485
+      "nota": 63.7818
     },
     {
       "dezena": 22,
-      "nota": 58.3767
+      "nota": 63.6085
+    },
+    {
+      "dezena": 2,
+      "nota": 62.4712
     }
   ],
   "aviso": "Material de laboratório estatístico. Sorteios são independentes; esperança teórica = 9 acertos. Não usar como recomendação de aposta. Carteira v2.1: seed por concurso + anti-overlap + perfis lab.",
-  "checkpoint_hash": "69605b9046ffef1aee9e74a98e6595342f3af69407f8783abab2e844ce5f7041"
+  "checkpoint_hash": "ccd140b28ccd20b02871c86e90ad1832d76a8fd6b6ecf13393daff55076661dd"
 }
